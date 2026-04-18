@@ -2,32 +2,44 @@
 #  JuggleFlow — .gitignore
 # =============================================================
 
-# ── SECRETS — ne jamais commiter ────────────────────────────
+# ── SECRETS & CONFIGURATION LOCALE ──────────────────────────
 .env
 *.env.local
-application-local.properties.secret
+*.env.*.local
 application-local.properties
+application-local.properties.bak
+application-local.properties.secret
+src/test/resources/application-test.properties.local
+*-secrets.yaml
+juggleflow-secrets.yaml
 
-# ── Java / Maven ────────────────────────────────────────────
+# ── BUILD OUTPUT ─────────────────────────────────────────────
 target/
+build/
+out/
 *.jar
 *.war
-.mvn/wrapper/maven-wrapper.jar
 
-# ── IntelliJ IDEA ───────────────────────────────────────────
+# ── MAVEN ────────────────────────────────────────────────────
+.mvn/wrapper/maven-wrapper.jar
+surefire-reports/
+
+# ── GRADLE ───────────────────────────────────────────────────
+.gradle/
+
+# ── INTELLIJ IDEA ────────────────────────────────────────────
 .idea/
 *.iml
 *.iws
 *.ipr
-out/
 
-# ── VS Code ─────────────────────────────────────────────────
+# ── VS CODE ──────────────────────────────────────────────────
 .vscode/
 
-# ── OS ──────────────────────────────────────────────────────
+# ── OS ───────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 
-# ── Logs ────────────────────────────────────────────────────
+# ── LOGS ─────────────────────────────────────────────────────
 *.log
 logs/

@@ -1,0 +1,78 @@
+# =============================================================
+#  JuggleFlow — Podman Pod (généré avec podman-5.7.1)
+#  Usage : podman kube play juggleflow-pod.yaml
+# =============================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: juggleflow
+  name: juggleflow
+spec:
+  containers:
+
+    - name: juggleflow-db
+      image: docker.io/library/postgres:17-alpine
+      args:
+        - postgres
+      env:
+        - name: POSTGRES_DB
+          value: juggleflow_db
+        - name: POSTGRES_USER
+          value: juggleflow_user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: juggleflow-secrets
+              key: POSTGRES_PASSWORD
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+      ports:
+        - containerPort: 5432
+          hostPort: 5432
+      volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: juggleflow-pgdata-pvc
+
+    - name: juggleflow-backend
+      image: localhost/juggleflow_backend:latest
+      env:
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://localhost:5432/juggleflow_db
+        - name: SPRING_DATASOURCE_USERNAME
+          value: juggleflow_user
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: juggleflow-secrets
+              key: POSTGRES_PASSWORD
+        - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+          value: validate
+        - name: SPRING_JPA_SHOW_SQL
+          value: "false"
+        - name: SPRING_JPA_DATABASE_PLATFORM
+          value: org.hibernate.dialect.PostgreSQLDialect
+        - name: SPRING_APPLICATION_NAME
+          value: JuggleFlow
+        - name: SERVER_PORT
+          value: "8080"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: juggleflow-secrets
+              key: JWT_SECRET
+        - name: JWT_EXPIRATION_MS
+          value: "900000"
+        - name: JWT_REFRESH_EXPIRATION_MS
+          value: "604800000"
+        - name: CORS_ALLOWED_ORIGINS
+          value: http://localhost:5173
+      ports:
+        - containerPort: 8080
+          hostPort: 8080
+      securityContext: {}
+
+  volumes:
+    - name: juggleflow-pgdata-pvc
+      persistentVolumeClaim:
+        claimName: juggleflow-pgdata
