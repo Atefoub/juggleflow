@@ -42,4 +42,8 @@ ENV JAVA_OPTS="-XX:+UseContainerSupport \
                -XX:+UseG1GC \
                -Djava.security.egd=file:/dev/./urandom"
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "\
+  echo 'Waiting 15s for PostgreSQL...'; \
+  sleep 15; \
+  echo 'Starting JuggleFlow'; \
+  java $JAVA_OPTS -jar app.jar"]

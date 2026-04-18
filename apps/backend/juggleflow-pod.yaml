@@ -10,7 +10,6 @@ metadata:
   name: juggleflow
 spec:
   containers:
-
     - name: juggleflow-db
       image: docker.io/library/postgres:17-alpine
       args:
@@ -71,6 +70,8 @@ spec:
         - containerPort: 8080
           hostPort: 8080
       securityContext: {}
+
+  restartPolicy: Always
 
   volumes:
     - name: juggleflow-pgdata-pvc
