@@ -6,6 +6,7 @@
 .env
 *.env.local
 application-local.properties.secret
+application-local.properties
 
 # ── Java / Maven ────────────────────────────────────────────
 target/

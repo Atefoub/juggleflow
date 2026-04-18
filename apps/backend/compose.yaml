@@ -2,7 +2,7 @@
 
 services:
   db:
-    image: docker.io/postgres:16-alpine
+    image: docker.io/postgres:17-alpine
     container_name: juggleflow-db
     restart: unless-stopped
     environment:
@@ -42,6 +42,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
       JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS}
+      # FIX 2026-04-09 : variable CORS_ALLOWED_ORIGINS manquante dans la version originale
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
     ports:
       - "8080:8080"
     networks:
