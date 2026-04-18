@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -31,7 +30,6 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableScheduling
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -46,9 +44,11 @@ public class SecurityConfig {
             "/api/auth/login",
             "/api/auth/register",
             "/actuator/health",
+
+            // Swagger / OpenAPI
+            "/v3/api-docs/**",
             "/swagger-ui/**",
-            "/swagger-ui.html",
-            "/v3/api-docs/**"
+            "/swagger-ui.html"
     };
 
     @Bean
@@ -58,20 +58,24 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Swagger doit être autorisé AVANT TOUT
                         .requestMatchers(PUBLIC_ROUTES).permitAll()
-                        // Admin : tableau de bord, utilisateurs, RGPD
+
+                        // Routes admin
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
-                        // Enseignant : classes, parcours, groupes
+
+                        // Routes enseignant
                         .requestMatchers(
                                 "/api/enseignant/**",
                                 "/api/classes/**"
                         ).hasAnyAuthority("ROLE_ENSEIGNANT", "ROLE_ADMIN")
-                        // Tout le reste : authentifié
+
+                        // Tout le reste nécessite une authentification
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtFilter, RateLimitFilter.class)
                 .build();
     }
 
@@ -94,14 +98,19 @@ public class SecurityConfig {
                 .map(user -> new org.springframework.security.core.userdetails.User(
                         user.getEmail(),
                         user.getPassword(),
-                        user.isEnabled(),   // ← transmet le flag enabled : lève DisabledException si false
-                        true,               // accountNonExpired
-                        true,               // credentialsNonExpired
-                        true,               // accountNonLocked
+                        user.isEnabled(),
+                        true,
+                        true,
+                        true,
                         List.of(new SimpleGrantedAuthority(user.getRole()))
                 ))
                 .orElseThrow(() -> new UsernameNotFoundException(
                         "Utilisateur non trouvé : " + email));
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);
     }
 
     @Bean
@@ -116,10 +125,5 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
             throws Exception {
         return config.getAuthenticationManager();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
     }
 }

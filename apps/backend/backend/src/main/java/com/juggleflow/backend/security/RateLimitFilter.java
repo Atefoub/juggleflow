@@ -1,8 +1,9 @@
 package com.juggleflow.backend.security;
 
-import io.github.bucket4j.Bandwidth;
+// FIX #2 : Suppression des imports de l'ancienne API dépréciée Bucket4j.
+// Bandwidth (classe statique) et Refill (classe standalone) sont dépréciés
+// depuis Bucket4j 8.2.x. La nouvelle API passe exclusivement par le builder fluent.
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,8 +30,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final int MAX_REQUESTS_PER_MINUTE = 10;
     private static final String[] RATE_LIMITED_PATHS = {
-        "/api/auth/login",
-        "/api/auth/register"
+            "/api/auth/login",
+            "/api/auth/register"
     };
 
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
@@ -66,21 +67,32 @@ public class RateLimitFilter extends OncePerRequestFilter {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType("application/json");
             response.getWriter().write(
-                """
-                {"error":"Too Many Requests",
-                 "message":"Trop de tentatives. Réessayez dans une minute.",
-                 "status":429}
-                """
+                    """
+                    {"error":"Too Many Requests",
+                     "message":"Trop de tentatives. Réessayez dans une minute.",
+                     "status":429}
+                    """
             );
         }
     }
 
+    /**
+     * FIX #2 (MAJEUR) : Remplacement de l'ancienne API Bucket4j dépréciée
+     * par la nouvelle API fluent lambda introduite en 8.2.x.
+     *
+     * AVANT (déprécié) :
+     *   Bandwidth limit = Bandwidth.classic(MAX, Refill.greedy(MAX, Duration.ofMinutes(1)));
+     *   return Bucket.builder().addLimit(limit).build();
+     *
+     * APRÈS (API courante 8.x) :
+     */
     private Bucket createBucket() {
-        Bandwidth limit = Bandwidth.classic(
-            MAX_REQUESTS_PER_MINUTE,
-            Refill.greedy(MAX_REQUESTS_PER_MINUTE, Duration.ofMinutes(1))
-        );
-        return Bucket.builder().addLimit(limit).build();
+        return Bucket.builder()
+                .addLimit(limit -> limit
+                        .capacity(MAX_REQUESTS_PER_MINUTE)
+                        .refillGreedy(MAX_REQUESTS_PER_MINUTE, Duration.ofMinutes(1))
+                )
+                .build();
     }
 
     private String getClientIp(HttpServletRequest request) {
