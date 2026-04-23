@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  /* Fonds */
+  --color-bg-primary: #0A0E2A;
+  --color-bg-secondary: #F0F2FF;
+  --color-bg-card: #111638;
+  --color-bg-input: #1A2040;
+
+  /* Marque */
+  --color-brand: #8B2BE2;
+  --color-brand-end: #C724B1;
+
+  /* Accents */
+  --color-cta: #FF7A00;
+  --color-info: #00B4D8;
+  --color-alert: #FF4D4D;
+  --color-success: #22C55E;
+
+  /* Rôles */
+  --color-student: #C724B1;
+  --color-teacher: #4068D8;
+  --color-admin: #5B20E6;
+
+  /* Textes */
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #A0AABF;
+  --color-text-muted: #5A6480;
+
+  /* Bordures */
+  --color-border: #1E2847;
+  --color-border-active: #8B2BE2;
+
+  /* Typographie */
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+
+  /* Rayons */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 24px;
+
+  /* Espacement */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    background-color: #0A0E2A;
+    color: #FFFFFF;
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Syne', sans-serif;
+  }
+}

@@ -1,16 +1,24 @@
 import { StrictMode } from 'react';
-import { BrowserRouter } from 'react-router-dom';
 import * as ReactDOM from 'react-dom/client';
-import App from './app/app';
+import { AuthProvider } from './context/AuthContext';
+import AppRouter from './router/AppRouter';
+import './index.css';
+
+// Import des polices Google Fonts
+const link = document.createElement('link');
+link.rel = 'stylesheet';
+link.href =
+  'https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap';
+document.head.appendChild(link);
 
 const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement,
+  document.getElementById('root') as HTMLElement
 );
 
 root.render(
   <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </StrictMode>,
+    <AuthProvider>
+      <AppRouter />
+    </AuthProvider>
+  </StrictMode>
 );
