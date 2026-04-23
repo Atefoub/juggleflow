@@ -56,7 +56,8 @@
         "ciTargetName": "test-ci",
         "testMode": "watch"
       }
-    }
+    },
+    "@nx/maven"
   ],
   "targetDefaults": {
     "test": {

@@ -1,0 +1,45 @@
+# =============================================================
+#  JuggleFlow — .gitignore
+# =============================================================
+
+# ── SECRETS & CONFIGURATION LOCALE ──────────────────────────
+.env
+*.env.local
+*.env.*.local
+application-local.properties
+application-local.properties.bak
+application-local.properties.secret
+src/test/resources/application-test.properties.local
+*-secrets.yaml
+juggleflow-secrets.yaml
+
+# ── BUILD OUTPUT ─────────────────────────────────────────────
+target/
+build/
+out/
+*.jar
+*.war
+
+# ── MAVEN ────────────────────────────────────────────────────
+.mvn/wrapper/maven-wrapper.jar
+surefire-reports/
+
+# ── GRADLE ───────────────────────────────────────────────────
+.gradle/
+
+# ── INTELLIJ IDEA ────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# ── VS CODE ──────────────────────────────────────────────────
+.vscode/
+
+# ── OS ───────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── LOGS ─────────────────────────────────────────────────────
+*.log
+logs/
