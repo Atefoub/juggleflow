@@ -58,27 +58,27 @@ export default function LoginPage() {
       className="min-h-screen flex flex-col items-center justify-center px-6"
       style={{ backgroundColor: '#0A0E2A', fontFamily: 'DM Sans, sans-serif' }}
     >
-      <div className="w-full max-w-sm">
+      <div className="w-full" style={{ maxWidth: '400px' }}>
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <div
-            className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-2xl"
-            style={{ background: 'linear-gradient(135deg, #8B2BE2, #C724B1)' }}
-          >
-            🤹
-          </div>
-          <h1
-            className="text-3xl font-bold text-white mb-1"
-            style={{ fontFamily: 'Syne, sans-serif' }}
-          >
-            JuggleFlow
-          </h1>
-          <p style={{ color: '#A0AABF', fontSize: '0.85rem' }}>
+          <img
+            src="/logo1.png"
+            alt="JuggleFlow"
+            style={{
+              width: '280px',
+              height: 'auto',
+              objectFit: 'contain',
+              display: 'block',
+              margin: '0 auto',
+              mixBlendMode: 'screen',
+            }}
+          />
+          <p style={{ color: '#A0AABF', fontSize: '0.85rem', marginTop: '8px' }}>
             Plateforme pédagogique de jonglage
           </p>
-        </div>
 
+</div>
         {/* Sélecteur de rôle */}
         <div className="mb-6">
           <p
