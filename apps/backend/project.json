@@ -21,7 +21,7 @@
       "executor": "nx:run-commands",
       "continuous": true,
       "options": {
-        "command": "./mvnw spring-boot:run",
+        "command": "mvnw.cmd spring-boot:run",
         "cwd": "apps/backend"
       }
     }
