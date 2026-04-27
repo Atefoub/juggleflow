@@ -40,7 +40,7 @@ CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
-    RETURN NEW;
+RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -53,16 +53,16 @@ $$ LANGUAGE plpgsql;
 -- =============================================================
 
 CREATE TABLE users (
-    id          BIGSERIAL       PRIMARY KEY,
-    user_type   VARCHAR(31)     NOT NULL
-                                CHECK (user_type IN ('student', 'teacher', 'administrator')),
-    email       VARCHAR(255)    NOT NULL UNIQUE,
-    password    VARCHAR(255)    NOT NULL,
-    first_name  VARCHAR(100)    NOT NULL,
-    last_name   VARCHAR(100)    NOT NULL,
-    enabled     BOOLEAN         NOT NULL DEFAULT TRUE,
-    created_at  TIMESTAMPTZ     DEFAULT NOW(),
-    updated_at  TIMESTAMPTZ     DEFAULT NOW()
+                     id          BIGSERIAL       PRIMARY KEY,
+                     user_type   VARCHAR(31)     NOT NULL
+                       CHECK (user_type IN ('student', 'teacher', 'administrator')),
+                     email       VARCHAR(255)    NOT NULL UNIQUE,
+                     password    VARCHAR(255)    NOT NULL,
+                     first_name  VARCHAR(100)    NOT NULL,
+                     last_name   VARCHAR(100)    NOT NULL,
+                     enabled     BOOLEAN         NOT NULL DEFAULT TRUE,
+                     created_at  TIMESTAMPTZ     DEFAULT NOW(),
+                     updated_at  TIMESTAMPTZ     DEFAULT NOW()
 );
 
 CREATE INDEX idx_users_email   ON users (email);
@@ -70,8 +70,8 @@ CREATE INDEX idx_users_type    ON users (user_type);
 CREATE INDEX idx_users_enabled ON users (enabled);
 
 CREATE TRIGGER trg_users_updated_at
-    BEFORE UPDATE ON users
-    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+  BEFORE UPDATE ON users
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 COMMENT ON TABLE users IS
     'Parent table for all user types (JOINED inheritance). '
@@ -85,12 +85,12 @@ COMMENT ON TABLE users IS
 -- =============================================================
 
 CREATE TABLE student (
-    id              BIGINT      PRIMARY KEY
-                                REFERENCES users (id) ON DELETE CASCADE,
-    class_id        BIGINT,     -- FK added after school_class creation
-    school_level    VARCHAR(50),
-    birth_date      DATE,
-    enrollment_date DATE
+                       id              BIGINT      PRIMARY KEY
+                         REFERENCES users (id) ON DELETE CASCADE,
+                       class_id        BIGINT,     -- FK added after school_class creation
+                       school_level    VARCHAR(50),
+                       birth_date      DATE,
+                       enrollment_date DATE
 );
 
 CREATE INDEX idx_student_class ON student (class_id);
@@ -105,10 +105,10 @@ COMMENT ON TABLE student IS
 -- =============================================================
 
 CREATE TABLE teacher (
-    id              BIGINT      PRIMARY KEY
-                                REFERENCES users (id) ON DELETE CASCADE,
-    subjects_taught TEXT,
-    certified       BOOLEAN     NOT NULL DEFAULT FALSE
+                       id              BIGINT      PRIMARY KEY
+                         REFERENCES users (id) ON DELETE CASCADE,
+                       subjects_taught TEXT,
+                       certified       BOOLEAN     NOT NULL DEFAULT FALSE
 );
 
 COMMENT ON TABLE teacher IS
@@ -121,9 +121,9 @@ COMMENT ON TABLE teacher IS
 -- =============================================================
 
 CREATE TABLE administrator (
-    id          BIGINT      PRIMARY KEY
-                            REFERENCES users (id) ON DELETE CASCADE,
-    admin_role  VARCHAR(50) DEFAULT 'school_admin'
+                             id          BIGINT      PRIMARY KEY
+                               REFERENCES users (id) ON DELETE CASCADE,
+                             admin_role  VARCHAR(50) DEFAULT 'school_admin'
 );
 
 COMMENT ON TABLE administrator IS
@@ -137,19 +137,19 @@ COMMENT ON TABLE administrator IS
 -- =============================================================
 
 CREATE TABLE school_class (
-    class_id            BIGSERIAL       PRIMARY KEY,
-    class_name          VARCHAR(100)    NOT NULL,
-    school_level        VARCHAR(10)
-                                        CHECK (school_level IN
-                                            ('PS','MS','GS','CP','CE1','CE2','CM1','CM2')),
-    school_year         INTEGER         NOT NULL
-                                        CHECK (school_year >= 2020 AND school_year <= 2100),
-    student_count       INTEGER         NOT NULL DEFAULT 0
-                                        CHECK (student_count >= 0),
-    homeroom_teacher_id BIGINT
-                                        REFERENCES teacher (id) ON DELETE SET NULL,
+                            class_id            BIGSERIAL       PRIMARY KEY,
+                            class_name          VARCHAR(100)    NOT NULL,
+                            school_level        VARCHAR(10)
+                              CHECK (school_level IN
+                                     ('PS','MS','GS','CP','CE1','CE2','CM1','CM2')),
+                            school_year         INTEGER         NOT NULL
+                              CHECK (school_year >= 2020 AND school_year <= 2100),
+                            student_count       INTEGER         NOT NULL DEFAULT 0
+                              CHECK (student_count >= 0),
+                            homeroom_teacher_id BIGINT
+                                                                REFERENCES teacher (id) ON DELETE SET NULL,
 
-    CONSTRAINT uq_class_name_year UNIQUE (class_name, school_year)
+                            CONSTRAINT uq_class_name_year UNIQUE (class_name, school_year)
 );
 
 CREATE INDEX idx_school_class_teacher ON school_class (homeroom_teacher_id);
@@ -161,8 +161,8 @@ COMMENT ON TABLE school_class IS
 
 -- Now that school_class exists, add the FK on student
 ALTER TABLE student
-    ADD CONSTRAINT fk_student_class
-        FOREIGN KEY (class_id) REFERENCES school_class (class_id) ON DELETE SET NULL;
+  ADD CONSTRAINT fk_student_class
+    FOREIGN KEY (class_id) REFERENCES school_class (class_id) ON DELETE SET NULL;
 
 
 -- =============================================================
@@ -171,11 +171,11 @@ ALTER TABLE student
 -- =============================================================
 
 CREATE TABLE difficulty_level (
-    level_id            BIGSERIAL       PRIMARY KEY,
-    level_name          VARCHAR(50)     NOT NULL UNIQUE,
-    description         TEXT,
-    progression_order   INTEGER         NOT NULL UNIQUE
-                                        CHECK (progression_order > 0)
+                                level_id            BIGSERIAL       PRIMARY KEY,
+                                level_name          VARCHAR(50)     NOT NULL UNIQUE,
+                                description         TEXT,
+                                progression_order   INTEGER         NOT NULL UNIQUE
+                                  CHECK (progression_order > 0)
 );
 
 COMMENT ON TABLE difficulty_level IS
@@ -188,10 +188,10 @@ COMMENT ON TABLE difficulty_level IS
 -- =============================================================
 
 CREATE TABLE category (
-    category_id     BIGSERIAL       PRIMARY KEY,
-    category_name   VARCHAR(100)    NOT NULL UNIQUE,
-    description     TEXT,
-    icon            VARCHAR(50)
+                        category_id     BIGSERIAL       PRIMARY KEY,
+                        category_name   VARCHAR(100)    NOT NULL UNIQUE,
+                        description     TEXT,
+                        icon            VARCHAR(50)
 );
 
 COMMENT ON TABLE category IS 'Trick categories (3 balls, scarves, clubs, etc.)';
@@ -200,26 +200,29 @@ COMMENT ON TABLE category IS 'Trick categories (3 balls, scarves, clubs, etc.)';
 -- =============================================================
 --  TABLE : trick
 --  Maps to : com.juggleflow.backend.model.Trick
+--
+--  siteswap : nullable — some tricks have no universally accepted
+--  standard siteswap notation.
 -- =============================================================
 
 CREATE TABLE trick (
-    trick_id                    BIGSERIAL       PRIMARY KEY,
-    trick_name                  VARCHAR(255)    NOT NULL UNIQUE,
-    siteswap                    VARCHAR(100),
-    description                 TEXT,
-    juggling_lab_animation_url  TEXT,
-    difficulty_score            INTEGER
-                                                CHECK (difficulty_score BETWEEN 1 AND 10),
-    estimated_learning_duration INTEGER
-                                                CHECK (estimated_learning_duration > 0),
-    popular                     BOOLEAN         NOT NULL DEFAULT FALSE,
-    created_at                  TIMESTAMPTZ     DEFAULT NOW(),
-    level_id                    BIGINT          NOT NULL
-                                                REFERENCES difficulty_level (level_id)
-                                                ON DELETE RESTRICT,
-    category_id                 BIGINT
-                                                REFERENCES category (category_id)
-                                                ON DELETE SET NULL
+                     trick_id                    BIGSERIAL       PRIMARY KEY,
+                     trick_name                  VARCHAR(255)    NOT NULL UNIQUE,
+                     siteswap                    VARCHAR(100),
+                     description                 TEXT,
+                     juggling_lab_animation_url  TEXT,
+                     difficulty_score            INTEGER
+                       CHECK (difficulty_score BETWEEN 1 AND 10),
+                     estimated_learning_duration INTEGER
+                       CHECK (estimated_learning_duration > 0),
+                     popular                     BOOLEAN         NOT NULL DEFAULT FALSE,
+                     created_at                  TIMESTAMPTZ     DEFAULT NOW(),
+                     level_id                    BIGINT          NOT NULL
+                       REFERENCES difficulty_level (level_id)
+                         ON DELETE RESTRICT,
+                     category_id                 BIGINT
+                                                                 REFERENCES category (category_id)
+                                                                   ON DELETE SET NULL
 );
 
 CREATE INDEX idx_trick_level    ON trick (level_id);
@@ -236,14 +239,14 @@ COMMENT ON TABLE trick IS 'Full catalogue of juggling tricks.';
 -- =============================================================
 
 CREATE TABLE prerequisite (
-    trick_id                BIGINT  NOT NULL
-                                    REFERENCES trick (trick_id) ON DELETE CASCADE,
-    prerequisite_trick_id   BIGINT  NOT NULL
-                                    REFERENCES trick (trick_id) ON DELETE CASCADE,
+                            trick_id                BIGINT  NOT NULL
+                              REFERENCES trick (trick_id) ON DELETE CASCADE,
+                            prerequisite_trick_id   BIGINT  NOT NULL
+                              REFERENCES trick (trick_id) ON DELETE CASCADE,
 
-    PRIMARY KEY (trick_id, prerequisite_trick_id),
-    CONSTRAINT chk_prerequisite_no_self
-        CHECK (trick_id <> prerequisite_trick_id)
+                            PRIMARY KEY (trick_id, prerequisite_trick_id),
+                            CONSTRAINT chk_prerequisite_no_self
+                              CHECK (trick_id <> prerequisite_trick_id)
 );
 
 COMMENT ON TABLE prerequisite IS
@@ -257,10 +260,10 @@ COMMENT ON TABLE prerequisite IS
 -- =============================================================
 
 CREATE TABLE badge_type (
-    badge_type_id   BIGSERIAL       PRIMARY KEY,
-    type_name       VARCHAR(100)    NOT NULL UNIQUE,
-    description     TEXT,
-    color           VARCHAR(7)
+                          badge_type_id   BIGSERIAL       PRIMARY KEY,
+                          type_name       VARCHAR(100)    NOT NULL UNIQUE,
+                          description     TEXT,
+                          color           VARCHAR(7)
 );
 
 COMMENT ON TABLE badge_type IS 'Badge categories (level, milestone, thematic, consistency).';
@@ -272,18 +275,18 @@ COMMENT ON TABLE badge_type IS 'Badge categories (level, milestone, thematic, co
 -- =============================================================
 
 CREATE TABLE badge (
-    badge_id            BIGSERIAL       PRIMARY KEY,
-    badge_name          VARCHAR(255)    NOT NULL UNIQUE,
-    description         TEXT,
-    icon_url            TEXT,
-    unlock_criteria     TEXT            NOT NULL,
-    experience_points   INTEGER         NOT NULL DEFAULT 0
-                                        CHECK (experience_points >= 0),
-    difficulty_order    INTEGER
-                                        CHECK (difficulty_order > 0),
-    badge_type_id       BIGINT          NOT NULL
-                                        REFERENCES badge_type (badge_type_id)
-                                        ON DELETE RESTRICT
+                     badge_id            BIGSERIAL       PRIMARY KEY,
+                     badge_name          VARCHAR(255)    NOT NULL UNIQUE,
+                     description         TEXT,
+                     icon_url            TEXT,
+                     unlock_criteria     TEXT            NOT NULL,
+                     experience_points   INTEGER         NOT NULL DEFAULT 0
+                       CHECK (experience_points >= 0),
+                     difficulty_order    INTEGER
+                       CHECK (difficulty_order > 0),
+                     badge_type_id       BIGINT          NOT NULL
+                       REFERENCES badge_type (badge_type_id)
+                         ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_badge_type          ON badge (badge_type_id);
@@ -300,15 +303,15 @@ COMMENT ON TABLE badge IS
 -- =============================================================
 
 CREATE TABLE user_badge (
-    user_badge_id   BIGSERIAL   PRIMARY KEY,
-    user_id         BIGINT      NOT NULL
-                                REFERENCES users (id) ON DELETE CASCADE,
-    badge_id        BIGINT      NOT NULL
-                                REFERENCES badge (badge_id) ON DELETE CASCADE,
-    unlocked_at     TIMESTAMPTZ DEFAULT NOW(),
-    notified        BOOLEAN     NOT NULL DEFAULT FALSE,
+                          user_badge_id   BIGSERIAL   PRIMARY KEY,
+                          user_id         BIGINT      NOT NULL
+                            REFERENCES users (id) ON DELETE CASCADE,
+                          badge_id        BIGINT      NOT NULL
+                            REFERENCES badge (badge_id) ON DELETE CASCADE,
+                          unlocked_at     TIMESTAMPTZ DEFAULT NOW(),
+                          notified        BOOLEAN     NOT NULL DEFAULT FALSE,
 
-    CONSTRAINT uq_user_badge UNIQUE (user_id, badge_id)
+                          CONSTRAINT uq_user_badge UNIQUE (user_id, badge_id)
 );
 
 CREATE INDEX idx_user_badge_user     ON user_badge (user_id);
@@ -324,26 +327,26 @@ COMMENT ON TABLE user_badge IS 'Badges earned by each user.';
 -- =============================================================
 
 CREATE TABLE user_progress (
-    progress_id         BIGSERIAL       PRIMARY KEY,
-    user_id             BIGINT          NOT NULL
-                                        REFERENCES users (id) ON DELETE CASCADE,
-    trick_id            BIGINT          NOT NULL
-                                        REFERENCES trick (trick_id) ON DELETE RESTRICT,
-    status              VARCHAR(20)     NOT NULL DEFAULT 'NOT_STARTED'
-                                        CHECK (status IN
-                                            ('NOT_STARTED', 'IN_PROGRESS', 'MASTERED')),
-    mastery_percentage  INTEGER         NOT NULL DEFAULT 0
-                                        CHECK (mastery_percentage BETWEEN 0 AND 100),
-    attempt_count       INTEGER         NOT NULL DEFAULT 0
-                                        CHECK (attempt_count >= 0),
-    started_at          TIMESTAMPTZ     DEFAULT NOW(),
-    mastered_at         TIMESTAMPTZ,
-    last_practice       TIMESTAMPTZ,
+                             progress_id         BIGSERIAL       PRIMARY KEY,
+                             user_id             BIGINT          NOT NULL
+                               REFERENCES users (id) ON DELETE CASCADE,
+                             trick_id            BIGINT          NOT NULL
+                               REFERENCES trick (trick_id) ON DELETE RESTRICT,
+                             status              VARCHAR(20)     NOT NULL DEFAULT 'NOT_STARTED'
+                               CHECK (status IN
+                                      ('NOT_STARTED', 'IN_PROGRESS', 'MASTERED')),
+                             mastery_percentage  INTEGER         NOT NULL DEFAULT 0
+                               CHECK (mastery_percentage BETWEEN 0 AND 100),
+                             attempt_count       INTEGER         NOT NULL DEFAULT 0
+                               CHECK (attempt_count >= 0),
+                             started_at          TIMESTAMPTZ     DEFAULT NOW(),
+                             mastered_at         TIMESTAMPTZ,
+                             last_practice       TIMESTAMPTZ,
 
-    CONSTRAINT uq_user_trick    UNIQUE (user_id, trick_id),
-    CONSTRAINT chk_mastered_at  CHECK (
-        mastered_at IS NULL OR mastered_at >= started_at
-    )
+                             CONSTRAINT uq_user_trick    UNIQUE (user_id, trick_id),
+                             CONSTRAINT chk_mastered_at  CHECK (
+                               mastered_at IS NULL OR mastered_at >= started_at
+                               )
 );
 
 CREATE INDEX idx_user_progress_user      ON user_progress (user_id);
@@ -363,22 +366,22 @@ COMMENT ON TABLE user_progress IS
 -- =============================================================
 
 CREATE TABLE gdpr_consent (
-    consent_id          BIGSERIAL       PRIMARY KEY,
-    user_id             BIGINT          NOT NULL
-                                        REFERENCES users (id) ON DELETE CASCADE,
-    consent_type        VARCHAR(30)     NOT NULL
-                                        CHECK (consent_type IN (
-                                            'DATA_USAGE',
-                                            'COMMUNICATION',
-                                            'COOKIES',
-                                            'PARENTAL_MINOR'
-                                        )),
-    consent_given       BOOLEAN         NOT NULL,
-    consent_at          TIMESTAMPTZ     DEFAULT NOW(),
-    policy_version      VARCHAR(20)     NOT NULL,
-    ip_address          VARCHAR(45),
-    legal_guardian_id   BIGINT
-                                        REFERENCES users (id) ON DELETE SET NULL
+                            consent_id          BIGSERIAL       PRIMARY KEY,
+                            user_id             BIGINT          NOT NULL
+                              REFERENCES users (id) ON DELETE CASCADE,
+                            consent_type        VARCHAR(30)     NOT NULL
+                              CHECK (consent_type IN (
+                                                      'DATA_USAGE',
+                                                      'COMMUNICATION',
+                                                      'COOKIES',
+                                                      'PARENTAL_MINOR'
+                                )),
+                            consent_given       BOOLEAN         NOT NULL,
+                            consent_at          TIMESTAMPTZ     DEFAULT NOW(),
+                            policy_version      VARCHAR(20)     NOT NULL,
+                            ip_address          VARCHAR(45),
+                            legal_guardian_id   BIGINT
+                                                                REFERENCES users (id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_gdpr_consent_user ON gdpr_consent (user_id);
@@ -397,19 +400,19 @@ COMMENT ON TABLE gdpr_consent IS
 -- =============================================================
 
 CREATE TABLE learning_path (
-    learning_path_id        BIGSERIAL       PRIMARY KEY,
-    path_name               VARCHAR(255)    NOT NULL,
-    description             TEXT,
-    target_level            VARCHAR(20)     NOT NULL
-                                            CHECK (target_level IN (
-                                                'BEGINNER',
-                                                'INTERMEDIATE',
-                                                'ADVANCED',
-                                                'EXPERT'
-                                            )),
-    estimated_duration_days INTEGER
-                                            CHECK (estimated_duration_days > 0),
-    active                  BOOLEAN         NOT NULL DEFAULT TRUE
+                             learning_path_id        BIGSERIAL       PRIMARY KEY,
+                             path_name               VARCHAR(255)    NOT NULL,
+                             description             TEXT,
+                             target_level            VARCHAR(20)     NOT NULL
+                               CHECK (target_level IN (
+                                                       'BEGINNER',
+                                                       'INTERMEDIATE',
+                                                       'ADVANCED',
+                                                       'EXPERT'
+                                 )),
+                             estimated_duration_days INTEGER
+                               CHECK (estimated_duration_days > 0),
+                             active                  BOOLEAN         NOT NULL DEFAULT TRUE
 );
 
 CREATE INDEX idx_learning_path_level  ON learning_path (target_level);
@@ -426,20 +429,20 @@ COMMENT ON TABLE learning_path IS
 -- =============================================================
 
 CREATE TABLE learning_path_step (
-    step_id             BIGSERIAL   PRIMARY KEY,
-    learning_path_id    BIGINT      NOT NULL
+                                  step_id             BIGSERIAL   PRIMARY KEY,
+                                  learning_path_id    BIGINT      NOT NULL
                                     REFERENCES learning_path (learning_path_id)
-                                    ON DELETE CASCADE,
-    trick_id            BIGINT      NOT NULL
+                                      ON DELETE CASCADE,
+                                  trick_id            BIGINT      NOT NULL
                                     REFERENCES trick (trick_id) ON DELETE RESTRICT,
-    step_order          INTEGER     NOT NULL
+                                  step_order          INTEGER     NOT NULL
                                     CHECK (step_order > 0),
-    instructions        TEXT,
-    min_practice_time   INTEGER
+                                  instructions        TEXT,
+                                  min_practice_time   INTEGER
                                     CHECK (min_practice_time > 0),
 
-    CONSTRAINT uq_step_order UNIQUE (learning_path_id, step_order),
-    CONSTRAINT uq_step_trick UNIQUE (learning_path_id, trick_id)
+                                  CONSTRAINT uq_step_order UNIQUE (learning_path_id, step_order),
+                                  CONSTRAINT uq_step_trick UNIQUE (learning_path_id, trick_id)
 );
 
 CREATE INDEX idx_lp_step_path ON learning_path_step (learning_path_id);
@@ -455,20 +458,20 @@ COMMENT ON TABLE learning_path_step IS
 -- =============================================================
 
 CREATE TABLE class_learning_path (
-    class_learning_path_id  BIGSERIAL   PRIMARY KEY,
-    learning_path_id        BIGINT      NOT NULL
-                                        REFERENCES learning_path (learning_path_id)
-                                        ON DELETE CASCADE,
-    class_id                BIGINT      NOT NULL
-                                        REFERENCES school_class (class_id)
-                                        ON DELETE CASCADE,
-    start_date              DATE        NOT NULL,
-    expected_end_date       DATE,
+                                   class_learning_path_id  BIGSERIAL   PRIMARY KEY,
+                                   learning_path_id        BIGINT      NOT NULL
+                                     REFERENCES learning_path (learning_path_id)
+                                       ON DELETE CASCADE,
+                                   class_id                BIGINT      NOT NULL
+                                     REFERENCES school_class (class_id)
+                                       ON DELETE CASCADE,
+                                   start_date              DATE        NOT NULL,
+                                   expected_end_date       DATE,
 
-    CONSTRAINT uq_class_path    UNIQUE (learning_path_id, class_id),
-    CONSTRAINT chk_end_date     CHECK (
-        expected_end_date IS NULL OR expected_end_date >= start_date
-    )
+                                   CONSTRAINT uq_class_path    UNIQUE (learning_path_id, class_id),
+                                   CONSTRAINT chk_end_date     CHECK (
+                                     expected_end_date IS NULL OR expected_end_date >= start_date
+                                     )
 );
 
 COMMENT ON TABLE class_learning_path IS
@@ -482,54 +485,76 @@ COMMENT ON TABLE class_learning_path IS
 
 -- difficulty_level
 INSERT INTO difficulty_level (level_name, description, progression_order) VALUES
-    ('Beginner',        'Basic tricks to discover juggling',                        1),
-    ('Intermediate',    'Tricks requiring mastery of the basics',                   2),
-    ('Advanced',        'Complex tricks with advanced technique',                   3),
-    ('Expert',          'Highly technical tricks for experienced jugglers',         4);
+                                                                            ('Beginner',        'Basic tricks to discover juggling',                        1),
+                                                                            ('Intermediate',    'Tricks requiring mastery of the basics',                   2),
+                                                                            ('Advanced',        'Complex tricks with advanced technique',                   3),
+                                                                            ('Expert',          'Highly technical tricks for experienced jugglers',         4);
 
 -- category
 INSERT INTO category (category_name, description, icon) VALUES
-    ('3 Balls',         '3-ball juggling tricks',               '🎯'),
-    ('Scarves',         'Scarf juggling (slower pace)',          '🎀'),
-    ('Clubs',           'Club juggling',                        '🎪'),
-    ('Advanced Tricks', 'Technical and spectacular tricks',     '⭐');
+                                                          ('3 Balls',         '3-ball juggling tricks',               '🎯'),
+                                                          ('Scarves',         'Scarf juggling (slower pace)',          '🎀'),
+                                                          ('Clubs',           'Club juggling',                        '🎪'),
+                                                          ('Advanced Tricks', 'Technical and spectacular tricks',     '⭐');
 
 -- badge_type
 INSERT INTO badge_type (type_name, description, color) VALUES
-    ('Level',       'Level progression badges',              '#FFD700'),
-    ('Milestone',   'Badges for major achievements',         '#C0C0C0'),
-    ('Thematic',    'Special thematic badges',               '#CD7F32'),
-    ('Consistency', 'Regularity and perseverance badges',    '#4169E1');
+                                                         ('Level',       'Level progression badges',              '#FFD700'),
+                                                         ('Milestone',   'Badges for major achievements',         '#C0C0C0'),
+                                                         ('Thematic',    'Special thematic badges',               '#CD7F32'),
+                                                         ('Consistency', 'Regularity and perseverance badges',    '#4169E1');
 
 -- badge  (unlock_criteria : JSON text parsed by BadgeService)
 INSERT INTO badge (badge_type_id, badge_name, description, unlock_criteria, experience_points, difficulty_order) VALUES
-    (1, 'First Step',       'Master your first trick',          '{"type":"tricks_mastered","count":1}',     10,  1),
-    (1, 'Bronze Juggler',   'Master 5 tricks',                  '{"type":"tricks_mastered","count":5}',     50,  2),
-    (1, 'Silver Juggler',   'Master 15 tricks',                 '{"type":"tricks_mastered","count":15}',   150,  3),
-    (1, 'Gold Juggler',     'Master 30 tricks',                 '{"type":"tricks_mastered","count":30}',   300,  4),
-    (2, 'Marathon',         'Practice for 100 hours total',     '{"type":"practice_time","minutes":6000}', 200,  5),
-    (4, 'Perseverant',      'Log in 7 days in a row',           '{"type":"consecutive_days","count":7}',    75,  3);
+                                                                                                                   (1, 'First Step',       'Master your first trick',          '{"type":"tricks_mastered","count":1}',     10,  1),
+                                                                                                                   (1, 'Bronze Juggler',   'Master 5 tricks',                  '{"type":"tricks_mastered","count":5}',     50,  2),
+                                                                                                                   (1, 'Silver Juggler',   'Master 15 tricks',                 '{"type":"tricks_mastered","count":15}',   150,  3),
+                                                                                                                   (1, 'Gold Juggler',     'Master 30 tricks',                 '{"type":"tricks_mastered","count":30}',   300,  4),
+                                                                                                                   (2, 'Marathon',         'Practice for 100 hours total',     '{"type":"practice_time","minutes":6000}', 200,  5),
+                                                                                                                   (4, 'Perseverant',      'Log in 7 days in a row',           '{"type":"consecutive_days","count":7}',    75,  3);
 
 -- trick  (level_id 1=Beginner 2=Intermediate 3=Advanced 4=Expert)
+--
+-- Notes on siteswap notation :
+--   Cascade (3 balls) : '3'              standard siteswap
+--   Shower            : '51'             standard siteswap
+--   Half-Shower       : '42'             standard siteswap
+--   Mills Mess        : '3'              same base as Cascade (hand-position variation)
+--   Cascade 441       : '441'            standard siteswap
+--   Box               : '(4,2x)(2x,4)'  standard synchronous siteswap
+--   Rubenstein's Revenge : NULL          no universally accepted siteswap notation;
+--                                        various notations exist depending on the
+--                                        extension used (positional siteswap, Gunswap,
+--                                        etc.) but none is recognised as a standard.
+--
+-- CORRECTION : Half-Shower description updated.
+--   The Half-Shower (siteswap 42) throws one ball in an arc from one hand to the
+--   other (like the Shower) while the other hand throws its ball in a column (same
+--   hand catch). The previous description stated "one ball does not change hands"
+--   which is incorrect — both balls change hands on alternate beats.
+--
+-- CORRECTION : Rubenstein's Revenge siteswap set to NULL.
+--   The previous seed used '(4,2x)(2x,4)' which is the siteswap for the Box,
+--   not for Rubenstein's Revenge. These are two distinct tricks.
 INSERT INTO trick (level_id, category_id, trick_name, siteswap, description,
                    difficulty_score, estimated_learning_duration, popular) VALUES
-    (1, 1, 'Cascade (3 balls)',       '3',              'The fundamental 3-ball juggling pattern',                      2, 180, TRUE),
-    (1, 1, 'Shower',                  '51',             'Balls travel up on one side and come down on the other',       3, 240, FALSE),
-    (2, 1, 'Half-Shower',             '42',             'Cascade variation — one ball does not change hands',           5, 300, FALSE),
-    (2, 1, 'Mills Mess',              '3',              'Spectacular pattern with crossing arms',                       7, 600, TRUE),
-    (3, 1, 'Cascade 441',             '441',            'Cascade variation with higher throws',                         6, 400, FALSE),
-    (3, 1, 'Box',                     '(4,2x)(2x,4)',   'Box-shaped pattern',                                           8, 720, FALSE),
-    (4, 1, 'Rubenstein''s Revenge',   '(4,2x)(2x,4)',   'Highly technical trick with complex movements',                9, 900, FALSE);
+                                                                             (1, 1, 'Cascade (3 balls)',       '3',              'The fundamental 3-ball juggling pattern. Each ball follows a bell-curve arc alternating from hand to hand.',                               2, 180, TRUE),
+                                                                             (1, 1, 'Shower',                  '51',             'Balls travel up in an arc on one side and come straight down on the other. One hand always throws high; the other catches.',               3, 240, FALSE),
+                                                                             (2, 1, 'Half-Shower',             '42',             'One hand throws in an arc toward the other (like the Shower) while the other hand throws its ball in a column caught by the same hand.',  5, 300, FALSE),
+                                                                             (2, 1, 'Mills Mess',              '3',              'Spectacular Cascade variation with arms crossing and uncrossing in rhythm. Same siteswap as the Cascade.',                                 7, 600, TRUE),
+                                                                             (3, 1, 'Cascade 441',             '441',            'Cascade variation with two higher throws followed by a standard throw, creating a brief moment of suspension.',                            6, 400, FALSE),
+                                                                             (3, 1, 'Box',                     '(4,2x)(2x,4)',   'Synchronous box-shaped pattern: two balls rise simultaneously while the third passes laterally between the hands.',                        8, 720, FALSE),
+                                                                             (4, 1, 'Rubenstein''s Revenge',   NULL,             'Expert-level Mills Mess derivative with inverted crossed throws. No universally accepted siteswap notation — varies by notation system.', 9, 900, FALSE);
 
 -- prerequisite  (trick_id → prerequisite_trick_id)
--- IDs are sequential from the INSERT above : Cascade=1, Shower=2, Half-Shower=3,
--- Mills Mess=4, Cascade 441=5, Box=6, Rubenstein's Revenge=7
+-- IDs are sequential from the INSERT above :
+-- Cascade=1, Shower=2, Half-Shower=3, Mills Mess=4, Cascade 441=5, Box=6, Rubenstein's Revenge=7
 INSERT INTO prerequisite (trick_id, prerequisite_trick_id) VALUES
-    (3, 1),   -- Half-Shower requires Cascade
-    (4, 1),   -- Mills Mess requires Cascade
-    (5, 1),   -- Cascade 441 requires Cascade
-    (6, 5),   -- Box requires Cascade 441
-    (7, 4);   -- Rubenstein's Revenge requires Mills Mess
+                                                             (3, 1),   -- Half-Shower requires Cascade
+                                                             (4, 1),   -- Mills Mess requires Cascade
+                                                             (5, 1),   -- Cascade 441 requires Cascade
+                                                             (6, 5),   -- Box requires Cascade 441
+                                                             (7, 4);   -- Rubenstein's Revenge requires Mills Mess
 
 
 -- =============================================================

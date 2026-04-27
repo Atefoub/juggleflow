@@ -11,22 +11,22 @@ import java.util.List;
 
 public interface TrickRepository extends JpaRepository<Trick, Long> {
 
-    Page<Trick> findAll(Pageable pageable);
+  // findAll(Pageable) est hérité de JpaRepository — pas besoin de le redéclarer
 
-    Page<Trick> findByLevel_Name(String levelName, Pageable pageable);
+  Page<Trick> findByLevel_Name(String levelName, Pageable pageable);
 
-    Page<Trick> findByCategory_Id(Long categoryId, Pageable pageable);
+  Page<Trick> findByCategory_Id(Long categoryId, Pageable pageable);
 
-    Page<Trick> findByNameContainingIgnoreCase(String name, Pageable pageable);
+  Page<Trick> findByNameContainingIgnoreCase(String name, Pageable pageable);
 
-    List<Trick> findByPopularTrue();
+  List<Trick> findByPopularTrue();
 
-    @Query("""
+  @Query("""
         SELECT t FROM Trick t
         WHERE t.level.progressionOrder <= (
             SELECT dl.progressionOrder FROM DifficultyLevel dl WHERE dl.name = :levelName
         )
         ORDER BY t.level.progressionOrder ASC, t.difficultyScore ASC
         """)
-    List<Trick> findRecommendedForLevel(@Param("levelName") String levelName);
+  List<Trick> findRecommendedForLevel(@Param("levelName") String levelName);
 }
