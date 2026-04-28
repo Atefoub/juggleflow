@@ -51,45 +51,39 @@ public class SecurityConfig {
             "/swagger-ui.html"
     };
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
-                .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        // Swagger doit être autorisé AVANT TOUT
-                        .requestMatchers(PUBLIC_ROUTES).permitAll()
-
-                        // Routes admin
-                        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
-
-                        // Routes enseignant
-                        .requestMatchers(
-                                "/api/enseignant/**",
-                                "/api/classes/**"
-                        ).hasAnyAuthority("ROLE_ENSEIGNANT", "ROLE_ADMIN")
-
-                        // Tout le reste nécessite une authentification
-                        .anyRequest().authenticated()
-                )
-                .authenticationProvider(authenticationProvider())
-                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtFilter, RateLimitFilter.class)
-                .build();
+  @Bean
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    return http
+      .csrf(AbstractHttpConfigurer::disable)
+      .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+      .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+      .authorizeHttpRequests(auth -> auth
+        .requestMatchers(PUBLIC_ROUTES).permitAll()
+        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+        .requestMatchers(
+          "/api/enseignant/**",
+          "/api/classes/**"
+        ).hasAnyAuthority("ROLE_ENSEIGNANT", "ROLE_ADMIN")
+        .anyRequest().authenticated()
+      )
+      .authenticationProvider(authenticationProvider())
+      .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+      .addFilterBefore(jwtFilter, RateLimitFilter.class)
+      .build();
     }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(allowedOrigins.split(",")));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-        config.setAllowCredentials(true);
+  @Bean
+  public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration config = new CorsConfiguration();
+    config.setAllowedOriginPatterns(List.of("*"));
+    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+    config.setAllowedHeaders(List.of("*"));
+    config.setAllowCredentials(true);
+    config.setMaxAge(3600L);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", config);
-        return source;
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", config);
+    return source;
     }
 
     @Bean
