@@ -1,7 +1,3 @@
-# =============================================================
-#  JuggleFlow — Podman Pod (généré avec podman-5.7.1)
-#  Usage : podman kube play juggleflow-pod.yaml
-# =============================================================
 apiVersion: v1
 kind: Pod
 metadata:
@@ -20,10 +16,7 @@ spec:
         - name: POSTGRES_USER
           value: juggleflow_user
         - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: juggleflow-secrets
-              key: POSTGRES_PASSWORD
+          value: JuggleFlow2026!
         - name: PGDATA
           value: /var/lib/postgresql/data/pgdata
       ports:
@@ -32,6 +25,8 @@ spec:
       volumeMounts:
         - mountPath: /var/lib/postgresql/data
           name: juggleflow-pgdata-pvc
+        - mountPath: /docker-entrypoint-initdb.d
+          name: juggleflow-init-sql
 
     - name: juggleflow-backend
       image: localhost/juggleflow_backend:latest
@@ -41,10 +36,7 @@ spec:
         - name: SPRING_DATASOURCE_USERNAME
           value: juggleflow_user
         - name: SPRING_DATASOURCE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: juggleflow-secrets
-              key: POSTGRES_PASSWORD
+          value: JuggleFlow2026!
         - name: SPRING_JPA_HIBERNATE_DDL_AUTO
           value: validate
         - name: SPRING_JPA_SHOW_SQL
@@ -56,10 +48,7 @@ spec:
         - name: SERVER_PORT
           value: "8080"
         - name: JWT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: juggleflow-secrets
-              key: JWT_SECRET
+          value: "9+pa2MKK+ReZcROSNYZF0epL4768Pv7IN3Kz0njHpUKb2kxeCPputW3rnM0Zms4A"
         - name: JWT_EXPIRATION_MS
           value: "900000"
         - name: JWT_REFRESH_EXPIRATION_MS
@@ -77,3 +66,8 @@ spec:
     - name: juggleflow-pgdata-pvc
       persistentVolumeClaim:
         claimName: juggleflow-pgdata
+    - name: juggleflow-init-sql
+      hostPath:
+        path: /mnt/c/Users/antoi/Documents/juggleflow/apps/backend/init
+        type: Directory
+
