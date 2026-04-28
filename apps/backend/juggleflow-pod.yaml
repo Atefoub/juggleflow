@@ -28,38 +28,6 @@ spec:
         - mountPath: /docker-entrypoint-initdb.d
           name: juggleflow-init-sql
 
-    - name: juggleflow-backend
-      image: localhost/juggleflow_backend:latest
-      env:
-        - name: SPRING_DATASOURCE_URL
-          value: jdbc:postgresql://localhost:5432/juggleflow_db
-        - name: SPRING_DATASOURCE_USERNAME
-          value: juggleflow_user
-        - name: SPRING_DATASOURCE_PASSWORD
-          value: JuggleFlow2026!
-        - name: SPRING_JPA_HIBERNATE_DDL_AUTO
-          value: validate
-        - name: SPRING_JPA_SHOW_SQL
-          value: "false"
-        - name: SPRING_JPA_DATABASE_PLATFORM
-          value: org.hibernate.dialect.PostgreSQLDialect
-        - name: SPRING_APPLICATION_NAME
-          value: JuggleFlow
-        - name: SERVER_PORT
-          value: "8080"
-        - name: JWT_SECRET
-          value: "9+pa2MKK+ReZcROSNYZF0epL4768Pv7IN3Kz0njHpUKb2kxeCPputW3rnM0Zms4A"
-        - name: JWT_EXPIRATION_MS
-          value: "900000"
-        - name: JWT_REFRESH_EXPIRATION_MS
-          value: "604800000"
-        - name: CORS_ALLOWED_ORIGINS
-          value: http://localhost:5173
-      ports:
-        - containerPort: 8080
-          hostPort: 8080
-      securityContext: {}
-
   restartPolicy: Always
 
   volumes:
@@ -70,4 +38,3 @@ spec:
       hostPath:
         path: /mnt/c/Users/antoi/Documents/juggleflow/apps/backend/init
         type: Directory
-
