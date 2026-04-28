@@ -1,67 +1,62 @@
-﻿name: juggleflow
+﻿apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: juggleflow-pod
+  name: juggleflow-pod
+spec:
+  containers:
+    - args:
+        - postgres
+      env:
+        - name: POSTGRES_USER
+          value: juggle
+        - name: POSTGRES_PASSWORD
+          value: cHIn8KdtRPOTcQ5kTGhmgsPfM4/liowYpNHXeHG6Tf0=
+        - name: POSTGRES_DB
+          value: juggleflow
+      image: docker.io/library/postgres:17-alpine
+      name: juggleflow-db
+      ports:
+        - containerPort: 5432
+          hostPort: 5432
+      volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: 2254aa0713f91c6fe825dbd7dcfb8c098fc44d6d585c3d994c62efb5450b4a51-pvc
 
-services:
-  db:
-    image: docker.io/postgres:17-alpine
-    container_name: juggleflow-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      PGDATA: /var/lib/postgresql/data/pgdata
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./init/juggleflow_postgresql_en.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
-    ports:
-      - "5432:5432"
-    networks:
-      - juggleflow-net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+    - env:
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://localhost:5432/juggleflow
+        - name: SPRING_DATASOURCE_USERNAME
+          value: juggle
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: cHIn8KdtRPOTcQ5kTGhmgsPfM4/liowYpNHXeHG6Tf0=
+        - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+          value: validate
+        - name: SPRING_JPA_SHOW_SQL
+          value: "false"
+        - name: SPRING_JPA_DATABASE_PLATFORM
+          value: org.hibernate.dialect.PostgreSQLDialect
+        - name: JWT_SECRET
+          value: "9+pa2MKK+ReZcROSNYZF0epL4768Pv7IN3Kz0njHpUKb2kxeCPputW3rnM0Zms4A"
+        - name: JWT_EXPIRATION_MS
+          value: "900000"
+        - name: JWT_REFRESH_EXPIRATION_MS
+          value: "604800000"
+        - name: SERVER_PORT
+          value: "8080"
+        - name: SPRING_APPLICATION_NAME
+          value: JuggleFlow
+        - name: CORS_ALLOWED_ORIGINS
+          value: http://localhost:5173
+      image: localhost/juggleflow_backend:latest
+      name: juggleflow-backend
+      ports:
+        - containerPort: 8080
+          hostPort: 8080
+      securityContext: {}
 
-  backend:
-    build:
-      context: .
-      dockerfile: Containerfile
-    container_name: juggleflow-backend
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      SPRING_APPLICATION_NAME: JuggleFlow
-      SERVER_PORT: 8080
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
-      SPRING_JPA_SHOW_SQL: "false"
-      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-900000}
-      JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS:-604800000}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
-    ports:
-      - "8080:8080"
-    networks:
-      - juggleflow-net
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-
-volumes:
-  pgdata:
-    name: juggleflow_pgdata
-
-networks:
-  juggleflow-net:
-    name: juggleflow-net
-    driver: bridge
+  volumes:
+    - name: 2254aa0713f91c6fe825dbd7dcfb8c098fc44d6d585c3d994c62efb5450b4a51-pvc
+      persistentVolumeClaim:
+        claimName: 2254aa0713f91c6fe825dbd7dcfb8c098fc44d6d585c3d994c62efb5450b4a51

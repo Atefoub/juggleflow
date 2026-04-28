@@ -1,104 +1,113 @@
 package com.juggleflow.backend.security;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import lombok.extern.slf4j.Slf4j;
+import io.jsonwebtoken.SignatureAlgorithm;
+
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Function;
 
-/**
- * Utilitaires JWT.
- * N'injecte PAS UserDetailsService → pas de dépendance circulaire.
- */
-@Slf4j
 @Component
 public class JwtUtils {
 
-    private final SecretKey signingKey;
-    private final long expirationMs;
-    private final long refreshExpirationMs;
+  @Value("${jwt.secret}")
+  private String secret;
 
-    public JwtUtils(
-            @Value("${jwt.secret}") String secret,
-            @Value("${jwt.expiration-ms:900000}") long expirationMs,
-            @Value("${jwt.refresh-expiration-ms:604800000}") long refreshExpirationMs) {
+  @Value("${jwt.expiration-ms}")
+  private long expirationMs;
 
-        if (secret == null || secret.length() < 32) {
-            throw new IllegalArgumentException(
-                "JWT_SECRET doit faire au moins 32 caractères. Vérifiez votre variable d'environnement.");
-        }
-        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.expirationMs = expirationMs;
-        this.refreshExpirationMs = refreshExpirationMs;
+  @Value("${jwt.refresh-expiration-ms}")
+  private long refreshExpirationMs;
+
+  private SecretKey key;
+
+  // ✅ Constructeur vide (Spring)
+  public JwtUtils() {}
+
+  // ✅ Constructeur pour les tests
+  public JwtUtils(String secret, long expirationMs, long refreshExpirationMs) {
+    this.secret = secret;
+    this.expirationMs = expirationMs;
+    this.refreshExpirationMs = refreshExpirationMs;
+    init(); // important !
+  }
+
+  @PostConstruct
+  public void init() {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] keyBytes = digest.digest(secret.getBytes(StandardCharsets.UTF_8));
+      this.key = Keys.hmacShaKeyFor(keyBytes);
+    } catch (Exception e) {
+      throw new RuntimeException("Erreur lors de l'initialisation de la clé JWT", e);
     }
+  }
 
-    // ── Génération ───────────────────────────────────────────────
+  // ===================== GENERATION =====================
 
-    public String generateToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", userDetails.getAuthorities().stream()
-                .map(a -> a.getAuthority()).toList());
-        return buildToken(claims, userDetails.getUsername(), expirationMs);
-    }
+  public String generateToken(UserDetails userDetails) {
+    return buildToken(userDetails, expirationMs);
+  }
 
-    public String generateRefreshToken(UserDetails userDetails) {
-        return buildToken(new HashMap<>(), userDetails.getUsername(), refreshExpirationMs);
-    }
+  public String generateRefreshToken(UserDetails userDetails) {
+    return buildToken(userDetails, refreshExpirationMs);
+  }
 
-    private String buildToken(Map<String, Object> extraClaims,
-                               String subject,
-                               long expiration) {
-        return Jwts.builder()
-                .claims(extraClaims)
-                .subject(subject)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(signingKey)
-                .compact();
-    }
+  private String buildToken(UserDetails userDetails, long expiration) {
+    return Jwts.builder()
+      .subject(userDetails.getUsername())
+      .issuedAt(new Date())
+      .expiration(new Date(System.currentTimeMillis() + expiration))
+      .signWith(key, SignatureAlgorithm.HS256)
+      .compact();
+  }
 
-    // ── Validation ───────────────────────────────────────────────
+  // ===================== EXTRACTION =====================
 
-    public boolean isTokenValid(String token, UserDetails userDetails) {
-        try {
-            String email = extractEmail(token);
-            return email.equals(userDetails.getUsername()) && !isTokenExpired(token);
-        } catch (JwtException | IllegalArgumentException e) {
-            log.debug("Token invalide : {}", e.getMessage());
-            return false;
-        }
-    }
+  public String extractEmail(String token) {
+    return extractClaim(token, Claims::getSubject);
+  }
 
-    // ── Extraction ───────────────────────────────────────────────
+  public Date extractExpiration(String token) {
+    return extractClaim(token, Claims::getExpiration);
+  }
 
-    public String extractEmail(String token) {
-        return extractClaim(token, Claims::getSubject);
-    }
+  public <T> T extractClaim(String token, Function<Claims, T> resolver) {
+    Claims claims = extractAllClaims(token);
+    return resolver.apply(claims);
+  }
 
-    private boolean isTokenExpired(String token) {
-        return extractClaim(token, Claims::getExpiration).before(new Date());
-    }
+  private Claims extractAllClaims(String token) {
+    return Jwts.parser()
+      .verifyWith(key)
+      .build()
+      .parseSignedClaims(token)
+      .getPayload();
+  }
 
-    private <T> T extractClaim(String token, Function<Claims, T> resolver) {
-        Claims claims = Jwts.parser()
-                .verifyWith(signingKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-        return resolver.apply(claims);
-    }
+  // ===================== VALIDATION =====================
 
-    public long getExpirationMs() {
-        return expirationMs;
-    }
+  public boolean isTokenValid(String token, UserDetails userDetails) {
+    final String email = extractEmail(token);
+    return email.equals(userDetails.getUsername()) && !isTokenExpired(token);
+  }
+
+  private boolean isTokenExpired(String token) {
+    return extractExpiration(token).before(new Date());
+  }
+
+  // ===================== GETTERS =====================
+
+  public long getExpirationMs() {
+    return expirationMs;
+  }
 }
