@@ -118,7 +118,7 @@ export default function OnboardingPage() {
 
       {/* CTA */}
       <button
-        onClick={() => navigate('/dashboard')}
+        onClick={() => navigate('/student/dashboard')}
         className="w-full py-3 rounded-xl font-bold text-white text-sm mt-auto"
         style={{ backgroundColor: '#FF7A00', minHeight: '48px' }}
       >
