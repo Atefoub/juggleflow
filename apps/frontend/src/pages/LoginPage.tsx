@@ -12,18 +12,18 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
-type RoleOption = 'ROLE_ELEVE' | 'ROLE_ENSEIGNANT' | 'ROLE_ADMIN';
+type RoleOption = 'ROLE_ELEVE' | 'ROLE_ENSEIGNANT' | 'ROLE_ADMINISTRATEUR';
 
 const roles: { value: RoleOption; label: string }[] = [
-  { value: 'ROLE_ELEVE', label: 'Élève' },
-  { value: 'ROLE_ENSEIGNANT', label: 'Enseignant' },
-  { value: 'ROLE_ADMIN', label: 'Admin' },
+  { value: 'ROLE_ELEVE',          label: 'Élève' },
+  { value: 'ROLE_ENSEIGNANT',     label: 'Enseignant' },
+  { value: 'ROLE_ADMINISTRATEUR', label: 'Admin' },
 ];
 
 const roleRedirect: Record<RoleOption, string> = {
-  ROLE_ELEVE: '/dashboard',
-  ROLE_ENSEIGNANT: '/teacher/dashboard',
-  ROLE_ADMIN: '/admin/dashboard',
+  ROLE_ELEVE:           '/student/dashboard',
+  ROLE_ENSEIGNANT:      '/teacher/dashboard',
+  ROLE_ADMINISTRATEUR:  '/admin/dashboard',
 };
 
 export default function LoginPage() {

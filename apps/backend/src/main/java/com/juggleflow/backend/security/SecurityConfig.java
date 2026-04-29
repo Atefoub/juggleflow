@@ -59,11 +59,11 @@ public class SecurityConfig {
       .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
       .authorizeHttpRequests(auth -> auth
         .requestMatchers(PUBLIC_ROUTES).permitAll()
-        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMINISTRATEUR")
         .requestMatchers(
           "/api/enseignant/**",
           "/api/classes/**"
-        ).hasAnyAuthority("ROLE_ENSEIGNANT", "ROLE_ADMIN")
+        ).hasAnyAuthority("ROLE_ENSEIGNANT", "ROLE_ADMINISTRATEUR")
         .anyRequest().authenticated()
       )
       .authenticationProvider(authenticationProvider())
