@@ -7,22 +7,18 @@ import StudentDashboardPage from '../pages/student/DashboardPage';
 import TeacherDashboardPage from '../pages/teacher/DashboardPage';
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage';
 
-// ─── Helper : redirige vers le dashboard du bon rôle ─────────────────────────
-
 function redirectForRole(role: Role): string {
   switch (role) {
     case 'ROLE_ELEVE':
       return '/student/dashboard';
     case 'ROLE_ENSEIGNANT':
       return '/teacher/dashboard';
-    case 'ROLE_ADMIN':
+    case 'ROLE_ADMINISTRATEUR': // ✅ corrigé
       return '/admin/dashboard';
     default:
       return '/login';
   }
 }
-
-// ─── Guard de rôle ────────────────────────────────────────────────────────────
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -43,15 +39,11 @@ function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   return children;
 }
 
-// ─── Redirection racine selon le rôle ────────────────────────────────────────
-
 function DefaultRedirect() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   return <Navigate to={redirectForRole(user.role)} replace />;
 }
-
-// ─── Router ───────────────────────────────────────────────────────────────────
 
 export default function AppRouter() {
   return (
@@ -85,7 +77,7 @@ export default function AppRouter() {
         <Route
           path="/admin/dashboard"
           element={
-            <ProtectedRoute requiredRole={'ROLE_ADMIN'}>
+            <ProtectedRoute requiredRole={'ROLE_ADMINISTRATEUR'}> {/* ✅ corrigé */}
               <AdminDashboardPage />
             </ProtectedRoute>
           }

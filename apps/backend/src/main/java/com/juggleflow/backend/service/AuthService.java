@@ -22,83 +22,84 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtUtils jwtUtils;
-    private final AuthenticationManager authenticationManager;
-    private final UserDetailsService userDetailsService;
+  private final UserRepository userRepository;
+  private final PasswordEncoder passwordEncoder;
+  private final JwtUtils jwtUtils;
+  private final AuthenticationManager authenticationManager;
+  private final UserDetailsService userDetailsService;
 
-    // ── Connexion ────────────────────────────────────────────────
+  // ── Connexion ────────────────────────────────────────────────
 
-    @Transactional(readOnly = true)
-    public LoginResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(
-                request.getEmail(), request.getPassword())
-        );
+  @Transactional(readOnly = true)
+  public LoginResponse login(LoginRequest request) {
+    authenticationManager.authenticate(
+      new UsernamePasswordAuthenticationToken(
+        request.getEmail(), request.getPassword())
+    );
 
-        User user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable"));
+    User user = userRepository.findByEmail(request.getEmail())
+      .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable"));
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+    UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
 
-        return buildLoginResponse(user, userDetails);
+    return buildLoginResponse(user, userDetails);
+  }
+
+  // ── Inscription ──────────────────────────────────────────────
+
+  @Transactional
+  public LoginResponse register(RegisterRequest request) {
+    if (userRepository.existsByEmail(request.getEmail())) {
+      throw new IllegalArgumentException("Cet email est déjà utilisé");
     }
 
-    // ── Inscription ──────────────────────────────────────────────
+    User user = createUserByRole(request);
+    userRepository.save(user);
 
-    @Transactional
-    public LoginResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Cet email est déjà utilisé");
-        }
+    UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+    return buildLoginResponse(user, userDetails);
+  }
 
-        User user = createUserByRole(request);
-        userRepository.save(user);
+  // ── Helpers ──────────────────────────────────────────────────
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
-        return buildLoginResponse(user, userDetails);
-    }
+  private User createUserByRole(RegisterRequest req) {
+    String encodedPassword = passwordEncoder.encode(req.getPassword());
+    // Normalise en majuscules pour accepter "ROLE_ADMINISTRATEUR" comme "administrator"
+    String role = req.getRole() != null ? req.getRole().toUpperCase() : "ROLE_ELEVE";
 
-    // ── Helpers ──────────────────────────────────────────────────
+    return switch (role) {
+      case "ROLE_ENSEIGNANT", "TEACHER" -> Teacher.builder()
+        .email(req.getEmail())
+        .password(encodedPassword)
+        .firstName(req.getFirstName())
+        .lastName(req.getLastName())
+        .build();
+      case "ROLE_ADMINISTRATEUR", "ADMINISTRATOR" -> Administrator.builder()
+        .email(req.getEmail())
+        .password(encodedPassword)
+        .firstName(req.getFirstName())
+        .lastName(req.getLastName())
+        .build();
+      default -> Student.builder()
+        .email(req.getEmail())
+        .password(encodedPassword)
+        .firstName(req.getFirstName())
+        .lastName(req.getLastName())
+        .build();
+    };
+  }
 
-    private User createUserByRole(RegisterRequest req) {
-        String encodedPassword = passwordEncoder.encode(req.getPassword());
-        String role = req.getRole() != null ? req.getRole().toLowerCase() : "student";
-
-        return switch (role) {
-            case "teacher" -> Teacher.builder()
-                .email(req.getEmail())
-                .password(encodedPassword)
-                .firstName(req.getFirstName())
-                .lastName(req.getLastName())
-                .build();
-            case "administrator" -> Administrator.builder()
-                .email(req.getEmail())
-                .password(encodedPassword)
-                .firstName(req.getFirstName())
-                .lastName(req.getLastName())
-                .build();
-            default -> Student.builder()
-                .email(req.getEmail())
-                .password(encodedPassword)
-                .firstName(req.getFirstName())
-                .lastName(req.getLastName())
-                .build();
-        };
-    }
-
-    private LoginResponse buildLoginResponse(User user, UserDetails userDetails) {
-        return LoginResponse.builder()
-            .accessToken(jwtUtils.generateToken(userDetails))
-            .refreshToken(jwtUtils.generateRefreshToken(userDetails))
-            .tokenType("Bearer")
-            .expiresIn(jwtUtils.getExpirationMs())
-            .userId(user.getId())
-            .email(user.getEmail())
-            .firstName(user.getFirstName())
-            .lastName(user.getLastName())
-            .role(user.getRole())
-            .build();
-    }
+  private LoginResponse buildLoginResponse(User user, UserDetails userDetails) {
+    return LoginResponse.builder()
+      .accessToken(jwtUtils.generateToken(userDetails))
+      .refreshToken(jwtUtils.generateRefreshToken(userDetails))
+      .tokenType("Bearer")
+      .expiresIn(jwtUtils.getExpirationMs())
+      .userId(user.getId())
+      .email(user.getEmail())
+      .firstName(user.getFirstName())
+      .lastName(user.getLastName())
+      .role(user.getRole())
+      .build();
+  }
 }

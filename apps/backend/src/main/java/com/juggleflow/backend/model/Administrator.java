@@ -23,6 +23,6 @@ public class Administrator extends User {
 
     @Override
     public String getRole() {
-        return "ROLE_ADMIN";
+        return "ROLE_ADMINISTRATEUR";
     }
 }
