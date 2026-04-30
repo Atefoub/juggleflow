@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { UserProfile, Role } from '../types/auth';
 import { authApi } from '../api/authApi';
 
@@ -13,7 +7,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (token: string) => Promise<void>;
+  login: (token: string) => Promise<UserProfile>;
   logout: () => void;
 }
 
@@ -41,11 +35,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token]);
 
-  const login = async (newToken: string) => {
+  const login = async (newToken: string): Promise<UserProfile> => {
     localStorage.setItem('access_token', newToken);
     setToken(newToken);
     const profile = await authApi.me();
     setUser(profile);
+    return profile;
   };
 
   const logout = () => {

@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { completeOnboarding, type OnboardingLevel } from '../../utils/onboarding';
+import { useAuth } from '../../context/AuthContext';
 
-const levels = [
+const levels: {
+  value: OnboardingLevel;
+  label: string;
+  icon: string;
+  description: string;
+}[] = [
   {
     value: 'BEGINNER',
     label: 'Débutant',
@@ -23,8 +30,9 @@ const levels = [
 ];
 
 export default function OnboardingPage() {
-  const [selected, setSelected] = useState('BEGINNER');
+  const [selected, setSelected] = useState<OnboardingLevel>('BEGINNER');
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <div
@@ -118,7 +126,10 @@ export default function OnboardingPage() {
 
       {/* CTA */}
       <button
-        onClick={() => navigate('/student/dashboard')}
+        onClick={() => {
+          completeOnboarding(selected, user?.id);
+          navigate('/student/dashboard', { replace: true });
+        }}
         className="w-full py-3 rounded-xl font-bold text-white text-sm mt-auto"
         style={{ backgroundColor: '#FF7A00', minHeight: '48px' }}
       >
