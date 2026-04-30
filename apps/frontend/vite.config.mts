@@ -5,7 +5,10 @@ import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig(() => ({
+export default defineConfig(({ mode }) => {
+  const isDev = mode === 'development';
+
+  return ({
   root: import.meta.dirname,
   cacheDir: '../../node_modules/.vite/apps/frontend',
   server: {
@@ -78,9 +81,11 @@ export default defineConfig(() => ({
           },
         ],
       },
-      // Affiche les logs du service worker en dev
       devOptions: {
-        enabled: true,
+        // En dev, Vite sert les fichiers en mémoire: la génération Workbox n'a
+        // souvent rien à "precache" dans `dev-dist` (à part sw/workbox ignorés),
+        // ce qui déclenche un warning inutile.
+        enabled: !isDev,
         type: 'module',
       },
     }),
@@ -105,4 +110,5 @@ export default defineConfig(() => ({
       provider: 'v8' as const,
     },
   },
-}));
+});
+});

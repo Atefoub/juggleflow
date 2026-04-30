@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../api/authApi';
+import { isOnboardingCompleted } from '../utils/onboarding';
 
 const schema = z.object({
   email: z.string().email('Email invalide'),
@@ -12,7 +13,7 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
-type RoleOption = 'ROLE_ELEVE' | 'ROLE_ENSEIGNANT' | 'ROLE_ADMINISTRATEUR';
+type RoleOption = 'ROLE_ELEVE' | 'ROLE_ENSEIGNANT' | 'ROLE_ADMINISTRATEUR' | 'ROLE_ADMIN';
 
 const roles: { value: RoleOption; label: string }[] = [
   { value: 'ROLE_ELEVE',          label: 'Élève' },
@@ -24,6 +25,7 @@ const roleRedirect: Record<RoleOption, string> = {
   ROLE_ELEVE:           '/student/dashboard',
   ROLE_ENSEIGNANT:      '/teacher/dashboard',
   ROLE_ADMINISTRATEUR:  '/admin/dashboard',
+  ROLE_ADMIN:           '/admin/dashboard',
 };
 
 export default function LoginPage() {
@@ -44,8 +46,16 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const response = await authApi.login(data);
-      await login(response.accessToken);
-      navigate(roleRedirect[response.role], { replace: true });
+      const profile = await login(response.accessToken);
+      if (profile.role === 'ROLE_ELEVE' && !isOnboardingCompleted(profile.id)) {
+        navigate('/onboarding', { replace: true });
+      } else {
+        const redirect =
+          (profile.role in roleRedirect
+            ? roleRedirect[profile.role as RoleOption]
+            : '/login');
+        navigate(redirect, { replace: true });
+      }
     } catch {
       setError('Email ou mot de passe incorrect');
     } finally {
