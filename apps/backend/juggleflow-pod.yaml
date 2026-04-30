@@ -25,8 +25,11 @@ spec:
       volumeMounts:
         - mountPath: /var/lib/postgresql/data
           name: juggleflow-pgdata-pvc
-        - mountPath: /docker-entrypoint-initdb.d
-          name: juggleflow-init-sql
+        # Le volume juggleflow-init-sql a été supprimé :
+        # Flyway (backend) prend en charge l'initialisation du schéma.
+        # Plus besoin de monter init/juggleflow_postgresql_en.sql dans
+        # /docker-entrypoint-initdb.d — ce répertoire est exécuté
+        # uniquement sur base vierge et entrerait en conflit avec Flyway.
 
   restartPolicy: Always
 
@@ -34,7 +37,3 @@ spec:
     - name: juggleflow-pgdata-pvc
       persistentVolumeClaim:
         claimName: juggleflow-pgdata
-    - name: juggleflow-init-sql
-      hostPath:
-        path: /mnt/c/Users/antoi/Documents/juggleflow/apps/backend/init
-        type: Directory
