@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../api/authApi';
 import { isOnboardingCompleted } from '../utils/onboarding';
+import type { Role } from '../types/auth';
 
 const schema = z.object({
   email: z.string().email('Email invalide'),
@@ -13,23 +14,14 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
-type RoleOption = 'ROLE_ELEVE' | 'ROLE_ENSEIGNANT' | 'ROLE_ADMINISTRATEUR' | 'ROLE_ADMIN';
 
-const roles: { value: RoleOption; label: string }[] = [
-  { value: 'ROLE_ELEVE',          label: 'Élève' },
-  { value: 'ROLE_ENSEIGNANT',     label: 'Enseignant' },
-  { value: 'ROLE_ADMINISTRATEUR', label: 'Admin' },
-];
-
-const roleRedirect: Record<RoleOption, string> = {
+const roleRedirect: Record<Role, string> = {
   ROLE_ELEVE:           '/student/dashboard',
   ROLE_ENSEIGNANT:      '/teacher/dashboard',
   ROLE_ADMINISTRATEUR:  '/admin/dashboard',
-  ROLE_ADMIN:           '/admin/dashboard',
 };
 
 export default function LoginPage() {
-  const [selectedRole, setSelectedRole] = useState<RoleOption>('ROLE_ELEVE');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
@@ -50,10 +42,7 @@ export default function LoginPage() {
       if (profile.role === 'ROLE_ELEVE' && !isOnboardingCompleted(profile.id)) {
         navigate('/onboarding', { replace: true });
       } else {
-        const redirect =
-          (profile.role in roleRedirect
-            ? roleRedirect[profile.role as RoleOption]
-            : '/login');
+        const redirect = roleRedirect[profile.role] ?? '/login';
         navigate(redirect, { replace: true });
       }
     } catch {
@@ -71,7 +60,7 @@ export default function LoginPage() {
       <div className="w-full" style={{ maxWidth: '400px' }}>
 
         {/* Logo */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-10">
           <img
             src="/logo1.png"
             alt="JuggleFlow"
@@ -87,35 +76,6 @@ export default function LoginPage() {
           <p style={{ color: '#A0AABF', fontSize: '0.85rem', marginTop: '8px' }}>
             Plateforme pédagogique de jonglage
           </p>
-
-</div>
-        {/* Sélecteur de rôle */}
-        <div className="mb-6">
-          <p
-            className="mb-2 text-xs font-bold uppercase tracking-widest"
-            style={{ color: '#5A6480' }}
-          >
-            Je suis :
-          </p>
-          <div className="flex gap-2">
-            {roles.map((role) => (
-              <button
-                key={role.value}
-                onClick={() => setSelectedRole(role.value)}
-                className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
-                style={{
-                  backgroundColor:
-                    selectedRole === role.value ? '#8B2BE2' : '#111638',
-                  color:
-                    selectedRole === role.value ? '#FFFFFF' : '#A0AABF',
-                  border: `1.5px solid ${selectedRole === role.value ? '#8B2BE2' : '#1E2847'}`,
-                  minHeight: '44px',
-                }}
-              >
-                {role.label}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Formulaire */}
