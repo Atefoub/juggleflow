@@ -3,7 +3,6 @@ package com.juggleflow.backend.service;
 import com.juggleflow.backend.dto.LoginRequest;
 import com.juggleflow.backend.dto.LoginResponse;
 import com.juggleflow.backend.dto.RegisterRequest;
-import com.juggleflow.backend.model.Administrator;
 import com.juggleflow.backend.model.Student;
 import com.juggleflow.backend.model.Teacher;
 import com.juggleflow.backend.model.User;
@@ -64,17 +63,18 @@ public class AuthService {
 
   private User createUserByRole(RegisterRequest req) {
     String encodedPassword = passwordEncoder.encode(req.getPassword());
-    // Normalise en majuscules pour accepter "ROLE_ADMINISTRATEUR" comme "administrator"
     String role = req.getRole() != null ? req.getRole().toUpperCase() : "ROLE_ELEVE";
+
+    // SÉCURITÉ : la création d'un compte ROLE_ADMINISTRATEUR est réservée
+    // aux admins existants via un endpoint dédié et protégé (/api/admin/users).
+    // Un appel public au register avec le rôle administrator est rejeté.
+    if (role.equals("ROLE_ADMINISTRATEUR") || role.equals("ADMINISTRATOR")) {
+      throw new IllegalArgumentException(
+          "La création d'un compte administrateur n'est pas autorisée via cet endpoint.");
+    }
 
     return switch (role) {
       case "ROLE_ENSEIGNANT", "TEACHER" -> Teacher.builder()
-        .email(req.getEmail())
-        .password(encodedPassword)
-        .firstName(req.getFirstName())
-        .lastName(req.getLastName())
-        .build();
-      case "ROLE_ADMINISTRATEUR", "ADMINISTRATOR" -> Administrator.builder()
         .email(req.getEmail())
         .password(encodedPassword)
         .firstName(req.getFirstName())
