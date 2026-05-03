@@ -35,32 +35,26 @@ export default function OnboardingPage() {
   const { user } = useAuth();
 
   return (
-    <div
-      className="min-h-screen flex flex-col px-6 py-10"
-      style={{ backgroundColor: '#0A0E2A', fontFamily: 'DM Sans, sans-serif' }}
-    >
+    <div className="min-h-screen flex flex-col px-6 py-10 bg-bg-primary font-body">
+
       {/* Header */}
       <div className="text-center mb-10">
-        <div className="text-4xl mb-4">🤹</div>
-        <h1
-          className="text-2xl font-bold text-white mb-2"
-          style={{ fontFamily: 'Syne, sans-serif' }}
-        >
+        <div className="text-4xl mb-4">
+          <span role="img" aria-label="jongleur">🤹</span>
+        </div>
+        <h1 className="font-display text-2xl font-bold text-white mb-2">
           Bienvenue sur JuggleFlow !
         </h1>
-        <p style={{ color: '#A0AABF', fontSize: '0.85rem' }}>
+        <p className="text-text-secondary text-sm">
           Une seule question avant de commencer.
         </p>
       </div>
 
       {/* Question */}
-      <h2
-        className="text-lg font-bold text-white mb-2"
-        style={{ fontFamily: 'Syne, sans-serif' }}
-      >
+      <h2 className="font-display text-lg font-bold text-white mb-2">
         Quel est ton niveau en jonglage ?
       </h2>
-      <p className="mb-6 text-sm" style={{ color: '#A0AABF' }}>
+      <p className="mb-6 text-sm text-text-secondary">
         Ton parcours sera adapté en fonction de ta réponse.
       </p>
 
@@ -72,43 +66,32 @@ export default function OnboardingPage() {
             <button
               key={level.value}
               onClick={() => setSelected(level.value)}
-              className="flex items-center gap-4 p-4 rounded-2xl text-left transition-all"
-              style={{
-                backgroundColor: isSelected ? '#1A0E2E' : '#111638',
-                border: `2px solid ${isSelected ? '#8B2BE2' : '#1E2847'}`,
-                minHeight: '72px',
-              }}
+              className={[
+                'flex items-center gap-4 p-4 rounded-2xl text-left transition-all min-h-[72px]',
+                isSelected
+                  ? 'bg-[#1A0E2E] border-2 border-brand'
+                  : 'bg-bg-card border-2 border-border',
+              ].join(' ')}
             >
               <div
-                className="flex items-center justify-center rounded-xl flex-shrink-0"
-                style={{
-                  width: '44px',
-                  height: '44px',
-                  backgroundColor: isSelected ? '#8B2BE2' : '#1E2847',
-                  fontSize: '1.3rem',
-                }}
+                className={[
+                  'flex items-center justify-center w-11 h-11 rounded-xl shrink-0 text-xl',
+                  isSelected ? 'bg-brand' : 'bg-border',
+                ].join(' ')}
               >
-                {level.icon}
+                <span role="img" aria-label={level.label}>{level.icon}</span>
               </div>
               <div className="flex-1">
-                <div
-                  className="font-bold text-sm mb-1"
-                  style={{ color: isSelected ? '#FFFFFF' : '#A0AABF' }}
-                >
+                <div className={`font-bold text-sm mb-1 ${isSelected ? 'text-white' : 'text-text-secondary'}`}>
                   {level.label}
                 </div>
-                <div className="text-xs" style={{ color: '#5A6480' }}>
-                  {level.description}
-                </div>
+                <div className="text-xs text-text-muted">{level.description}</div>
               </div>
               <div
-                className="rounded-full flex-shrink-0"
-                style={{
-                  width: '20px',
-                  height: '20px',
-                  border: `2px solid ${isSelected ? '#8B2BE2' : '#5A6480'}`,
-                  backgroundColor: isSelected ? '#8B2BE2' : 'transparent',
-                }}
+                className={[
+                  'w-5 h-5 rounded-full shrink-0 border-2',
+                  isSelected ? 'border-brand bg-brand' : 'border-text-muted bg-transparent',
+                ].join(' ')}
               />
             </button>
           );
@@ -116,10 +99,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Note rassurante */}
-      <div
-        className="p-4 rounded-xl mb-10 text-xs leading-relaxed"
-        style={{ backgroundColor: '#111638', color: '#5A6480' }}
-      >
+      <div className="p-4 rounded-xl mb-10 text-xs leading-relaxed bg-bg-card text-text-muted">
         Ton niveau sera ajusté automatiquement au fil de ta progression.
         Tu pourras le modifier à tout moment dans ton profil.
       </div>
@@ -130,8 +110,7 @@ export default function OnboardingPage() {
           completeOnboarding(selected, user?.id);
           navigate('/student/dashboard', { replace: true });
         }}
-        className="w-full py-3 rounded-xl font-bold text-white text-sm mt-auto"
-        style={{ backgroundColor: '#FF7A00', minHeight: '48px' }}
+        className="w-full py-3 rounded-xl font-bold text-white text-sm mt-auto min-h-12 bg-cta"
       >
         C'est parti →
       </button>
