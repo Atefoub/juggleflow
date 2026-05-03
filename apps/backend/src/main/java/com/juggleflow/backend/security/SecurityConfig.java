@@ -37,7 +37,7 @@ public class SecurityConfig {
     private final RateLimitFilter rateLimitFilter;
     private final UserRepository userRepository;
 
-    @Value("${cors.allowed-origins:http://localhost:5173}")
+    @Value("${cors.allowed-origins}")
     private String allowedOrigins;
 
     private static final String[] PUBLIC_ROUTES = {
@@ -45,7 +45,8 @@ public class SecurityConfig {
             "/api/auth/register",
             "/actuator/health",
 
-            // Swagger / OpenAPI
+            // Swagger — accessible uniquement si springdoc.api-docs.enabled=true
+            // (désactivé en production via application.properties)
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html"
@@ -75,16 +76,18 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
-    config.setAllowedOriginPatterns(List.of("*"));
+    // Origines explicites depuis ${cors.allowed-origins} — jamais de wildcard avec credentials
+    List<String> origins = List.of(allowedOrigins.split(","));
+    config.setAllowedOrigins(origins);
     config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-    config.setAllowedHeaders(List.of("*"));
+    config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
     config.setAllowCredentials(true);
     config.setMaxAge(3600L);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", config);
     return source;
-    }
+  }
 
     @Bean
     public UserDetailsService userDetailsService() {
