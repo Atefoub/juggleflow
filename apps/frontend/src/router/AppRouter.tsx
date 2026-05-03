@@ -14,8 +14,7 @@ function redirectForRole(role: Role, userId?: number): string {
       return isOnboardingCompleted(userId) ? '/student/dashboard' : '/onboarding';
     case 'ROLE_ENSEIGNANT':
       return '/teacher/dashboard';
-    case 'ROLE_ADMINISTRATEUR': // ✅ corrigé
-    case 'ROLE_ADMIN':
+    case 'ROLE_ADMINISTRATEUR':
       return '/admin/dashboard';
     default:
       return '/login';
