@@ -1,8 +1,7 @@
 export type Role =
   | 'ROLE_ELEVE'
   | 'ROLE_ENSEIGNANT'
-  | 'ROLE_ADMINISTRATEUR'
-  | 'ROLE_ADMIN';
+  | 'ROLE_ADMINISTRATEUR';
 
 export interface LoginRequest {
   email: string;
