@@ -53,27 +53,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center px-6"
-      style={{ backgroundColor: '#0A0E2A', fontFamily: 'DM Sans, sans-serif' }}
-    >
-      <div className="w-full" style={{ maxWidth: '400px' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-bg-primary font-body">
+      <div className="w-full max-w-[400px]">
 
         {/* Logo */}
         <div className="text-center mb-10">
           <img
             src="/logo1.png"
             alt="JuggleFlow"
-            style={{
-              width: '280px',
-              height: 'auto',
-              objectFit: 'contain',
-              display: 'block',
-              margin: '0 auto',
-              mixBlendMode: 'screen',
-            }}
+            className="w-[280px] h-auto object-contain block mx-auto"
+            style={{ mixBlendMode: 'screen' }}
           />
-          <p style={{ color: '#A0AABF', fontSize: '0.85rem', marginTop: '8px' }}>
+          <p className="text-text-secondary text-sm mt-2">
             Plateforme pédagogique de jonglage
           </p>
         </div>
@@ -83,55 +74,41 @@ export default function LoginPage() {
 
           {/* Email */}
           <div>
-            <label
-              className="block text-sm font-semibold mb-2"
-              style={{ color: '#FFFFFF' }}
-            >
+            <label className="block text-sm font-semibold mb-2 text-text-primary">
               Adresse e-mail institutionnelle
             </label>
             <input
               {...register('email')}
               type="email"
               placeholder="prenom.nom@ecole.fr"
-              className="w-full px-4 py-3 rounded-xl outline-none text-sm transition-all"
-              style={{
-                backgroundColor: '#111638',
-                border: `1.5px solid ${errors.email ? '#FF4D4D' : '#1E2847'}`,
-                color: '#FFFFFF',
-                minHeight: '48px',
-              }}
+              className={[
+                'w-full px-4 py-3 rounded-xl outline-none text-sm transition-all min-h-12',
+                'bg-bg-input text-text-primary',
+                errors.email ? 'border-[1.5px] border-alert' : 'border-[1.5px] border-border',
+              ].join(' ')}
             />
             {errors.email && (
-              <p className="mt-1 text-xs" style={{ color: '#FF4D4D' }}>
-                {errors.email.message}
-              </p>
+              <p className="mt-1 text-xs text-alert">{errors.email.message}</p>
             )}
           </div>
 
           {/* Mot de passe */}
           <div>
-            <label
-              className="block text-sm font-semibold mb-2"
-              style={{ color: '#FFFFFF' }}
-            >
+            <label className="block text-sm font-semibold mb-2 text-text-primary">
               Mot de passe
             </label>
             <input
               {...register('password')}
               type="password"
               placeholder="••••••••"
-              className="w-full px-4 py-3 rounded-xl outline-none text-sm"
-              style={{
-                backgroundColor: '#111638',
-                border: `1.5px solid ${errors.password ? '#FF4D4D' : '#1E2847'}`,
-                color: '#FFFFFF',
-                minHeight: '48px',
-              }}
+              className={[
+                'w-full px-4 py-3 rounded-xl outline-none text-sm min-h-12',
+                'bg-bg-input text-text-primary',
+                errors.password ? 'border-[1.5px] border-alert' : 'border-[1.5px] border-border',
+              ].join(' ')}
             />
             {errors.password && (
-              <p className="mt-1 text-xs" style={{ color: '#FF4D4D' }}>
-                {errors.password.message}
-              </p>
+              <p className="mt-1 text-xs text-alert">{errors.password.message}</p>
             )}
           </div>
 
@@ -139,8 +116,7 @@ export default function LoginPage() {
           <div className="text-right">
             <button
               type="button"
-              className="text-sm underline"
-              style={{ color: '#A0AABF' }}
+              className="text-sm underline text-text-secondary"
             >
               Mot de passe oublié ?
             </button>
@@ -148,10 +124,7 @@ export default function LoginPage() {
 
           {/* Erreur globale */}
           {error && (
-            <div
-              className="px-4 py-3 rounded-xl text-sm text-center"
-              style={{ backgroundColor: '#2A1020', color: '#FF4D4D', border: '1px solid #FF4D4D' }}
-            >
+            <div className="px-4 py-3 rounded-xl text-sm text-center bg-[#2A1020] text-alert border border-alert">
               {error}
             </div>
           )}
@@ -160,44 +133,34 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 rounded-xl font-bold text-white text-sm transition-opacity"
-            style={{
-              backgroundColor: '#FF7A00',
-              minHeight: '48px',
-              opacity: isLoading ? 0.7 : 1,
-            }}
+            className={[
+              'w-full py-3 rounded-xl font-bold text-white text-sm transition-opacity min-h-12',
+              'bg-cta',
+              isLoading ? 'opacity-70' : 'opacity-100',
+            ].join(' ')}
           >
             {isLoading ? 'Connexion...' : 'Se connecter →'}
           </button>
 
           {/* Séparateur */}
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-px" style={{ backgroundColor: '#1E2847' }} />
-            <span className="text-xs" style={{ color: '#5A6480' }}>ou</span>
-            <div className="flex-1 h-px" style={{ backgroundColor: '#1E2847' }} />
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-text-muted">ou</span>
+            <div className="flex-1 h-px bg-border" />
           </div>
 
           {/* ENT */}
           <button
             type="button"
-            className="w-full py-3 rounded-xl font-semibold text-sm"
-            style={{
-              backgroundColor: 'transparent',
-              border: '1.5px solid #1E2847',
-              color: '#A0AABF',
-              minHeight: '48px',
-            }}
+            className="w-full py-3 rounded-xl font-semibold text-sm min-h-12 bg-transparent border-[1.5px] border-border text-text-secondary"
           >
             Connexion via ENT de l'établissement
           </button>
         </form>
 
         {/* Notice RGPD */}
-        <div
-          className="mt-6 p-4 rounded-xl text-center text-xs leading-relaxed"
-          style={{ backgroundColor: '#111638', color: '#5A6480' }}
-        >
-          <strong style={{ color: '#A0AABF' }}>
+        <div className="mt-6 p-4 rounded-xl text-center text-xs leading-relaxed bg-bg-input text-text-muted">
+          <strong className="text-text-secondary">
             Accès réservé aux établissements partenaires.
           </strong>
           <br />
