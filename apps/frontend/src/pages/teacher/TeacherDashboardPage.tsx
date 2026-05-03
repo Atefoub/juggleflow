@@ -17,7 +17,6 @@ const navItems = [
   { label: 'Ressources',     icon: '📁', path: '/teacher/ressources' },
 ];
 
-// Regroupe les élèves par couleur de groupe pour l'affichage synthétique
 function groupStudents(students: StudentSummary[]) {
   const groups: Record<StudentSummary['groupColor'], StudentSummary[]> = {
     VERT: [], ORANGE: [], ROUGE: [],
@@ -44,7 +43,6 @@ export default function TeacherDashboardPage() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
 
-  // 1. Charge les classes de l'enseignant
   useEffect(() => {
     teacherApi
       .getMyClasses()
@@ -56,7 +54,6 @@ export default function TeacherDashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // 2. Charge les élèves de la classe sélectionnée
   useEffect(() => {
     if (!selectedClass) return;
     setStudents([]);
@@ -66,47 +63,32 @@ export default function TeacherDashboardPage() {
       .catch(() => setError('Impossible de charger les élèves de cette classe.'));
   }, [selectedClass]);
 
-  const groups   = groupStudents(students);
-  const avgProgress = averageProgress(students);
+  const groups          = groupStudents(students);
+  const avgProgress     = averageProgress(students);
   const blockedStudents = students.filter((s) => s.groupColor === 'ROUGE');
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{
-        backgroundColor: '#0A0E2A',
-        fontFamily: 'DM Sans, sans-serif',
-        maxWidth: '430px',
-        margin: '0 auto',
-        paddingBottom: '80px',
-      }}
-    >
+    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-[430px] mx-auto pb-20">
+
       {/* Header */}
-      <div
-        className="px-5 pt-12 pb-4"
-        style={{ backgroundColor: '#0D1235', borderBottom: '1px solid #1E2847' }}
-      >
+      <div className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
         <div className="flex items-center gap-3">
-          <div
-            className="flex items-center justify-center rounded-xl font-bold text-white flex-shrink-0 text-xs"
-            style={{ width: '40px', height: '40px', backgroundColor: '#4068D8' }}
-          >
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl font-bold text-white shrink-0 text-xs bg-teacher">
             Prof
           </div>
           <div className="flex-1">
-            <p className="font-bold text-white text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>
+            <p className="font-display font-bold text-white text-sm">
               {user ? `${user.firstName} ${user.lastName}` : '—'}
             </p>
             {selectedClass && (
-              <p className="text-xs" style={{ color: '#5A6480' }}>
+              <p className="text-xs text-text-muted">
                 {selectedClass.name} · {selectedClass.studentCount} élève{selectedClass.studentCount > 1 ? 's' : ''}
               </p>
             )}
           </div>
           <button
             onClick={logout}
-            className="text-xs px-3 py-1 rounded-lg"
-            style={{ backgroundColor: '#1E2847', color: '#A0AABF' }}
+            className="text-xs px-3 py-1 rounded-lg bg-border text-text-secondary"
           >
             Quitter
           </button>
@@ -119,12 +101,12 @@ export default function TeacherDashboardPage() {
               <button
                 key={cls.id}
                 onClick={() => setSelectedClass(cls)}
-                className="flex-shrink-0 px-3 py-1 rounded-lg text-xs font-semibold"
-                style={{
-                  backgroundColor: selectedClass?.id === cls.id ? '#4068D8' : '#1E2847',
-                  color: selectedClass?.id === cls.id ? '#FFFFFF' : '#A0AABF',
-                  border: '1px solid #1E2847',
-                }}
+                className={[
+                  'shrink-0 px-3 py-1 rounded-lg text-xs font-semibold border border-border',
+                  selectedClass?.id === cls.id
+                    ? 'bg-teacher text-white'
+                    : 'bg-border text-text-secondary',
+                ].join(' ')}
               >
                 {cls.name}
               </button>
@@ -138,10 +120,7 @@ export default function TeacherDashboardPage() {
 
         {/* Erreur */}
         {error && (
-          <div
-            className="p-4 rounded-2xl text-sm text-center"
-            style={{ backgroundColor: '#2A1020', color: '#FF4D4D', border: '1px solid #FF4D4D' }}
-          >
+          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
             {error}
           </div>
         )}
@@ -149,11 +128,7 @@ export default function TeacherDashboardPage() {
         {loading && (
           <div className="flex flex-col gap-3">
             {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="rounded-2xl animate-pulse"
-                style={{ height: '80px', backgroundColor: '#111638' }}
-              />
+              <div key={i} className="h-20 rounded-2xl animate-pulse bg-bg-card" />
             ))}
           </div>
         )}
@@ -161,32 +136,17 @@ export default function TeacherDashboardPage() {
         {!loading && !error && (
           <>
             {/* Progression moyenne */}
-            <div
-              className="p-4 rounded-2xl flex items-center gap-4"
-              style={{ backgroundColor: '#111638', border: '1px solid #1E2847' }}
-            >
+            <div className="p-4 rounded-2xl flex items-center gap-4 bg-bg-card border border-border">
               <div className="flex-1">
-                <p className="text-xs uppercase tracking-widest mb-1" style={{ color: '#5A6480' }}>
+                <p className="text-xs uppercase tracking-widest mb-1 text-text-muted">
                   Progression moyenne
                 </p>
-                <p className="text-4xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>
-                  {avgProgress}%
-                </p>
-                <p className="text-xs mt-1" style={{ color: '#A0AABF' }}>
+                <p className="font-display text-4xl font-bold text-white">{avgProgress}%</p>
+                <p className="text-xs mt-1 text-text-secondary">
                   {students.length} élève{students.length > 1 ? 's' : ''} dans la classe
                 </p>
               </div>
-              <div
-                className="flex items-center justify-center rounded-full flex-shrink-0"
-                style={{
-                  width: '72px',
-                  height: '72px',
-                  border: '4px solid #8B2BE2',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  color: '#FFFFFF',
-                }}
-              >
+              <div className="flex items-center justify-center w-[72px] h-[72px] rounded-full shrink-0 border-4 border-brand text-xs font-bold text-white">
                 {avgProgress}%
               </div>
             </div>
@@ -194,13 +154,10 @@ export default function TeacherDashboardPage() {
             {/* Groupes d'élèves */}
             {students.length > 0 && (
               <div>
-                <h2
-                  className="font-bold text-white text-sm uppercase tracking-wider mb-3"
-                  style={{ fontFamily: 'Syne, sans-serif' }}
-                >
+                <h2 className="font-display font-bold text-white text-sm uppercase tracking-wider mb-3">
                   Groupes d'élèves
                 </h2>
-                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #1E2847' }}>
+                <div className="rounded-2xl overflow-hidden border border-border">
                   {(['VERT', 'ORANGE', 'ROUGE'] as const)
                     .filter((color) => groups[color].length > 0)
                     .map((color, index, arr) => {
@@ -209,29 +166,26 @@ export default function TeacherDashboardPage() {
                       return (
                         <div
                           key={color}
-                          className="flex items-center gap-3 p-4"
-                          style={{
-                            borderBottom: index < arr.length - 1 ? '1px solid #1E2847' : 'none',
-                            backgroundColor: '#111638',
-                          }}
+                          className="flex items-center gap-3 p-4 bg-bg-card"
+                          style={{ borderBottom: index < arr.length - 1 ? '1px solid #1E2847' : 'none' }}
                         >
                           <div
-                            className="rounded-full flex-shrink-0"
-                            style={{ width: '10px', height: '10px', backgroundColor: GROUP_COLOR_MAP[color] }}
+                            className="w-[10px] h-[10px] rounded-full shrink-0"
+                            style={{ backgroundColor: GROUP_COLOR_MAP[color] }}
                           />
                           <div className="flex-1">
                             <p className="text-sm font-bold text-white">
                               Groupe {color.charAt(0) + color.slice(1).toLowerCase()}
                             </p>
-                            <p className="text-xs" style={{ color: '#5A6480' }}>
+                            <p className="text-xs text-text-muted">
                               {group.length} élève{group.length > 1 ? 's' : ''} · {GROUP_LABEL_MAP[color]}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <div style={{ width: '70px' }}>
+                            <div className="w-[70px]">
                               <ProgressBar value={avg} color={GROUP_COLOR_MAP[color]} height="6px" />
                             </div>
-                            <span className="text-sm font-bold text-white" style={{ minWidth: '32px', textAlign: 'right' }}>
+                            <span className="text-sm font-bold text-white min-w-8 text-right">
                               {avg}%
                             </span>
                           </div>
@@ -244,16 +198,13 @@ export default function TeacherDashboardPage() {
 
             {/* Alerte élèves bloqués */}
             {blockedStudents.length > 0 && (
-              <div
-                className="p-4 rounded-2xl flex items-start gap-3"
-                style={{ backgroundColor: '#1A1020', border: '1px solid #2A1A10', borderLeft: '3px solid #FF7A00' }}
-              >
-                <span className="text-lg flex-shrink-0">⚠️</span>
+              <div className="p-4 rounded-2xl flex items-start gap-3 bg-[#1A1020] border border-[#2A1A10] border-l-[3px] border-l-cta">
+                <span role="img" aria-label="attention" className="text-lg shrink-0">⚠️</span>
                 <div>
                   <p className="text-sm font-bold text-white mb-1">
                     {blockedStudents.length} élève{blockedStudents.length > 1 ? 's' : ''} en difficulté
                   </p>
-                  <p className="text-xs" style={{ color: '#A0AABF' }}>
+                  <p className="text-xs text-text-secondary">
                     {blockedStudents
                       .slice(0, 3)
                       .map((s) => `${s.firstName} ${s.lastName[0]}.`)
@@ -266,20 +217,14 @@ export default function TeacherDashboardPage() {
 
             {/* Aucune classe */}
             {classes.length === 0 && (
-              <div
-                className="p-4 rounded-2xl text-sm"
-                style={{ backgroundColor: '#111638', border: '1px solid #1E2847', color: '#A0AABF' }}
-              >
+              <div className="p-4 rounded-2xl text-sm bg-bg-card border border-border text-text-secondary">
                 Vous n'avez pas encore de classe. Créez-en une pour commencer.
               </div>
             )}
 
             {/* Actions rapides */}
             <div>
-              <h2
-                className="font-bold text-white text-sm uppercase tracking-wider mb-3"
-                style={{ fontFamily: 'Syne, sans-serif' }}
-              >
+              <h2 className="font-display font-bold text-white text-sm uppercase tracking-wider mb-3">
                 Actions rapides
               </h2>
               <div className="flex flex-wrap gap-2">
@@ -290,13 +235,7 @@ export default function TeacherDashboardPage() {
                 ].map((action) => (
                   <button
                     key={action}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold"
-                    style={{
-                      backgroundColor: '#111638',
-                      border: '1.5px solid #1E2847',
-                      color: '#A0AABF',
-                      minHeight: '44px',
-                    }}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold min-h-11 bg-bg-card border-[1.5px] border-border text-text-secondary"
                   >
                     {action}
                   </button>

@@ -4,12 +4,6 @@ import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import { studentApi, type StudentStats, type BadgeData, type LearningPath } from '../../api/studentApi';
 
-// ─── Chemin de ce fichier ────────────────────────────────────────────────────
-// Placer ce fichier dans :  apps/frontend/src/pages/student/DashboardPage.tsx
-// ou                     :  apps/frontend/src/pages/student/StudentDashboardPage.tsx
-// L'import ci-dessus suppose que le fichier est dans pages/student/ (2 niveaux)
-// ─────────────────────────────────────────────────────────────────────────────
-
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
   { label: 'Catalogue',   icon: '🎯', path: '/catalogue' },
@@ -64,13 +58,13 @@ export default function StudentDashboardPage() {
   ].slice(0, 3);
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-[430px] mx-auto pb-20">
+    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
 
       {/* ── Header ── */}
       <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
 
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex items-center justify-center w-11 h-11 rounded-full font-bold text-sm text-text-primary shrink-0 bg-gradient-to-br from-brand to-brand-end">
+          <div className="flex items-center justify-center w-11 h-11 rounded-full font-bold text-sm text-text-primary shrink-0 bg-linear-to-br from-brand to-brand-end">
             {initials}
           </div>
 
@@ -189,21 +183,23 @@ export default function StudentDashboardPage() {
                     <div key={badge.id} className="flex flex-col items-center gap-2">
                       <div
                         className={[
-                          'flex items-center justify-center w-[52px] h-[52px] rounded-xl text-lg',
+                          'flex items-center justify-center w-13 h-13 rounded-xl text-lg',
                           badge.unlocked
-                            ? 'bg-gradient-to-br from-brand to-brand-end'
+                            ? 'bg-linear-to-br from-brand to-brand-end'
                             : 'bg-border opacity-45',
                         ].join(' ')}
                       >
                         {badge.iconUrl ? (
                           <img src={badge.iconUrl} alt={badge.name} className="w-7" />
                         ) : (
-                          badge.unlocked ? '🏅' : '🔒'
+                          <span role="img" aria-label={badge.unlocked ? 'badge débloqué' : 'badge verrouillé'}>
+                            {badge.unlocked ? '🏅' : '🔒'}
+                          </span>
                         )}
                       </div>
                       <span
                         className={[
-                          'text-xs text-center max-w-[60px] truncate',
+                          'text-xs text-center max-w-15 truncate',
                           badge.unlocked ? 'text-text-primary' : 'text-text-muted',
                         ].join(' ')}
                         title={badge.name}
