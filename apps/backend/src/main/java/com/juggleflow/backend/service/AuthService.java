@@ -123,6 +123,20 @@ public class AuthService {
     return buildLoginResponse(user, userDetails);
   }
 
+  // ── Logout / Révocation ───────────────────────────────────────
+
+  /**
+   * [VULN-R3] Révoque un refresh token lors du logout.
+   * Silencieux si le token est déjà invalide ou malformé.
+   */
+  public void revokeRefreshToken(String refreshToken) {
+    try {
+      jwtUtils.revokeToken(refreshToken);
+    } catch (Exception ignored) {
+      // Token déjà invalide — pas d'erreur à remonter au client
+    }
+  }
+
   // ── Helpers ───────────────────────────────────────────────────
 
   /**
