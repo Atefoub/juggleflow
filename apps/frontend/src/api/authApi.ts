@@ -1,31 +1,22 @@
 /**
- * authApi.ts — CORRECTIONS SÉCURITÉ appliquées :
+ * authApi.ts
  *
- * [VULN-28] STOCKAGE DU TOKEN DANS localStorage :
- *           localStorage est accessible par tout script JS sur la page.
- *           Un XSS réussit → vol immédiat et silencieux du token → session
- *           hijacking. La durée de vie du token (15 min) ne limite pas le
- *           risque si le refresh token (7 jours) est aussi dans localStorage.
+ * Architecture de sécurité des tokens (04/05/2026) :
  *
- *           CORRECTION : les tokens sont stockés EN MÉMOIRE (variable de module).
- *           - Access token : mémoire JS (perdu à la fermeture de l'onglet → OK)
- *           - Refresh token : cookie httpOnly SameSite=Strict (non accessible
- *             par JS, envoyé automatiquement par le navigateur).
+ *   Access token  → stocké EN MÉMOIRE (variable de module _accessToken).
+ *                   Jamais dans localStorage/sessionStorage : inaccessible
+ *                   à un script JS injecté (XSS).
+ *                   Perdu au rechargement → restauré silencieusement via /refresh.
  *
- *           Architecture résultante :
- *           • Le refresh token est stocké dans un cookie httpOnly/SameSite=Strict
- *             géré par le backend (endpoint POST /api/auth/refresh).
- *           • L'access token est en mémoire : un XSS ne peut pas l'exfiltrer
- *             via localStorage.read() — il faudrait intercepter la mémoire du
- *             processus, ce qui est beaucoup plus difficile.
+ *   Refresh token → géré exclusivement par le backend sous forme de cookie
+ *                   httpOnly/Secure/SameSite=Strict. Le JS ne le voit jamais.
+ *                   Envoyé automatiquement par le navigateur sur /api/auth/*
+ *                   grâce à withCredentials: true.
  *
- *           NOTE OPÉRATIONNELLE : cela signifie que l'access token est perdu
- *           à la fermeture / rechargement de l'onglet. Le AuthContext détecte
- *           cela (token null) et appelle silencieusement /api/auth/refresh
- *           pour obtenir un nouvel access token via le cookie httpOnly.
- *
- * [VULN-29] Le 401 interceptor supprimait localStorage sans révoquer le token
- *           côté serveur. CORRECTION : appel de logout() qui efface le cookie.
+ * [VULN-28] Suppression du stockage localStorage des tokens.
+ * [VULN-29] Intercepteur 401 : refresh silencieux avant redirection login.
+ * [FIX-COOKIE] /auth/refresh envoi body vide — le cookie httpOnly est lu
+ *              automatiquement par le backend (plus de refreshToken dans le body).
  */
 
 import axios, { type AxiosRequestConfig } from 'axios';
@@ -53,11 +44,11 @@ export function clearAccessToken(): void {
 export const api = axios.create({
   baseURL: '/api',
   headers: { 'Content-Type': 'application/json' },
-  // [VULN-28] withCredentials=true : envoie le cookie httpOnly du refresh token
+  // withCredentials=true : envoie le cookie httpOnly du refresh token automatiquement
   withCredentials: true,
 });
 
-// ── Intercepteur requête : inject access token depuis la mémoire ──
+// ── Intercepteur requête : injecte l'access token depuis la mémoire ──
 
 api.interceptors.request.use((config) => {
   const token = getAccessToken();
@@ -107,7 +98,6 @@ api.interceptors.response.use(
         const newAccessToken = response.data.accessToken;
         setAccessToken(newAccessToken);
 
-        // Déblocage de la file d'attente
         _refreshQueue.forEach((cb) => cb.resolve(newAccessToken));
         _refreshQueue = [];
 
@@ -133,9 +123,12 @@ api.interceptors.response.use(
 // ── API Auth ──────────────────────────────────────────────────
 
 export const authApi = {
+  /**
+   * Authentifie l'utilisateur. Le backend pose le cookie refresh_token httpOnly
+   * automatiquement — aucune action côté client nécessaire pour le gérer.
+   */
   login: async (data: LoginRequest): Promise<LoginResponse> => {
     const response = await api.post<LoginResponse>('/auth/login', data);
-    // [VULN-28] Access token stocké en mémoire (pas localStorage)
     setAccessToken(response.data.accessToken);
     return response.data;
   },
@@ -145,13 +138,20 @@ export const authApi = {
     return response.data;
   },
 
+  /**
+   * Déconnecte l'utilisateur :
+   *   1. Appelle POST /auth/logout → révocation du refresh token serveur
+   *      + suppression du cookie httpOnly par Set-Cookie: Max-Age=0.
+   *   2. Efface l'access token en mémoire locale.
+   *
+   * Le logout est tenté même si l'access token est expiré (route publique
+   * côté backend) pour garantir la révocation du cookie.
+   */
   logout: async (): Promise<void> => {
     try {
-      // Révoque le refresh token côté serveur (optionnel mais recommandé)
       await api.post('/auth/logout');
     } finally {
       clearAccessToken();
-      // Le cookie httpOnly sera effacé par le backend via Set-Cookie: expires=past
     }
   },
 };

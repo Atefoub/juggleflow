@@ -49,7 +49,8 @@ import java.util.List;
  *           validation du token. Pour les endpoints publics (login/register)
  *           cela n'avait pas d'impact, mais l'ordre logique est :
  *           RateLimitFilter → JwtFilter → UsernamePasswordAuthenticationFilter.
- *           CORRECTION : RateLimitFilter ajouté BEFORE JwtFilter.
+ *           CORRECTION 04/05/2026 : les deux appels addFilterBefore étaient
+ *           inversés dans l'implémentation précédente — corrigé ci-dessous.
  *
  * [VULN-17] CORS : validation que allowedOrigins ne contient pas de wildcard
  *           avec allowCredentials=true (combinaison interdite par le W3C).
@@ -77,13 +78,27 @@ public class SecurityConfig {
 
   /**
    * Routes entièrement publiques.
+   *
    * [VULN-15] Swagger RETIRÉ d'ici — géré conditionnellement ci-dessous.
    * /actuator/health reste public (sonde K8s/Docker).
+   *
+   * [FIX-LOGOUT] /api/auth/logout ajouté ici (04/05/2026).
+   *   Problème : un utilisateur dont l'access token est expiré obtenait un 401
+   *   avant d'atteindre l'endpoint, laissant le cookie refresh_token actif.
+   *   Solution : le logout ne nécessite pas de token Bearer valide — il lit
+   *   directement le cookie httpOnly et révoque le refresh token côté serveur.
+   *   Risque CSRF mitigé par SameSite=Strict sur le cookie refresh_token :
+   *   une requête cross-site ne pourra jamais envoyer le cookie.
+   *
+   * [FIX-COOKIE] /api/auth/refresh rendu public : le frontend envoie un body
+   *   vide avec credentials: 'include' (cookie httpOnly). Spring Security ne
+   *   doit pas rejeter la requête avant que le cookie soit lu par le controller.
    */
   private static final String[] PUBLIC_ROUTES = {
     "/api/auth/login",
     "/api/auth/register",
     "/api/auth/refresh",
+    "/api/auth/logout",
     "/actuator/health"
   };
 
@@ -152,9 +167,13 @@ public class SecurityConfig {
 
       .authenticationProvider(authenticationProvider())
 
-      // [VULN-16] Ordre correct : RateLimitFilter → JwtFilter → UsernamePasswordAuthFilter
-      .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
-      .addFilterBefore(jwtFilter, RateLimitFilter.class)
+      // [VULN-16] Ordre d'exécution : RateLimitFilter → JwtFilter → UsernamePasswordAuthFilter.
+      // addFilterBefore(F, R) insère F juste AVANT R dans la chaîne Spring Security.
+      // Pour obtenir RateLimit → Jwt → UsernamePassword, on déclare de droite à gauche :
+      //   1. JwtFilter        juste avant UsernamePasswordAuthenticationFilter
+      //   2. RateLimitFilter  juste avant JwtFilter
+      .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+      .addFilterBefore(rateLimitFilter, JwtFilter.class)
 
       .build();
   }
