@@ -16,9 +16,14 @@ export interface RegisterRequest {
   role: string;
 }
 
+/**
+ * Réponse d'authentification reçue dans le body HTTP.
+ *
+ * Le refresh token n'est PAS présent ici — il est transmis exclusivement
+ * via le cookie httpOnly posé par le backend (inaccessible à JavaScript).
+ */
 export interface LoginResponse {
   accessToken: string;
-  refreshToken: string;
   tokenType: string;
   expiresIn: number;
   userId: number;
