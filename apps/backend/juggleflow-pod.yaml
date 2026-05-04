@@ -16,7 +16,10 @@ spec:
         - name: POSTGRES_USER
           value: juggleflow_user
         - name: POSTGRES_PASSWORD
-          value: JuggleFlow2026!
+          valueFrom:
+            secretKeyRef:
+              name: juggleflow-db-password
+              key: juggleflow-db-password
         - name: PGDATA
           value: /var/lib/postgresql/data/pgdata
       ports:
