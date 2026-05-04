@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -40,8 +41,8 @@ import java.util.List;
  *
  * [VULN-15] SWAGGER accessible en prod (springdoc.api-docs.enabled=false
  *           par défaut, mais les routes étaient en PUBLIC_ROUTES).
- *           CORRECTION : Swagger retiré des routes publiques ; protégé par
- *           ROLE_ADMINISTRATEUR. Désactivé en prod via application.properties.
+ *           CORRECTION : Swagger conditionnel via swagger.public (dev) ou
+ *           protégé par ROLE_ADMINISTRATEUR (prod).
  *
  * [VULN-16] ORDRE DES FILTRES : JwtFilter était placé AVANT RateLimitFilter,
  *           ce qui signifie que le rate limiting s'appliquait APRÈS la
@@ -67,8 +68,16 @@ public class SecurityConfig {
   private String allowedOrigins;
 
   /**
+   * [VULN-15] swagger.public=true  → Swagger ouvert sans auth (dev local uniquement)
+   *           swagger.public=false → Swagger protégé par ROLE_ADMINISTRATEUR (prod)
+   *           Valeur par défaut : false (sécurisé par défaut)
+   */
+  @Value("${swagger.public:false}")
+  private boolean swaggerPublic;
+
+  /**
    * Routes entièrement publiques.
-   * [VULN-15] Swagger RETIRÉ d'ici — protégé par ROLE_ADMINISTRATEUR ci-dessous.
+   * [VULN-15] Swagger RETIRÉ d'ici — géré conditionnellement ci-dessous.
    * /actuator/health reste public (sonde K8s/Docker).
    */
   private static final String[] PUBLIC_ROUTES = {
@@ -76,6 +85,12 @@ public class SecurityConfig {
     "/api/auth/register",
     "/api/auth/refresh",
     "/actuator/health"
+  };
+
+  private static final String[] SWAGGER_ROUTES = {
+    "/v3/api-docs/**",
+    "/swagger-ui/**",
+    "/swagger-ui.html"
   };
 
   @Bean
@@ -90,22 +105,13 @@ public class SecurityConfig {
 
       // [VULN-13] Headers de sécurité HTTP
       .headers(headers -> headers
-        // X-Content-Type-Options: nosniff (activé par défaut, rendu explicite)
         .contentTypeOptions(c -> {})
-
-        // X-Frame-Options: DENY
         .frameOptions(frame -> frame.deny())
-
-        // Strict-Transport-Security (HSTS) — 1 an, includeSubDomains
         .httpStrictTransportSecurity(hsts -> hsts
           .includeSubDomains(true)
           .maxAgeInSeconds(31536000))
-
-        // Referrer-Policy: strict-origin-when-cross-origin
         .referrerPolicy(referrer -> referrer
           .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
-
-        // Content-Security-Policy
         .contentSecurityPolicy(csp -> csp.policyDirectives(
           "default-src 'self'; " +
             "script-src 'self'; " +
@@ -115,8 +121,6 @@ public class SecurityConfig {
             "frame-ancestors 'none'; " +
             "form-action 'self';"
         ))
-
-        // Permissions-Policy via StaticHeadersWriter (permissionsPolicy() déprécié Spring Security 6.4+)
         .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
           "Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()"
         ))
@@ -125,9 +129,17 @@ public class SecurityConfig {
       .authorizeHttpRequests(auth -> auth
         .requestMatchers(PUBLIC_ROUTES).permitAll()
 
-        // [VULN-15] Swagger protégé — uniquement admin et uniquement si activé
-        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
-        .hasAuthority("ROLE_ADMINISTRATEUR")
+        // [VULN-15] Swagger : public si swagger.public=true (dev), admin sinon (prod)
+        .requestMatchers(SWAGGER_ROUTES)
+        .access((authentication, context) -> {
+          if (swaggerPublic) {
+            return new AuthorizationDecision(true);
+          }
+          return new AuthorizationDecision(
+            authentication.get().getAuthorities().stream()
+              .anyMatch(a -> a.getAuthority().equals("ROLE_ADMINISTRATEUR"))
+          );
+        })
 
         .requestMatchers("/api/admin/**")
         .hasAuthority("ROLE_ADMINISTRATEUR")
@@ -182,8 +194,7 @@ public class SecurityConfig {
         List.of(new SimpleGrantedAuthority(user.getRole()))
       ))
       // [VULN-18] Message générique — pas de fuite "email inexistant vs mauvais MDP"
-      .orElseThrow(() -> new UsernameNotFoundException(
-        "Identifiants invalides"));
+      .orElseThrow(() -> new UsernameNotFoundException("Identifiants invalides"));
   }
 
   @Bean
