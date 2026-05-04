@@ -1,12 +1,11 @@
 package com.juggleflow.backend.security;
-import org.springframework.context.annotation.Lazy;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,55 +17,75 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * Filtre JWT — extrait et valide le token Bearer à chaque requête.
- * UserDetailsService est injecté directement (pas de @Lazy) car
- * JwtUtils ne dépend plus de UserDetailsService.
+ * CORRECTIONS SÉCURITÉ appliquées :
+ *
+ * [VULN-06] Le message de log ne contient plus le contenu du token brut
+ *           (risque de fuite dans les logs).
+ *
+ * [VULN-07] Toutes les branches d'exception sont attrapées séparément pour
+ *           ne pas masquer des erreurs système derrière un simple "warn".
+ *
+ * [VULN-08] La méthode isTokenValid() du JwtUtils rejette désormais les
+ *           refresh tokens utilisés comme access tokens (voir JwtUtils).
+ *           Le filtre bénéficie automatiquement de cette protection.
  */
 @Slf4j
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
-    private final JwtUtils jwtUtils;
-    private final UserDetailsService userDetailsService;
+  private final JwtUtils jwtUtils;
+  private final UserDetailsService userDetailsService;
 
-    public JwtFilter(JwtUtils jwtUtils, @Lazy UserDetailsService userDetailsService) {
-        this.jwtUtils = jwtUtils;
-        this.userDetailsService = userDetailsService;
+  public JwtFilter(JwtUtils jwtUtils, @Lazy UserDetailsService userDetailsService) {
+    this.jwtUtils = jwtUtils;
+    this.userDetailsService = userDetailsService;
+  }
+
+  @Override
+  protected void doFilterInternal(HttpServletRequest request,
+                                  HttpServletResponse response,
+                                  FilterChain filterChain)
+    throws ServletException, IOException {
+
+    final String authHeader = request.getHeader("Authorization");
+
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+      filterChain.doFilter(request, response);
+      return;
     }
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
+    String jwt = authHeader.substring(7);
 
-        final String authHeader = request.getHeader("Authorization");
+    try {
+      String email = jwtUtils.extractEmail(jwt);
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
+      if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+
+        // [VULN-08] isTokenValid() rejette les refresh tokens et les tokens révoqués
+        if (jwtUtils.isTokenValid(jwt, userDetails)) {
+          UsernamePasswordAuthenticationToken authToken =
+            new UsernamePasswordAuthenticationToken(
+              userDetails, null, userDetails.getAuthorities());
+          authToken.setDetails(
+            new WebAuthenticationDetailsSource().buildDetails(request));
+          SecurityContextHolder.getContext().setAuthentication(authToken);
+        } else {
+          // [VULN-06] Pas de log du token brut
+          log.debug("Token JWT invalide ou révoqué pour la requête sur {}",
+            request.getRequestURI());
         }
-
-        try {
-            String jwt = authHeader.substring(7);
-            String email = jwtUtils.extractEmail(jwt);
-
-            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-
-                if (jwtUtils.isTokenValid(jwt, userDetails)) {
-                    UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(
-                                    userDetails, null, userDetails.getAuthorities());
-                    authToken.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Échec de validation du token JWT : {}", e.getMessage());
-        }
-
-        filterChain.doFilter(request, response);
+      }
+    } catch (io.jsonwebtoken.ExpiredJwtException e) {
+      // [VULN-06] Log sans le token brut
+      log.debug("Token JWT expiré — requête sur {}", request.getRequestURI());
+    } catch (io.jsonwebtoken.JwtException e) {
+      log.warn("Token JWT malformé sur {} : {}", request.getRequestURI(), e.getMessage());
+    } catch (Exception e) {
+      log.error("Erreur inattendue dans JwtFilter sur {} : {}",
+        request.getRequestURI(), e.getMessage());
     }
+
+    filterChain.doFilter(request, response);
+  }
 }
