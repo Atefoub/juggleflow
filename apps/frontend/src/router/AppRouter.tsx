@@ -4,6 +4,7 @@ import { Role } from '../types/auth';
 import LoginPage from '../pages/LoginPage';
 import OnboardingPage from '../pages/student/OnboardingPage';
 import StudentDashboardPage from '../pages/student/DashboardPage';
+import CataloguePage from '../pages/student/CataloguePage';
 import TeacherDashboardPage from '../pages/teacher/DashboardPage';
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage';
 import { isOnboardingCompleted } from '../utils/onboarding';
@@ -78,6 +79,16 @@ export default function AppRouter() {
           element={
             <ProtectedRoute requiredRole={'ROLE_ELEVE'}>
               <StudentDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Élève — Catalogue */}
+        <Route
+          path="/student/catalogue"
+          element={
+            <ProtectedRoute requiredRole={'ROLE_ELEVE'}>
+              <CataloguePage />
             </ProtectedRoute>
           }
         />
