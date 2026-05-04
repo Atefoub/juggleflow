@@ -16,10 +16,23 @@
   <artifactId>backend</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>juggleflow-backend</name>
-  <description>JuggleFlow — Backend Spring Boot</description>
+  <description>JuggleFlow - Backend Spring Boot</description>
 
   <properties>
     <java.version>21</java.version>
+
+    <!--
+      Convention Maven : ces deux proprietes controlent l'encodage utilise
+      par maven-resources-plugin (filtrage des fichiers .properties, .xml, etc.)
+      et maven-site-plugin. Sans elles, Maven utilise l'encodage de la plateforme
+      systeme (Cp1252 sur Windows), ce qui provoque un MalformedInputException
+      des qu'un fichier de ressources contient des caracteres non-ASCII.
+
+      Valeur imposee : UTF-8 sur toutes les plateformes.
+    -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
     <jjwt.version>0.12.6</jjwt.version>
     <springdoc.version>2.8.6</springdoc.version>
     <bucket4j.version>8.10.1</bucket4j.version>
@@ -65,12 +78,12 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- ============================================================
-         Flyway — migration de schéma versionnée
-         flyway-core       : moteur principal
-         flyway-database-postgresql : support natif PostgreSQL 10+
-         Les versions sont gérées par le BOM Spring Boot.
-         ============================================================ -->
+    <!--
+      Flyway - migration de schema versionnee.
+      flyway-core                : moteur principal.
+      flyway-database-postgresql : support natif PostgreSQL 10+.
+      Les versions sont gerees par le BOM Spring Boot.
+    -->
     <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
@@ -88,7 +101,7 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- JWT -->
+    <!-- JWT (JJWT 0.12+) -->
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-api</artifactId>
@@ -127,7 +140,6 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-test</artifactId>
@@ -139,7 +151,7 @@
   <build>
     <plugins>
 
-      <!-- Compiler -->
+      <!-- Compiler Java 21 -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -157,7 +169,7 @@
         </configuration>
       </plugin>
 
-      <!-- Spring Boot Plugin -->
+      <!-- Spring Boot Maven Plugin -->
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>

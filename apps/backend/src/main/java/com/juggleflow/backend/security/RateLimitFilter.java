@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -17,36 +18,40 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * CORRECTIONS SÉCURITÉ appliquées :
+ * Filtre de limitation du débit (rate limiting) sur les endpoints d'authentification.
  *
- * [VULN-09] BYPASS VIA X-Forwarded-For : l'ancienne implémentation prenait la
- *           première IP du header X-Forwarded-For sans vérification, permettant
- *           à un attaquant de contourner le rate limiting en changeant ce header.
- *           CORRECTION : lecture de X-Forwarded-For uniquement si un proxy de
- *           confiance est configuré (${app.trusted-proxy:false}). En l'absence
- *           de proxy configuré, on utilise toujours request.getRemoteAddr().
+ * Protections appliquées :
  *
- * [VULN-10] MEMORY LEAK in-memory : la ConcurrentHashMap grossit indéfiniment
- *           (une entrée par IP distincte, jamais nettoyée).
- *           CORRECTION : Bucket4j gère lui-même l'expiration via la fenêtre de
- *           refill. On ajoute une limite de taille maximale (10 000 entrées)
- *           et un nettoyage périodique via computeIfAbsent avec eviction.
- *           Pour la production multi-nœuds, migrer vers bucket4j-redis.
+ * [VULN-09] Bypass via X-Forwarded-For : l'IP réelle (TCP) est utilisée par défaut.
+ *           Le header XFF n'est lu que si app.trusted-proxy=true, et on prend
+ *           la dernière entrée (ajoutée par le proxy, non forgeable par le client).
  *
- * [VULN-11] /api/auth/refresh non inclus dans le rate limiting.
- *           CORRECTION : ajout de ce chemin dans RATE_LIMITED_PATHS.
+ * [VULN-10] La ConcurrentHashMap est bornée à MAX_BUCKET_ENTRIES entrées.
+ *           Au-delà, les nouvelles IPs sont rejetées (fail-closed) pour éviter
+ *           un memory exhaustion DoS sur la map elle-même.
+ *           TODO prod multi-nœuds : migrer vers bucket4j-redis.
  *
- * [VULN-12] La réponse 429 ne contenait pas de header Retry-After.
- *           CORRECTION : header Retry-After: 60 ajouté.
+ * [VULN-11] /api/auth/refresh ajouté dans RATE_LIMITED_PATHS.
+ *
+ * [VULN-12] Header Retry-After: 60 présent sur toutes les réponses 429.
+ *
+ * [FIX-TRUSTEDPROXY] CORRECTION 04/05/2026 — app.trusted-proxy était lu via
+ *                     System.getProperty() / System.getenv(), contournant la
+ *                     gestion centralisée de configuration Spring Boot et rendant
+ *                     la propriété invisible dans les logs de contexte applicatif.
+ *                     CORRECTION : injection via @Value avec valeur par défaut
+ *                     sécurisée (false). La propriété est désormais déclarée dans
+ *                     application.properties et surchargeable par variable d'env
+ *                     APP_TRUSTED_PROXY (convention Spring Boot).
  */
 @Slf4j
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
-  private static final int    MAX_REQUESTS_PER_MINUTE = 10;
-  private static final int    MAX_BUCKET_ENTRIES      = 10_000;
+  private static final int MAX_REQUESTS_PER_MINUTE = 10;
+  private static final int MAX_BUCKET_ENTRIES      = 10_000;
 
-  /** [VULN-11] /api/auth/refresh ajouté */
+  /** [VULN-11] /api/auth/refresh inclus dans le périmètre du rate limiting. */
   private static final Set<String> RATE_LIMITED_PATHS = Set.of(
     "/api/auth/login",
     "/api/auth/register",
@@ -54,8 +59,16 @@ public class RateLimitFilter extends OncePerRequestFilter {
   );
 
   /**
-   * [VULN-10] La map est bornée. Si elle dépasse MAX_BUCKET_ENTRIES,
-   * les nouvelles IPs sont bloquées par précaution (fail-closed).
+   * [FIX-TRUSTEDPROXY] Injection Spring : la valeur est lue depuis
+   * application.properties (app.trusted-proxy) ou la variable d'env
+   * APP_TRUSTED_PROXY. Valeur par défaut : false (sécurisé).
+   */
+  @Value("${app.trusted-proxy:false}")
+  private boolean trustedProxy;
+
+  /**
+   * [VULN-10] Map bornée à MAX_BUCKET_ENTRIES entrées.
+   * Bucket4j gère l'expiration via la fenêtre de refill (1 min).
    */
   private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
@@ -77,9 +90,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     String clientIp = getClientIp(request);
 
-    // [VULN-10] Fail-closed si la map est saturée (protection DoS sur la map elle-même)
+    // [VULN-10] Fail-closed : protection contre le memory exhaustion DoS
     if (buckets.size() >= MAX_BUCKET_ENTRIES && !buckets.containsKey(clientIp)) {
-      log.warn("Rate limit map saturée ({} entrées) — rejet de l'IP {}", MAX_BUCKET_ENTRIES, clientIp);
+      log.warn("Rate limit map saturée ({} entrées) — rejet de l'IP {}",
+        MAX_BUCKET_ENTRIES, clientIp);
       sendTooManyRequests(response);
       return;
     }
@@ -104,28 +118,21 @@ public class RateLimitFilter extends OncePerRequestFilter {
   }
 
   /**
-   * [VULN-09] Extraction sécurisée de l'IP cliente.
+   * Extraction sécurisée de l'IP cliente.
    *
-   * La lecture de X-Forwarded-For est un vecteur classique de bypass :
-   * un client peut forger ce header. On n'y fait confiance QUE si l'application
-   * tourne derrière un reverse-proxy de confiance (nginx / AWS ALB).
+   * [VULN-09] Sans proxy de confiance (défaut) : request.getRemoteAddr() — IP TCP réelle.
+   * [FIX-TRUSTEDPROXY] Avec proxy de confiance (app.trusted-proxy=true) : dernière IP
+   *                     du header X-Forwarded-For (ajoutée par le proxy, non forgeable).
    *
-   * Par défaut (${app.trusted-proxy} absent ou false) : on retourne
-   * directement request.getRemoteAddr() qui est la vraie IP TCP.
-   *
-   * Si un proxy est configuré, on prend la DERNIÈRE IP du header (la plus
-   * récente ajoutée par le proxy, pas la première que le client peut forger).
+   * Pourquoi la DERNIÈRE et non la première ?
+   * Le header XFF est construit en append : "client, proxy1, proxy2". La première
+   * valeur est fournie par le client et peut être forgée librement. La dernière est
+   * ajoutée par le reverse-proxy de confiance qui parle directement à l'application.
    */
   private String getClientIp(HttpServletRequest request) {
-    // Récupération de la propriété système ou de l'env (injectée via @Value serait mieux en prod)
-    boolean trustedProxy = Boolean.parseBoolean(
-      System.getProperty("app.trusted-proxy",
-        System.getenv().getOrDefault("APP_TRUSTED_PROXY", "false")));
-
     if (trustedProxy) {
       String xForwardedFor = request.getHeader("X-Forwarded-For");
       if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-        // [VULN-09] On prend la DERNIÈRE entrée (ajoutée par le proxy de confiance)
         String[] parts = xForwardedFor.split(",");
         return parts[parts.length - 1].trim();
       }
@@ -133,15 +140,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
     return request.getRemoteAddr();
   }
 
-  /** [VULN-12] Réponse 429 avec header Retry-After */
+  /** [VULN-12] Réponse 429 conforme avec header Retry-After. */
   private void sendTooManyRequests(HttpServletResponse response) throws IOException {
     response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
     response.setContentType("application/json;charset=UTF-8");
     response.setHeader("Retry-After", "60");
     response.getWriter().write("""
-            {"error":"Too Many Requests",
-             "message":"Trop de tentatives. Réessayez dans une minute.",
-             "status":429}
-            """);
+      {"error":"Too Many Requests",
+       "message":"Trop de tentatives. Réessayez dans une minute.",
+       "status":429}
+      """);
   }
 }
