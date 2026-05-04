@@ -3,10 +3,10 @@ import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 
 const navItems = [
-  { label: 'Accueil', icon: '🏠', path: '/dashboard' },
-  { label: 'Catalogue', icon: '🎯', path: '/catalogue' },
-  { label: 'Progression', icon: '📊', path: '/progression' },
-  { label: 'Profil', icon: '👤', path: '/profil' },
+  { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
+  { label: 'Catalogue',   icon: '🎯', path: '/student/catalogue' },
+  { label: 'Progression', icon: '📊', path: '/student/progression' },
+  { label: 'Profil',      icon: '👤', path: '/student/profil' },
 ];
 
 // Données mockées
