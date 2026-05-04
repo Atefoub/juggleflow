@@ -1,51 +1,112 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+/**
+ * AuthContext.tsx — CORRECTIONS SÉCURITÉ appliquées :
+ *
+ * [VULN-28] Le token n'est plus lu depuis localStorage au montage.
+ *           Au lieu de ça, on tente un refresh silencieux via le cookie httpOnly
+ *           pour restaurer la session sans exposer le token dans le stockage navigateur.
+ *
+ * [VULN-30] ONBOARDING STATE dans localStorage :
+ *           Les clés "onboarding_completed:<userId>" dans localStorage sont peu
+ *           sensibles (pas de données personnelles) mais doivent être nettoyées
+ *           au logout pour éviter des fuites d'état entre utilisateurs sur le
+ *           même appareil (ex: école avec ordinateurs partagés).
+ *           CORRECTION : logout() nettoie maintenant les clés d'onboarding.
+ */
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { UserProfile, Role } from '../types/auth';
-import { authApi } from '../api/authApi';
+import { authApi, setAccessToken, clearAccessToken, getAccessToken } from '../api/authApi';
+import { resetOnboarding } from '../utils/onboarding';
 
 interface AuthContextType {
   user: UserProfile | null;
-  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (token: string) => Promise<UserProfile>;
-  logout: () => void;
+  login: (token: string, profile?: UserProfile) => Promise<UserProfile>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem('access_token')
-  );
+  const [user, setUser]         = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  /**
+   * [VULN-28] Au montage : on ne lit PLUS localStorage.
+   * On tente un refresh silencieux via le cookie httpOnly.
+   * Si le cookie est absent ou expiré → état non-authentifié.
+   */
   useEffect(() => {
-    if (token) {
-      authApi
-        .me()
-        .then(setUser)
-        .catch(() => {
-          localStorage.removeItem('access_token');
-          setToken(null);
-        })
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
-  }, [token]);
+    let cancelled = false;
 
-  const login = async (newToken: string): Promise<UserProfile> => {
-    localStorage.setItem('access_token', newToken);
-    setToken(newToken);
-    const profile = await authApi.me();
-    setUser(profile);
-    return profile;
+    const tryRestoreSession = async () => {
+      try {
+        // Tente d'obtenir un access token via le refresh token (cookie httpOnly)
+        const { authApi: freshApi } = await import('../api/authApi');
+        const refreshResponse = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          credentials: 'include',           // envoie le cookie httpOnly
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+
+        if (!refreshResponse.ok) {
+          // Pas de session active → état initial non-authentifié
+          return;
+        }
+
+        const data = await refreshResponse.json();
+        setAccessToken(data.accessToken);
+
+        // Charge le profil avec le nouvel access token
+        const profile = await freshApi.me();
+        if (!cancelled) {
+          setUser(profile);
+        }
+      } catch {
+        // Refresh échoué → pas de session (normal)
+        clearAccessToken();
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    tryRestoreSession();
+    return () => { cancelled = true; };
+  }, []);
+
+  /**
+   * Appelé après un login réussi.
+   * token = access token (déjà stocké en mémoire par authApi.login()).
+   */
+  const login = async (token: string, profile?: UserProfile): Promise<UserProfile> => {
+    setAccessToken(token);
+    const resolvedProfile = profile ?? await authApi.me();
+    setUser(resolvedProfile);
+    return resolvedProfile;
   };
 
-  const logout = () => {
-    localStorage.removeItem('access_token');
-    setToken(null);
+  /**
+   * [VULN-30] Nettoyage complet : access token mémoire + onboarding localStorage.
+   */
+  const logout = async (): Promise<void> => {
+    // Nettoyage de l'état local onboarding (localStorage) avant de perdre le user.id
+    if (user?.id) {
+      resetOnboarding(user.id);
+    }
+
+    await authApi.logout().catch(() => {
+      // On déconnecte quand même localement même si le serveur ne répond pas
+    });
+
+    clearAccessToken();
     setUser(null);
   };
 
@@ -53,9 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        token,
         isLoading,
-        isAuthenticated: !!token && !!user,
+        isAuthenticated: !!getAccessToken() && !!user,
         login,
         logout,
       }}
