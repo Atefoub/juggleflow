@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
@@ -34,6 +34,8 @@ export default function StudentListPage() {
   const [selectedClass, setSelectedClass] = useState<SchoolClass | null>(null);
   const [groupFilter, setGroupFilter]   = useState<GroupFilter>('Tous');
   const [search, setSearch]             = useState('');
+  const [addStudentId, setAddStudentId] = useState('');
+  const [addingStudent, setAddingStudent] = useState(false);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState<string | null>(null);
 
@@ -59,20 +61,76 @@ export default function StudentListPage() {
       .catch(() => setError('Impossible de charger les élèves de cette classe.'));
   }, [selectedClass]);
 
-  const filteredStudents = students.filter((s) => {
+  const filteredStudents = useMemo(() => students.filter((s) => {
     const matchesGroup  = groupFilter === 'Tous' || s.groupColor === groupFilter;
     const normalizedSearch = search.trim().toLowerCase();
     const matchesSearch = normalizedSearch === '' ||
       `${s.firstName} ${s.lastName}`.toLowerCase().includes(normalizedSearch);
     return matchesGroup && matchesSearch;
-  });
+  }), [students, groupFilter, search]);
+
+  async function handleAddStudent() {
+    if (!selectedClass) return;
+    const parsed = Number(addStudentId.trim());
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setError("ID élève invalide. Utilise un nombre (ex: 12).");
+      return;
+    }
+
+    setAddingStudent(true);
+    setError(null);
+    try {
+      await teacherApi.addStudentToClass(selectedClass.id, parsed);
+      const updated = await teacherApi.getClassStudents(selectedClass.id);
+      setStudents(updated);
+      setAddStudentId('');
+    } catch {
+      setError("Impossible d'ajouter cet élève (vérifie l'ID et les droits).");
+    } finally {
+      setAddingStudent(false);
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
 
       {/* Header */}
       <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
-        <h1 className="font-display font-bold text-text-primary text-2xl mb-1">Élèves</h1>
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <div>
+            <h1 className="font-display font-bold text-text-primary text-2xl">Élèves</h1>
+            <p className="text-xs text-text-secondary mt-1">
+              {loading ? '…' : `${students.length} élève${students.length !== 1 ? 's' : ''}`}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/teacher/parcours/assigner')}
+            className="shrink-0 px-3 py-2 rounded-xl text-xs font-semibold bg-bg-card border border-border text-text-secondary hover:opacity-85 transition-opacity min-h-11"
+          >
+            + Assigner
+          </button>
+        </div>
+
+        {/* Ajouter un élève (par ID) */}
+        <div className="flex items-center gap-2 mb-4">
+          <input
+            value={addStudentId}
+            onChange={(e) => setAddStudentId(e.target.value)}
+            placeholder="ID élève (ex: 12)"
+            inputMode="numeric"
+            className="flex-1 px-4 py-3 rounded-xl outline-none text-sm min-h-12 bg-bg-input text-text-primary border-[1.5px] border-border"
+          />
+          <button
+            type="button"
+            disabled={addingStudent || !selectedClass}
+            onClick={handleAddStudent}
+            className="px-4 py-3 rounded-xl font-bold text-white text-sm min-h-12 bg-teacher disabled:opacity-50"
+          >
+            {addingStudent ? 'Ajout…' : '+ Ajouter'}
+          </button>
+        </div>
+
         <p className="text-xs text-text-secondary mb-4">
           {loading ? '…' : `${students.length} élève${students.length !== 1 ? 's' : ''}`}
         </p>

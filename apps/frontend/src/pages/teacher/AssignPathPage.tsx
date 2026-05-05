@@ -433,7 +433,7 @@ export default function AssignPathPage() {
         {step < 3 ? (
           <button
             onClick={() => setStep((s) => (s + 1) as Step)}
-            disabled={step === 1 ? !selectedPath : selectedStudentIds.size === 0}
+            disabled={step === 1 ? !selectedPath : false}
             className="flex-1 py-3 rounded-2xl text-sm font-semibold text-white bg-teacher min-h-11 disabled:opacity-40"
           >
             {step === 1 ? 'Continuer →' : 'Confirmer →'}
