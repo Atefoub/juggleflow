@@ -6,9 +6,9 @@ import { studentApi, type StudentStats, type BadgeData, type LearningPath } from
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
-  { label: 'Catalogue',   icon: '🎯', path: '/catalogue' },
-  { label: 'Progression', icon: '📊', path: '/progression' },
-  { label: 'Profil',      icon: '👤', path: '/profil' },
+  { label: 'Catalogue',   icon: '🎯', path: '/student/catalogue' },
+  { label: 'Progression', icon: '📊', path: '/student/progression' },
+  { label: 'Profil',      icon: '👤', path: '/student/profil' },
 ];
 
 const XP_PER_TRICK = 100;
