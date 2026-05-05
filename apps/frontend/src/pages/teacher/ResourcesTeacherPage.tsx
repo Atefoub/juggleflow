@@ -44,7 +44,7 @@ const VIDEO_RESOURCES = [
 
 const GUIDE_RESOURCES = [
   { id: 1, title: 'Guide pédagogique cycle 2 — Jonglage',     pages: '20 pages' },
-  { id: 2, title: 'Progressions EPS — Manipulation d'objets', pages: '15 pages' },
+  { id: 2, title: `Progressions EPS — Manipulation d'objets`, pages: '15 pages' },
 ];
 
 export default function ResourcesTeacherPage() {
