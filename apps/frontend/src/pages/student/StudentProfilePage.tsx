@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
+import { studentApi, type StudentStats, type LearningPath } from '../../api/studentApi';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -10,27 +11,50 @@ const navItems = [
   { label: 'Profil',      icon: '👤', path: '/student/profil' },
 ];
 
-const MOCK_STATS = {
-  tricksLearned: 12,
-  totalTime: '3h 20min',
-  streakDays: 5,
-};
-
-const MOCK_PATH = {
-  name: 'Parcours Débutant',
-  progress: 60,
-  level: 'Débutant',
-};
+const XP_PER_TRICK = 100;
+const XP_MAX = 500;
 
 export default function StudentProfilePage() {
   const { user, logout } = useAuth();
 
+  const [stats, setStats]       = useState<StudentStats | null>(null);
+  const [paths, setPaths]       = useState<LearningPath[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState<string | null>(null);
+
   const [notificationsOn, setNotificationsOn] = useState(true);
   const [darkMode, setDarkMode]               = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      studentApi.getStatistics(),
+      studentApi.getMyLearningPaths(),
+    ])
+      .then(([s, p]) => {
+        setStats(s);
+        setPaths(p);
+      })
+      .catch(() => setError('Impossible de charger les données du profil.'))
+      .finally(() => setLoading(false));
+  }, []);
 
   const initials = user
     ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
     : '??';
+
+  const xp          = (stats?.totalTricksLearned ?? 0) * XP_PER_TRICK;
+  const xpPercent   = Math.min((xp / XP_MAX) * 100, 100);
+  const currentPath = paths[0] ?? null;
+
+  const pathProgressPercent = currentPath && currentPath.stepCount > 0
+    ? Math.round(((stats?.totalTricksLearned ?? 0) / currentPath.stepCount) * 100)
+    : 0;
+
+  // Estimation du temps total en heures (fictif mais calculé)
+  const totalMinutes = (stats?.totalTricksLearned ?? 0) * 15;
+  const totalTimeLabel = totalMinutes >= 60
+    ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}min`
+    : `${totalMinutes}min`;
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -46,49 +70,83 @@ export default function StudentProfilePage() {
             {user ? `${user.firstName} ${user.lastName}` : '—'}
           </p>
           <p className="text-xs text-text-secondary mt-0.5">
-            Élève · Niveau {MOCK_PATH.level}
+            Élève {currentPath ? `· ${currentPath.pathName}` : ''}
           </p>
         </div>
 
-        <div className="flex gap-2 flex-wrap justify-center">
-          <span className="px-3 py-1 rounded-full text-xs bg-bg-card border border-border text-text-secondary">
-            <span role="img" aria-label="école" className="mr-1">🏫</span>
-            École JuggleFlow
-          </span>
-          <span className="px-3 py-1 rounded-full text-xs bg-bg-card border border-border text-text-secondary">
-            <span role="img" aria-label="classe" className="mr-1">📚</span>
-            6ème A
-          </span>
+        {/* XP badge */}
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-bg-card border border-border">
+          <span role="img" aria-label="XP" className="text-sm">⭐</span>
+          <span className="text-sm font-bold text-text-primary">{xp} XP</span>
+          <span className="text-xs text-text-muted">· Bronze</span>
         </div>
       </header>
 
       {/* Content */}
       <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
 
+        {error && (
+          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
+            {error}
+          </div>
+        )}
+
         {/* Stats */}
         <section>
           <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
             Mes statistiques
           </h2>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { value: MOCK_STATS.tricksLearned,          label: 'Figures\napprises', icon: '✅', iconLabel: 'figures apprises' },
-              { value: MOCK_STATS.totalTime,               label: 'Temps\ntotal',      icon: '⏱️', iconLabel: 'temps total'      },
-              { value: `${MOCK_STATS.streakDays}j`,        label: 'Jours\nde suite',   icon: '🔥', iconLabel: 'jours de suite'   },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="p-3 rounded-xl flex flex-col gap-1 bg-bg-card border border-border"
-              >
-                <span role="img" aria-label={stat.iconLabel} className="text-lg">{stat.icon}</span>
-                <span className="font-display text-xl font-bold text-text-primary leading-tight">
-                  {stat.value}
-                </span>
-                <span className="text-[0.6rem] text-text-muted whitespace-pre-line leading-tight">
-                  {stat.label}
-                </span>
+
+          {loading ? (
+            <div className="grid grid-cols-3 gap-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-20 rounded-xl animate-pulse bg-bg-card" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { value: stats?.totalTricksLearned ?? 0, label: 'Figures\napprises', icon: '✅', iconLabel: 'figures apprises' },
+                { value: totalTimeLabel,                  label: 'Temps\nestimé',     icon: '⏱️', iconLabel: 'temps estimé'     },
+                { value: stats?.badgesEarned ?? 0,        label: 'Badges\nobtenus',   icon: '🏅', iconLabel: 'badges obtenus'   },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="p-3 rounded-xl flex flex-col gap-1 bg-bg-card border border-border"
+                >
+                  <span role="img" aria-label={stat.iconLabel} className="text-lg">{stat.icon}</span>
+                  <span className="font-display text-xl font-bold text-text-primary leading-tight">
+                    {stat.value}
+                  </span>
+                  <span className="text-[0.6rem] text-text-muted whitespace-pre-line leading-tight">
+                    {stat.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* XP Progress */}
+        <section>
+          <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
+            Progression XP
+          </h2>
+          <div className="p-4 rounded-2xl bg-bg-card border border-border">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <p className="text-xs text-text-muted mb-0.5">Rang actuel</p>
+                <p className="font-display font-bold text-text-primary text-base">🥉 Bronze</p>
               </div>
-            ))}
+              <div className="text-right">
+                <p className="text-xs text-text-muted mb-0.5">Points XP</p>
+                <p className="font-display font-bold text-brand text-base">{xp} / {XP_MAX}</p>
+              </div>
+            </div>
+            <ProgressBar value={xpPercent} color="linear-gradient(90deg, #8B2BE2, #C724B1)" height="8px" />
+            <p className="text-xs text-text-muted mt-1">
+              {Math.max(0, XP_MAX - xp)} XP pour atteindre le rang Argent
+            </p>
           </div>
         </section>
 
@@ -97,19 +155,32 @@ export default function StudentProfilePage() {
           <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
             Parcours assigné
           </h2>
-          <div className="p-4 rounded-2xl bg-bg-card border border-border">
-            <div className="flex items-center justify-between mb-1">
-              <p className="font-bold text-text-primary text-sm">{MOCK_PATH.name}</p>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-border text-text-secondary">
-                {MOCK_PATH.level}
-              </span>
+          {loading ? (
+            <div className="h-20 rounded-2xl animate-pulse bg-bg-card" />
+          ) : currentPath ? (
+            <div className="p-4 rounded-2xl bg-bg-card border border-border">
+              <div className="flex items-center justify-between mb-1">
+                <p className="font-bold text-text-primary text-sm">{currentPath.pathName}</p>
+                {currentPath.targetLevel && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-border text-text-secondary">
+                    {currentPath.targetLevel}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-text-muted mb-2">
+                {currentPath.stepCount} figure{currentPath.stepCount > 1 ? 's' : ''} · {currentPath.estimatedDurationDays ?? '?'} jours
+              </p>
+              <div className="flex justify-between mb-2">
+                <span className="text-xs text-text-muted">Progression</span>
+                <span className="text-xs text-text-secondary font-bold">{pathProgressPercent}%</span>
+              </div>
+              <ProgressBar value={pathProgressPercent} color="linear-gradient(90deg, #8B2BE2, #C724B1)" height="8px" />
             </div>
-            <div className="flex justify-between mb-2">
-              <span className="text-xs text-text-muted">Progression</span>
-              <span className="text-xs text-text-secondary font-bold">{MOCK_PATH.progress}%</span>
+          ) : (
+            <div className="p-4 rounded-2xl bg-bg-card border border-border text-xs text-text-muted">
+              Aucun parcours assigné pour l'instant.
             </div>
-            <ProgressBar value={MOCK_PATH.progress} color="linear-gradient(90deg, #8B2BE2, #C724B1)" height="8px" />
-          </div>
+          )}
         </section>
 
         {/* Preferences */}

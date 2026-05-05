@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import { catalogueApi, LEVEL_LABELS, scoreToStars, type TrickResponse } from '../../api/catalogueApi';
+import { studentApi } from '../../api/studentApi';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -23,35 +24,8 @@ const XP_BY_LEVEL: Record<string, number> = {
 };
 const XP_NEXT = 500;
 
-// Static badge data displayed on this page (visual only — not from API)
-const BADGE_GROUPS = [
-  {
-    title: 'Badges de niveau',
-    badges: [
-      { id: 'b1', icon: '🥉', label: 'Premiers pas', unlocked: true  },
-      { id: 'b2', icon: '🎯', label: 'Précision',    unlocked: false },
-      { id: 'b3', icon: '🏆', label: 'Champion',     unlocked: false },
-    ],
-  },
-  {
-    title: 'Badges de régularité',
-    badges: [
-      { id: 'b4', icon: '🔥', label: '7 jours',   unlocked: true  },
-      { id: 'b5', icon: '⚡', label: '30 jours',  unlocked: false },
-      { id: 'b6', icon: '💎', label: '100 jours', unlocked: false },
-    ],
-  },
-  {
-    title: 'Badges jalons',
-    badges: [
-      { id: 'b7', icon: '🌱', label: '10 figures', unlocked: true  },
-      { id: 'b8', icon: '🌿', label: '25 figures', unlocked: false },
-      { id: 'b9', icon: '🌳', label: '50 figures', unlocked: false },
-    ],
-  },
-];
-
 type Tab = 'description' | 'conseils' | 'prerequis';
+type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED';
 
 function StarRating({ score }: { score: number }) {
   const stars = scoreToStars(score);
@@ -68,11 +42,13 @@ export default function TrickDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [trick, setTrick]   = useState<TrickResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState<string | null>(null);
-  const [tab, setTab]         = useState<Tab>('description');
-  const [mastered, setMastered] = useState(false);
+  const [trick, setTrick]             = useState<TrickResponse | null>(null);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState<string | null>(null);
+  const [tab, setTab]                 = useState<Tab>('description');
+  const [status, setStatus]           = useState<ProgressStatus>('NOT_STARTED');
+  const [savingStatus, setSavingStatus] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -88,6 +64,23 @@ export default function TrickDetailPage() {
   const xpPercent  = Math.min((xp / XP_NEXT) * 100, 100);
   const levelLabel = LEVEL_LABELS[level] ?? level;
   const chipClass  = LEVEL_CHIP[level] ?? LEVEL_CHIP.Beginner;
+
+  async function handleSetStatus(newStatus: ProgressStatus) {
+    if (!trick) return;
+    setSavingStatus(true);
+    setStatusError(null);
+    try {
+      await studentApi.updateProgress(trick.id, {
+        status: newStatus,
+        masteryScore: newStatus === 'MASTERED' ? 10 : undefined,
+      });
+      setStatus(newStatus);
+    } catch {
+      setStatusError('Impossible de sauvegarder. Réessaie.');
+    } finally {
+      setSavingStatus(false);
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -163,10 +156,26 @@ export default function TrickDetailPage() {
               )}
             </section>
 
+            {/* Status actuel */}
+            {status !== 'NOT_STARTED' && (
+              <div className={[
+                'flex items-center gap-2 p-3 rounded-xl text-sm font-semibold',
+                status === 'MASTERED'    ? 'bg-success/10 border border-success/30 text-success' :
+                status === 'IN_PROGRESS' ? 'bg-cta/10     border border-cta/30     text-cta'     : '',
+              ].join(' ')}>
+                <span>{status === 'MASTERED' ? '✅' : '🔄'}</span>
+                <span>{status === 'MASTERED' ? 'Figure maîtrisée !' : 'Apprentissage en cours'}</span>
+              </div>
+            )}
+
             {/* Session button */}
-            <button className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold text-white bg-linear-to-br from-brand to-brand-end min-h-11 hover:opacity-90 transition-opacity">
+            <button
+              onClick={() => handleSetStatus('IN_PROGRESS')}
+              disabled={status === 'MASTERED' || savingStatus}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold text-white bg-linear-to-br from-brand to-brand-end min-h-11 hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
               <span role="img" aria-label="chronomètre">⏱️</span>
-              Démarrer une session
+              {status === 'IN_PROGRESS' ? 'Continuer la session' : 'Démarrer une session'}
             </button>
 
             {/* XP & Rank */}
@@ -228,6 +237,14 @@ export default function TrickDetailPage() {
                       Garde les yeux fixés sur le point le plus haut de la trajectoire.
                     </p>
                   </div>
+                  {trick.estimatedLearningDuration && (
+                    <div className="flex gap-3 p-3 rounded-xl bg-bg-card border border-border">
+                      <span role="img" aria-label="durée" className="text-lg shrink-0">⏱️</span>
+                      <p className="text-sm text-text-secondary leading-relaxed">
+                        Durée d'apprentissage estimée : <strong className="text-text-primary">{trick.estimatedLearningDuration} minutes</strong> de pratique.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -247,52 +264,33 @@ export default function TrickDetailPage() {
               )}
             </section>
 
-            {/* Badges */}
-            {BADGE_GROUPS.map((group) => (
-              <section key={group.title}>
-                <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
-                  {group.title}
-                </h2>
-                <div className="flex gap-4">
-                  {group.badges.map((badge) => (
-                    <div key={badge.id} className="flex flex-col items-center gap-2">
-                      <div
-                        className={[
-                          'flex items-center justify-center w-14 h-14 rounded-xl text-2xl',
-                          badge.unlocked
-                            ? 'bg-linear-to-br from-brand to-brand-end'
-                            : 'bg-border opacity-40',
-                        ].join(' ')}
-                      >
-                        <span role="img" aria-label={badge.unlocked ? badge.label : 'verrouillé'}>
-                          {badge.unlocked ? badge.icon : '🔒'}
-                        </span>
-                      </div>
-                      <span className={`text-[0.6rem] text-center ${badge.unlocked ? 'text-text-primary' : 'text-text-muted'}`}>
-                        {badge.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ))}
+            {/* Erreur sauvegarde */}
+            {statusError && (
+              <div className="p-3 rounded-xl text-xs text-alert bg-[#2A1020] border border-alert">
+                {statusError}
+              </div>
+            )}
 
-            {/* Mark as mastered */}
+            {/* Boutons de statut */}
             <section className="flex flex-col gap-3">
               <button
-                onClick={() => setMastered(true)}
-                disabled={mastered}
+                onClick={() => handleSetStatus('MASTERED')}
+                disabled={status === 'MASTERED' || savingStatus}
                 className={[
                   'w-full py-3 rounded-2xl text-sm font-semibold min-h-11 transition-opacity',
-                  mastered
+                  status === 'MASTERED'
                     ? 'bg-success/20 text-success border border-success/40 cursor-default'
                     : 'bg-linear-to-br from-brand to-brand-end text-white hover:opacity-90',
                 ].join(' ')}
               >
-                {mastered ? '✅ Figure maîtrisée !' : 'Marquer comme maîtrisée'}
+                {savingStatus ? 'Sauvegarde…' : status === 'MASTERED' ? '✅ Figure maîtrisée !' : 'Marquer comme maîtrisée'}
               </button>
-              {!mastered && (
-                <button className="w-full py-3 rounded-2xl text-sm font-semibold border border-border text-text-secondary bg-bg-card min-h-11 hover:opacity-80 transition-opacity">
+              {status !== 'IN_PROGRESS' && status !== 'MASTERED' && (
+                <button
+                  onClick={() => handleSetStatus('IN_PROGRESS')}
+                  disabled={savingStatus}
+                  className="w-full py-3 rounded-2xl text-sm font-semibold border border-border text-text-secondary bg-bg-card min-h-11 hover:opacity-80 transition-opacity disabled:opacity-50"
+                >
                   Marquer en cours
                 </button>
               )}

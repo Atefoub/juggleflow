@@ -27,6 +27,14 @@ export interface LearningPath {
   trickNames: string[];
 }
 
+export interface TrickProgress {
+  trickId: number;
+  trickName: string;
+  status: 'MASTERED' | 'IN_PROGRESS' | 'NOT_STARTED';
+  masteryScore: number | null;
+  updatedAt: string | null;
+}
+
 export const studentApi = {
   getStatistics: async (): Promise<StudentStats> => {
     const res = await api.get<StudentStats>('/progress/statistics');
@@ -45,6 +53,19 @@ export const studentApi = {
 
   getMyLearningPaths: async (): Promise<LearningPath[]> => {
     const res = await api.get<LearningPath[]>('/tricks/paths');
+    return res.data;
+  },
+
+  getMyProgress: async (): Promise<TrickProgress[]> => {
+    const res = await api.get<TrickProgress[]>('/progress');
+    return res.data;
+  },
+
+  updateProgress: async (trickId: number, data: {
+    status: 'MASTERED' | 'IN_PROGRESS' | 'NOT_STARTED';
+    masteryScore?: number;
+  }): Promise<TrickProgress> => {
+    const res = await api.put<TrickProgress>(`/progress/${trickId}`, data);
     return res.data;
   },
 };
