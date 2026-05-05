@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -18,7 +19,7 @@ interface ConsentStats {
   expires: number;
 }
 
-// ─── Données mockées ──────────────────────────────────────────────────────────
+// ─── Données mockées (à remplacer par un adminApi quand le backend expose ces routes) ──
 
 const MOCK_CLASSES: SchoolClass[] = [
   { id: 1, nom: 'CE1 — Groupe A', niveauScolaire: 'CE1', enseignant: 'Mme Dupont',  nombreEleves: 24, progressionMoyenne: 73, statut: 'actif' },
@@ -54,21 +55,14 @@ function KpiCard({ label, value, sublabel, icon, iconLabel }: KpiCardProps) {
   );
 }
 
-// Barre de progression sans style inline :
-// On utilise des classes Tailwind arbitraires w-[N%].
-// Note : les classes dynamiques doivent être safelisted dans tailwind.config.js
-// si le purge est actif (ex. safelist: [{ pattern: /^w-\[/ }]).
-interface ProgressBarProps {
-  value: number;
-}
-
-function ProgressBar({ value }: ProgressBarProps) {
-  // Arrondi au multiple de 5 le plus proche pour limiter les classes à générer
-  const rounded = Math.round(value / 5) * 5;
-  const widthClass = `w-[${rounded}%]`;
+function ProgressBar({ value }: { value: number }) {
+  const clamped = Math.min(Math.max(value, 0), 100);
   return (
     <div className="w-full bg-[#EBEBEB] rounded-full h-2 overflow-hidden">
-      <div className={`h-2 rounded-full bg-[#555] transition-all duration-500 ${widthClass}`} />
+      <div
+        className="h-2 rounded-full bg-[#555] transition-all duration-500"
+        style={{ width: `${clamped}%` }}
+      />
     </div>
   );
 }
@@ -76,10 +70,11 @@ function ProgressBar({ value }: ProgressBarProps) {
 // ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function AdminDashboardPage() {
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<'classes' | 'rgpd'>('classes');
 
-  const totalEleves       = MOCK_CLASSES.reduce((s, c) => s + c.nombreEleves, 0);
-  const classesActives    = MOCK_CLASSES.filter((c) => c.statut === 'actif').length;
+  const totalEleves        = MOCK_CLASSES.reduce((s, c) => s + c.nombreEleves, 0);
+  const classesActives     = MOCK_CLASSES.filter((c) => c.statut === 'actif').length;
   const progressionGlobale = Math.round(
     MOCK_CLASSES.reduce((s, c) => s + c.progressionMoyenne, 0) / MOCK_CLASSES.length
   );
@@ -94,10 +89,13 @@ export default function AdminDashboardPage() {
           <div className="text-xs text-[#999] uppercase tracking-widest font-semibold mb-0.5">
             Administrateur
           </div>
-          <div className="text-base font-bold text-[#111]">École Jules Ferry</div>
+          <div className="text-base font-bold text-[#111]">
+            {user ? `${user.firstName} ${user.lastName}` : 'École JuggleFlow'}
+          </div>
         </div>
         <button
           type="button"
+          onClick={logout}
           className="h-9 px-4 border border-[#DDD] rounded-lg text-sm font-medium text-[#555] hover:bg-[#F5F5F5] transition-colors"
         >
           Déconnexion
@@ -272,8 +270,8 @@ export default function AdminDashboardPage() {
                 <h3 className="text-sm font-bold text-[#111] mb-4">Export des données</h3>
                 <div className="space-y-3">
                   {[
-                    { fmt: 'CSV', titre: 'Bilan de progression',        detail: 'Toutes les classes · Année en cours', ariaLabel: 'Télécharger le bilan CSV' },
-                    { fmt: 'PDF', titre: 'Registre des consentements',  detail: 'Format PDF signé · RGPD conforme',    ariaLabel: 'Télécharger le registre PDF' },
+                    { fmt: 'CSV', titre: 'Bilan de progression',       detail: 'Toutes les classes · Année en cours', ariaLabel: 'Télécharger le bilan CSV' },
+                    { fmt: 'PDF', titre: 'Registre des consentements', detail: 'Format PDF signé · RGPD conforme',    ariaLabel: 'Télécharger le registre PDF' },
                   ].map(({ fmt, titre, detail, ariaLabel }) => (
                     <div key={fmt} className="flex items-center gap-3 p-3 border border-[#E0E0E0] rounded-lg">
                       <div className="w-9 h-9 bg-[#EBEBEB] border border-[#DDD] rounded-lg flex items-center justify-center text-xs font-bold text-[#666] shrink-0">
