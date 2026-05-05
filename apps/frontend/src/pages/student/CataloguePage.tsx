@@ -93,6 +93,8 @@ function AnimationPreview({ url, name }: { url: string | null; name: string }) {
 
 type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED';
 
+const PROGRESS_UPDATED_EVENT = 'juggleflow:progress-updated';
+
 function ProgressChip({ status }: { status: ProgressStatus }) {
   if (status === 'NOT_STARTED') return null;
   const cfg = status === 'MASTERED'
@@ -213,6 +215,17 @@ export default function CataloguePage() {
       .catch(() => {
         // silencieux : le catalogue reste utilisable sans l'info de progression
       });
+  }, []);
+
+  useEffect(() => {
+    const handler = (evt: Event) => {
+      const { detail } = evt as CustomEvent<{ trickId: number; status: ProgressStatus }>;
+      if (!detail?.trickId || !detail.status) return;
+      setProgressById((prev) => ({ ...prev, [detail.trickId]: detail.status }));
+    };
+
+    window.addEventListener(PROGRESS_UPDATED_EVENT, handler);
+    return () => window.removeEventListener(PROGRESS_UPDATED_EVENT, handler);
   }, []);
 
   const fetchTricks = useCallback(async (pageNum: number, reset: boolean) => {
