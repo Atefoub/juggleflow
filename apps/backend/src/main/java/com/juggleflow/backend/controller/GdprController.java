@@ -40,6 +40,11 @@ import java.util.Map;
  *                     via System.getProperty() / System.getenv(), contournant la gestion
  *                     centralisée Spring Boot. Alignement sur RateLimitFilter :
  *                     injection via @Value("${app.trusted-proxy:false}").
+ *
+ * [FIX-SWAGGER-ALIGN] Route /pending-count renommée en /pending pour correspondre
+ *                     au Swagger généré (summary "Nombre de consentements parentaux
+ *                     manquants"). Les deux noms étaient incohérents entre le path
+ *                     HTTP et la documentation.
  */
 @RestController
 @RequestMapping("/api/admin/gdpr")
@@ -122,10 +127,14 @@ public class GdprController {
   }
 
   /**
-   * GET /api/admin/gdpr/classes/{classId}/consents/pending-count
+   * GET /api/admin/gdpr/classes/{classId}/consents/pending
    * Retourne le nombre de consentements parentaux manquants dans une classe.
+   *
+   * [FIX-SWAGGER-ALIGN] Renommé de /pending-count → /pending pour cohérence
+   * avec le Swagger (le suffixe "-count" était redondant avec le champ
+   * "pendingCount" dans le body de réponse).
    */
-  @GetMapping("/classes/{classId}/consents/pending-count")
+  @GetMapping("/classes/{classId}/consents/pending")
   @Operation(summary = "Nombre de consentements parentaux manquants")
   public ResponseEntity<Map<String, Long>> getPendingCount(@PathVariable Long classId) {
     long count = gdprService.getPendingConsentsCount(classId);
