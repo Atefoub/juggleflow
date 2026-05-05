@@ -3,9 +3,12 @@ import { useAuth } from '../context/AuthContext';
 import { Role } from '../types/auth';
 import LoginPage from '../pages/LoginPage';
 import OnboardingPage from '../pages/student/OnboardingPage';
-import StudentDashboardPage from '../pages/student/DashboardPage';
+import StudentDashboardPage from '../pages/student/StudentDashboardPage';
 import CataloguePage from '../pages/student/CataloguePage';
-import TeacherDashboardPage from '../pages/teacher/DashboardPage';
+import ProgressPage from '../pages/student/Progresspage';
+import StudentProfilePage from '../pages/student/StudentProfilePage';
+import TeacherDashboardPage from '../pages/teacher/TeacherDashboardPage';
+import StudentDetailPage from '../pages/student/StudentDetailPage';
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage';
 import { isOnboardingCompleted } from '../utils/onboarding';
 
@@ -39,7 +42,6 @@ function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
     return <Navigate to={redirectForRole(user.role, user.id)} replace />;
   }
 
-  // Élève: force onboarding tant que non terminé
   if (
     user.role === 'ROLE_ELEVE' &&
     !isOnboardingCompleted(user.id) &&
@@ -73,7 +75,7 @@ export default function AppRouter() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/onboarding" element={<OnboardingRoute />} />
 
-        {/* Élève */}
+        {/* ── Élève ── */}
         <Route
           path="/student/dashboard"
           element={
@@ -82,8 +84,6 @@ export default function AppRouter() {
             </ProtectedRoute>
           }
         />
-
-        {/* Élève — Catalogue */}
         <Route
           path="/student/catalogue"
           element={
@@ -92,8 +92,24 @@ export default function AppRouter() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/student/progression"
+          element={
+            <ProtectedRoute requiredRole={'ROLE_ELEVE'}>
+              <ProgressPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/profil"
+          element={
+            <ProtectedRoute requiredRole={'ROLE_ELEVE'}>
+              <StudentProfilePage />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Enseignant */}
+        {/* ── Enseignant ── */}
         <Route
           path="/teacher/dashboard"
           element={
@@ -102,12 +118,20 @@ export default function AppRouter() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/teacher/eleve/:id"
+          element={
+            <ProtectedRoute requiredRole={'ROLE_ENSEIGNANT'}>
+              <StudentDetailPage />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Administrateur */}
+        {/* ── Administrateur ── */}
         <Route
           path="/admin/dashboard"
           element={
-            <ProtectedRoute requiredRole={'ROLE_ADMINISTRATEUR'}> {/* ✅ corrigé */}
+            <ProtectedRoute requiredRole={'ROLE_ADMINISTRATEUR'}>
               <AdminDashboardPage />
             </ProtectedRoute>
           }
