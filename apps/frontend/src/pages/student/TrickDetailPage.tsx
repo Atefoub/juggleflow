@@ -27,6 +27,8 @@ const XP_NEXT = 500;
 type Tab = 'description' | 'conseils' | 'prerequis';
 type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED';
 
+const PROGRESS_UPDATED_EVENT = 'juggleflow:progress-updated';
+
 function StarRating({ score }: { score: number }) {
   const stars = scoreToStars(score);
   return (
@@ -97,6 +99,10 @@ export default function TrickDetailPage() {
         masteryScore: newStatus === 'MASTERED' ? 10 : undefined,
       });
       setStatus(newStatus);
+
+      window.dispatchEvent(new CustomEvent(PROGRESS_UPDATED_EVENT, {
+        detail: { trickId: trick.id, status: newStatus },
+      }));
     } catch {
       setStatusError('Impossible de sauvegarder. Réessaie.');
     } finally {
