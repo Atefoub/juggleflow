@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import {
   catalogueApi,
@@ -6,6 +7,7 @@ import {
   scoreToStars,
   type TrickResponse,
 } from '../../api/catalogueApi';
+import { studentApi, type TrickProgress } from '../../api/studentApi';
 
 // ── Config ────────────────────────────────────────────────────
 
@@ -89,18 +91,44 @@ function AnimationPreview({ url, name }: { url: string | null; name: string }) {
   );
 }
 
-function TrickCard({ trick, onOpen }: { trick: TrickResponse; onOpen: (t: TrickResponse) => void }) {
+type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED';
+
+function ProgressChip({ status }: { status: ProgressStatus }) {
+  if (status === 'NOT_STARTED') return null;
+  const cfg = status === 'MASTERED'
+    ? { icon: '✅', label: 'Maîtrisée', cls: 'bg-success/10 text-success border border-success/30' }
+    : { icon: '🔄', label: 'En cours',  cls: 'bg-cta/10 text-cta border border-cta/30' };
+
+  return (
+    <span className={`text-[0.55rem] font-bold px-2 py-0.5 rounded-full ${cfg.cls}`}>
+      <span aria-hidden="true">{cfg.icon}</span>{' '}{cfg.label}
+    </span>
+  );
+}
+
+function TrickCard({
+  trick,
+  status,
+  onOpen,
+}: {
+  trick: TrickResponse;
+  status: ProgressStatus;
+  onOpen: (t: TrickResponse) => void;
+}) {
   return (
     <div className="flex items-center gap-4 p-4 rounded-2xl bg-bg-card border border-border">
       <AnimationPreview url={trick.jugglingLabAnimationUrl} name={trick.name} />
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 mb-1">
           <p className="font-bold text-white text-sm leading-tight truncate">{trick.name}</p>
-          {trick.popular && (
-            <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full shrink-0 bg-[#1A1208] text-cta border border-[#FF7A0033]">
-              <span role="img" aria-label="Populaire">🔥</span>{' '}Populaire
-            </span>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            <ProgressChip status={status} />
+            {trick.popular && (
+              <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full bg-[#1A1208] text-cta border border-[#FF7A0033]">
+                <span role="img" aria-label="Populaire">🔥</span>{' '}Populaire
+              </span>
+            )}
+          </div>
         </div>
         <DifficultyChip level={trick.levelName} />
         <div className="mt-1.5 mb-2">
@@ -144,121 +172,21 @@ function TrickCardSkeleton() {
   );
 }
 
-function TrickDetailDrawer({ trick, onClose }: { trick: TrickResponse | null; onClose: () => void }) {
-  useEffect(() => {
-    document.body.style.overflow = trick ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [trick]);
-
-  if (!trick) return null;
-
-  return (
-    <>
-      <div onClick={onClose} className="fixed inset-0 z-40 bg-black/70" aria-hidden="true" />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Détail de la figure : ${trick.name}`}
-        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-y-auto bg-[#0D1235] border border-border max-w-107.5 mx-auto max-h-[85vh]"
-      >
-        <div className="flex justify-center pt-3 pb-2">
-          <div className="w-10 h-1 rounded-full bg-border" />
-        </div>
-        <div className="px-5 pb-10">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h2 className="font-display text-xl font-bold text-white leading-tight mb-1">{trick.name}</h2>
-              <div className="flex items-center gap-2">
-                <DifficultyChip level={trick.levelName} />
-                {trick.categoryName && (
-                  <span className="text-[0.6rem] text-text-muted">{trick.categoryName}</span>
-                )}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Fermer le détail"
-              className="flex items-center justify-center w-9 h-9 rounded-xl bg-border text-text-secondary text-sm"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div className="flex items-center justify-center rounded-2xl mb-5 bg-bg-input h-45">
-            {trick.jugglingLabAnimationUrl ? (
-              <iframe
-                src={trick.jugglingLabAnimationUrl}
-                title={`Animation ${trick.name}`}
-                className="w-full h-45 border-0 rounded-2xl bg-bg-input"
-                scrolling="no"
-              />
-            ) : (
-              <span className="text-5xl" aria-hidden="true">🤹</span>
-            )}
-          </div>
-
-          <div className="flex gap-3 mb-5">
-            <div className="flex-1 p-3 rounded-xl text-center bg-bg-card border border-border">
-              <div className="font-display text-xl font-bold text-white mb-0.5">{trick.difficultyScore}/10</div>
-              <div className="text-[0.65rem] text-text-muted">Difficulté</div>
-            </div>
-            {trick.estimatedLearningDuration && (
-              <div className="flex-1 p-3 rounded-xl text-center bg-bg-card border border-border">
-                <div className="font-display text-xl font-bold text-white mb-0.5">{trick.estimatedLearningDuration}min</div>
-                <div className="text-[0.65rem] text-text-muted">Apprentissage</div>
-              </div>
-            )}
-            {trick.siteswap && (
-              <div className="flex-1 p-3 rounded-xl text-center bg-bg-card border border-border">
-                <div className="font-display text-base font-bold text-white mb-0.5"><code>{trick.siteswap}</code></div>
-                <div className="text-[0.65rem] text-text-muted">Siteswap</div>
-              </div>
-            )}
-          </div>
-
-          <section className="mb-5">
-            <h3 className="font-display font-bold text-white text-sm uppercase tracking-wider mb-2">Description</h3>
-            <p className="text-sm leading-relaxed text-text-secondary">{trick.description}</p>
-          </section>
-
-          {trick.prerequisiteNames.length > 0 && (
-            <section className="mb-6">
-              <h3 className="font-display font-bold text-white text-sm uppercase tracking-wider mb-2">Prérequis</h3>
-              <div className="flex flex-wrap gap-2">
-                {trick.prerequisiteNames.map((name) => (
-                  <span key={name} className="px-3 py-1 rounded-lg text-xs font-semibold bg-border text-text-secondary">{name}</span>
-                ))}
-              </div>
-            </section>
-          )}
-
-          <button
-            type="button"
-            className="w-full py-3 min-h-12 rounded-xl font-bold text-white text-sm bg-linear-to-br from-[#8B2BE2] to-[#C724B1]"
-          >
-            Commencer cette figure →
-          </button>
-        </div>
-      </div>
-    </>
-  );
-}
-
 // ── Page principale ────────────────────────────────────────────
 
 export default function CataloguePage() {
+  const navigate = useNavigate();
   const [search, setSearch]                   = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [activeFilter, setActiveFilter]       = useState<FilterLevel>('Tous');
   const [tricks, setTricks]                   = useState<TrickResponse[]>([]);
   const [popular, setPopular]                 = useState<TrickResponse[]>([]);
+  const [progressById, setProgressById]       = useState<Record<number, ProgressStatus>>({});
   const [loading, setLoading]                 = useState(true);
   const [loadingMore, setLoadingMore]         = useState(false);
   const [error, setError]                     = useState<string | null>(null);
   const [page, setPage]                       = useState(0);
   const [hasMore, setHasMore]                 = useState(true);
-  const [selectedTrick, setSelectedTrick]     = useState<TrickResponse | null>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -270,6 +198,21 @@ export default function CataloguePage() {
 
   useEffect(() => {
     catalogueApi.getPopular().then(setPopular).catch(() => { /* empty */ });
+  }, []);
+
+  useEffect(() => {
+    studentApi
+      .getMyProgress()
+      .then((progress: TrickProgress[]) => {
+        const next: Record<number, ProgressStatus> = {};
+        for (const p of progress) {
+          next[p.trickId] = p.status;
+        }
+        setProgressById(next);
+      })
+      .catch(() => {
+        // silencieux : le catalogue reste utilisable sans l'info de progression
+      });
   }, []);
 
   const fetchTricks = useCallback(async (pageNum: number, reset: boolean) => {
@@ -356,7 +299,7 @@ export default function CataloguePage() {
                 <button
                   type="button"
                   key={trick.id}
-                  onClick={() => setSelectedTrick(trick)}
+                  onClick={() => navigate(`/student/trick/${trick.id}`)}
                   className="shrink-0 p-3 rounded-2xl text-left transition-opacity hover:opacity-80 w-35 bg-bg-card border border-border"
                   aria-label={`Voir la figure populaire : ${trick.name}`}
                 >
@@ -372,7 +315,10 @@ export default function CataloguePage() {
                       <span className="text-3xl" aria-hidden="true">🤹</span>
                     )}
                   </div>
-                  <p className="font-bold text-white text-xs mb-1 truncate" title={trick.name}>{trick.name}</p>
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <p className="font-bold text-white text-xs truncate" title={trick.name}>{trick.name}</p>
+                    <ProgressChip status={progressById[trick.id] ?? 'NOT_STARTED'} />
+                  </div>
                   <DifficultyChip level={trick.levelName} />
                 </button>
               ))}
@@ -411,7 +357,14 @@ export default function CataloguePage() {
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                {tricks.map((trick) => <TrickCard key={trick.id} trick={trick} onOpen={setSelectedTrick} />)}
+                {tricks.map((trick) => (
+                  <TrickCard
+                    key={trick.id}
+                    trick={trick}
+                    status={progressById[trick.id] ?? 'NOT_STARTED'}
+                    onOpen={(t) => navigate(`/student/trick/${t.id}`)}
+                  />
+                ))}
               </div>
             )}
 
@@ -435,7 +388,6 @@ export default function CataloguePage() {
         )}
       </main>
 
-      <TrickDetailDrawer trick={selectedTrick} onClose={() => setSelectedTrick(null)} />
       <BottomNav items={navItems} />
     </div>
   );
