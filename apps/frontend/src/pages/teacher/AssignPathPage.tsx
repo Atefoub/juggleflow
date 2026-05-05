@@ -50,7 +50,10 @@ export default function AssignPathPage() {
 
   useEffect(() => {
     if (!selectedClass) return;
-    teacherApi.getClassStudents(selectedClass.id).then(setStudents).catch(() => {});
+    teacherApi
+      .getClassStudents(selectedClass.id)
+      .then(setStudents)
+      .catch(() => setError('Impossible de charger les élèves de cette classe.'));
   }, [selectedClass]);
 
   const filteredPaths = MOCK_PATHS.filter(
