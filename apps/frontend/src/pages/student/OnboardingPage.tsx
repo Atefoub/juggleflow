@@ -67,7 +67,7 @@ export default function OnboardingPage() {
               key={level.value}
               onClick={() => setSelected(level.value)}
               className={[
-                'flex items-center gap-4 p-4 rounded-2xl text-left transition-all min-h-[72px]',
+                'flex items-center gap-4 p-4 rounded-2xl text-left transition-all min-h-18',
                 isSelected
                   ? 'bg-[#1A0E2E] border-2 border-brand'
                   : 'bg-bg-card border-2 border-border',
