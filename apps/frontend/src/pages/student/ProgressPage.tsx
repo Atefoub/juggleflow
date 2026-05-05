@@ -1,8 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
-import { studentApi, type StudentStats, type BadgeData } from '../../api/studentApi';
+import {
+  studentApi,
+  type StudentStats,
+  type BadgeData,
+  type TrickProgress,
+} from '../../api/studentApi';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -21,14 +27,76 @@ const STREAK_BADGES = [
   { id: 's4', name: '30 days', icon: '💎', requirement: 30 },
 ];
 
-const MOCK_STREAK = 5;
+type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED';
+
+const PROGRESS_UPDATED_EVENT = 'juggleflow:progress-updated';
+
+const STATUS_BADGE: Record<ProgressStatus, { label: string; cls: string; icon: string }> = {
+  MASTERED: {
+    icon: '✅',
+    label: 'Maîtrisée',
+    cls: 'bg-success/10 text-success border border-success/30',
+  },
+  IN_PROGRESS: {
+    icon: '🔄',
+    label: 'En cours',
+    cls: 'bg-cta/10 text-cta border border-cta/30',
+  },
+  NOT_STARTED: {
+    icon: '🔒',
+    label: 'Non commencée',
+    cls: 'bg-border/40 text-text-muted border border-border',
+  },
+};
+
+function dayKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function addDays(d: Date, days: number): Date {
+  const next = new Date(d);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+/**
+ * Calcule le streak (jours consécutifs) à partir des dates d'activité.
+ * On considère qu'une activité existe si au moins une figure a été mise à jour ce jour-là.
+ */
+function computeStreakFromProgress(progress: TrickProgress[]): number {
+  const days = new Set<string>();
+  for (const p of progress) {
+    if (!p.updatedAt) continue;
+    const date = new Date(p.updatedAt);
+    if (Number.isNaN(date.getTime())) continue;
+    days.add(dayKey(date));
+  }
+
+  if (days.size === 0) return 0;
+
+  let streak = 0;
+  let cursor = new Date();
+  // Si aucune activité aujourd'hui, on commence à hier (streak "en cours" jusqu'au dernier jour actif).
+  if (!days.has(dayKey(cursor))) {
+    cursor = addDays(cursor, -1);
+  }
+
+  while (days.has(dayKey(cursor))) {
+    streak += 1;
+    cursor = addDays(cursor, -1);
+  }
+
+  return streak;
+}
 
 export default function ProgressPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [stats, setStats]         = useState<StudentStats | null>(null);
   const [badges, setBadges]       = useState<BadgeData[]>([]);
   const [allBadges, setAllBadges] = useState<BadgeData[]>([]);
+  const [trickProgress, setTrickProgress] = useState<TrickProgress[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
 
@@ -37,14 +105,30 @@ export default function ProgressPage() {
       studentApi.getStatistics(),
       studentApi.getUnlockedBadges(),
       studentApi.getAllBadges(),
+      studentApi.getMyProgress(),
     ])
-      .then(([s, unlocked, all]) => {
+      .then(([s, unlocked, all, progress]) => {
         setStats(s);
         setBadges(unlocked);
         setAllBadges(all);
+        setTrickProgress(progress);
       })
       .catch(() => setError('Impossible de charger votre progression. Veuillez réessayer.'))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const handler = (evt: Event) => {
+      const { detail } = evt as CustomEvent<{ trickId: number; status: ProgressStatus }>;
+      if (!detail?.trickId || !detail.status) return;
+      setTrickProgress((prev) => prev.map((p) => (
+        p.trickId === detail.trickId
+          ? { ...p, status: detail.status, updatedAt: new Date().toISOString() }
+          : p
+      )));
+    };
+    window.addEventListener(PROGRESS_UPDATED_EVENT, handler);
+    return () => window.removeEventListener(PROGRESS_UPDATED_EVENT, handler);
   }, []);
 
   const xp        = (stats?.totalTricksLearned ?? 0) * XP_PER_TRICK;
@@ -59,6 +143,18 @@ export default function ProgressPage() {
   const initials = user
     ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
     : '??';
+
+  const sortedTrickProgress = useMemo(() => {
+    const rank: Record<ProgressStatus, number> = { IN_PROGRESS: 0, MASTERED: 1, NOT_STARTED: 2 };
+    return [...trickProgress].sort((a, b) => {
+      const ra = rank[a.status];
+      const rb = rank[b.status];
+      if (ra !== rb) return ra - rb;
+      return a.trickName.localeCompare(b.trickName, 'fr');
+    });
+  }, [trickProgress]);
+
+  const streakDays = useMemo(() => computeStreakFromProgress(trickProgress), [trickProgress]);
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -206,13 +302,13 @@ export default function ProgressPage() {
                 </h2>
                 <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-bg-card border border-border">
                   <span role="img" aria-label="feu" className="text-sm">🔥</span>
-                  <span className="text-xs font-bold text-cta">{MOCK_STREAK} jours</span>
+                  <span className="text-xs font-bold text-cta">{streakDays} jours</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-4 gap-3">
                 {STREAK_BADGES.map((badge) => {
-                  const isUnlocked = MOCK_STREAK >= badge.requirement;
+                  const isUnlocked = streakDays >= badge.requirement;
                   return (
                     <div key={badge.id} className="flex flex-col items-center gap-2">
                       <div
@@ -244,15 +340,58 @@ export default function ProgressPage() {
                 <div className="flex justify-between mb-1">
                   <span className="text-xs text-text-secondary">Progression streak</span>
                   <span className="text-xs text-text-muted">
-                    {MOCK_STREAK} / {STREAK_BADGES[STREAK_BADGES.length - 1].requirement} jours
+                    {streakDays} / {STREAK_BADGES[STREAK_BADGES.length - 1].requirement} jours
                   </span>
                 </div>
                 <ProgressBar
-                  value={Math.min((MOCK_STREAK / STREAK_BADGES[STREAK_BADGES.length - 1].requirement) * 100, 100)}
+                  value={Math.min((streakDays / STREAK_BADGES[STREAK_BADGES.length - 1].requirement) * 100, 100)}
                   color="#FF7A00"
                   height="6px"
                 />
               </div>
+            </section>
+
+            {/* Détail par figure */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
+                  Détail par figure
+                </h2>
+                <span className="text-xs text-text-muted">
+                  {sortedTrickProgress.length} figure{sortedTrickProgress.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+
+              {sortedTrickProgress.length === 0 ? (
+                <div className="p-4 rounded-2xl bg-bg-card border border-border text-xs text-text-muted text-center">
+                  Aucune progression à afficher pour le moment.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {sortedTrickProgress.map((p) => {
+                    const badge = STATUS_BADGE[p.status];
+                    return (
+                      <button
+                        key={p.trickId}
+                        type="button"
+                        onClick={() => navigate(`/student/trick/${p.trickId}`)}
+                        className="w-full text-left flex items-center justify-between gap-3 p-3 rounded-2xl bg-bg-card border border-border hover:opacity-90 transition-opacity"
+                        aria-label={`Voir la figure ${p.trickName}`}
+                      >
+                        <div className="min-w-0">
+                          <p className="font-semibold text-text-primary text-sm truncate">{p.trickName}</p>
+                          <p className="text-[0.6rem] text-text-muted">
+                            {p.updatedAt ? `Mis à jour : ${new Date(p.updatedAt).toLocaleDateString('fr-FR')}` : '—'}
+                          </p>
+                        </div>
+                        <span className={`shrink-0 text-[0.55rem] font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>
+                          <span aria-hidden="true">{badge.icon}</span>{' '}{badge.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           </>
         )}
