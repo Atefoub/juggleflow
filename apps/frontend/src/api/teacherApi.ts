@@ -27,6 +27,24 @@ export interface StudentPathProgress {
   totalTricks: number;
 }
 
+export interface LearningPathSummary {
+  id: number;
+  pathName: string;
+  description: string;
+  targetLevel: string | null;
+  estimatedDurationDays: number | null;
+  stepCount: number;
+  trickNames: string[];
+}
+
+export interface TrickProgressItem {
+  trickId: number;
+  trickName: string;
+  status: 'MASTERED' | 'IN_PROGRESS' | 'NOT_STARTED';
+  masteryScore: number | null;
+  updatedAt: string | null;
+}
+
 export const teacherApi = {
   getMyClasses: async (): Promise<SchoolClass[]> => {
     const res = await api.get<SchoolClass[]>('/enseignant/classes');
@@ -43,6 +61,30 @@ export const teacherApi = {
       `/enseignant/classes/${classId}/paths/${pathId}/progress`
     );
     return res.data;
+  },
+
+  getAllPaths: async (level?: string): Promise<LearningPathSummary[]> => {
+    const res = await api.get<LearningPathSummary[]>('/tricks/paths', {
+      params: level ? { level } : undefined,
+    });
+    return res.data;
+  },
+
+  getPathById: async (id: number): Promise<LearningPathSummary> => {
+    const res = await api.get<LearningPathSummary>(`/tricks/paths/${id}`);
+    return res.data;
+  },
+
+  assignPathToClass: async (classId: number, pathId: number): Promise<LearningPathSummary> => {
+    const res = await api.post<LearningPathSummary>(
+      `/enseignant/classes/${classId}/paths`,
+      { classId, pathId }
+    );
+    return res.data;
+  },
+
+  unassignPathFromClass: async (classId: number, pathId: number): Promise<void> => {
+    await api.delete(`/enseignant/classes/${classId}/paths/${pathId}`);
   },
 };
 
