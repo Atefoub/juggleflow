@@ -37,6 +37,13 @@ export interface LearningPathSummary {
   trickNames: string[];
 }
 
+export interface AssignPathRequest {
+  learningPathId: number;
+  classId: number;
+  startDate: string; // YYYY-MM-DD
+  expectedEndDate?: string; // YYYY-MM-DD
+}
+
 export interface TrickProgressItem {
   trickId: number;
   trickName: string;
@@ -76,15 +83,32 @@ export const teacherApi = {
   },
 
   assignPathToClass: async (classId: number, pathId: number): Promise<LearningPathSummary> => {
+    const today = new Date();
+    const startDate = today.toISOString().slice(0, 10); // YYYY-MM-DD
+
+    const payload: AssignPathRequest = {
+      classId,
+      learningPathId: pathId,
+      startDate,
+    };
+
     const res = await api.post<LearningPathSummary>(
       `/enseignant/classes/${classId}/paths`,
-      { classId, pathId }
+      payload
     );
     return res.data;
   },
 
   unassignPathFromClass: async (classId: number, pathId: number): Promise<void> => {
     await api.delete(`/enseignant/classes/${classId}/paths/${pathId}`);
+  },
+
+  addStudentToClass: async (classId: number, studentId: number): Promise<void> => {
+    await api.post(`/enseignant/classes/${classId}/students/${studentId}`);
+  },
+
+  removeStudentFromClass: async (classId: number, studentId: number): Promise<void> => {
+    await api.delete(`/enseignant/classes/${classId}/students/${studentId}`);
   },
 };
 
