@@ -198,7 +198,7 @@ export default function TrickDetailPage() {
 
             {/* Session button */}
             <button
-              onClick={() => handleSetStatus('IN_PROGRESS')}
+              onClick={() => navigate(`/student/session/${trick.id}`)}
               disabled={status === 'MASTERED' || savingStatus}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold text-white bg-linear-to-br from-brand to-brand-end min-h-11 hover:opacity-90 transition-opacity disabled:opacity-50"
             >

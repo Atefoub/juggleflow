@@ -10,6 +10,7 @@ import OnboardingPage from '../pages/student/OnboardingPage';
 import StudentDashboardPage from '../pages/student/StudentDashboardPage';
 import CataloguePage        from '../pages/student/CataloguePage';
 import TrickDetailPage      from '../pages/student/TrickDetailPage';
+import StudentSessionPage   from '../pages/student/StudentSessionPage';
 import ProgressPage         from '../pages/student/ProgressPage';
 import BadgesPage           from '../pages/student/BadgesPage';
 import StudentProfilePage   from '../pages/student/StudentProfilePage';
@@ -98,6 +99,7 @@ export default function AppRouter() {
         <Route path="/student/dashboard"   element={student(<StudentDashboardPage />)} />
         <Route path="/student/catalogue"   element={student(<CataloguePage />)} />
         <Route path="/student/trick/:id"   element={student(<TrickDetailPage />)} />
+        <Route path="/student/session/:id" element={student(<StudentSessionPage />)} />
         <Route path="/student/progression" element={student(<ProgressPage />)} />
         <Route path="/student/badges"      element={student(<BadgesPage />)} />
         <Route path="/student/profil"      element={student(<StudentProfilePage />)} />
