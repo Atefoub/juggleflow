@@ -68,7 +68,7 @@ export default function TeacherDashboardPage() {
   const blockedStudents = students.filter((s) => s.groupColor === 'ROUGE');
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-[430px] mx-auto pb-20">
+    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
 
       {/* Header */}
       <div className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
@@ -146,7 +146,7 @@ export default function TeacherDashboardPage() {
                   {students.length} élève{students.length > 1 ? 's' : ''} dans la classe
                 </p>
               </div>
-              <div className="flex items-center justify-center w-[72px] h-[72px] rounded-full shrink-0 border-4 border-brand text-xs font-bold text-white">
+              <div className="flex items-center justify-center w-18 h-18 rounded-full shrink-0 border-4 border-brand text-xs font-bold text-white">
                 {avgProgress}%
               </div>
             </div>
@@ -170,7 +170,7 @@ export default function TeacherDashboardPage() {
                           style={{ borderBottom: index < arr.length - 1 ? '1px solid #1E2847' : 'none' }}
                         >
                           <div
-                            className="w-[10px] h-[10px] rounded-full shrink-0"
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
                             style={{ backgroundColor: GROUP_COLOR_MAP[color] }}
                           />
                           <div className="flex-1">
@@ -182,7 +182,7 @@ export default function TeacherDashboardPage() {
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="w-[70px]">
+                            <div className="w-17.5">
                               <ProgressBar value={avg} color={GROUP_COLOR_MAP[color]} height="6px" />
                             </div>
                             <span className="text-sm font-bold text-white min-w-8 text-right">

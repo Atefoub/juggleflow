@@ -32,15 +32,15 @@ const PAGE_SIZE = 10;
 
 const LEVEL_CHIP_CLASS: Record<string, string> = {
   Beginner:     'text-[#22C55E] bg-[rgba(34,197,94,0.12)]',
-  Intermediate: 'text-[#FF7A00] bg-[rgba(255,122,0,0.12)]',
+  Intermediate: 'text-cta bg-[rgba(255,122,0,0.12)]',
   Advanced:     'text-[#8B2BE2] bg-[rgba(139,43,226,0.12)]',
   Expert:       'text-[#FF4D4D] bg-[rgba(255,77,77,0.12)]',
 };
 
 const FILTER_ACTIVE_CLASS: Record<FilterLevel, string> = {
-  Tous:         'bg-gradient-to-br from-[#8B2BE2] to-[#C724B1] text-white border-[#8B2BE2]',
+  Tous:         'bg-linear-to-br from-[#8B2BE2] to-[#C724B1] text-white border-[#8B2BE2]',
   Beginner:     'bg-[rgba(34,197,94,0.12)] text-[#22C55E] border-[#22C55E]',
-  Intermediate: 'bg-[rgba(255,122,0,0.12)] text-[#FF7A00] border-[#FF7A00]',
+  Intermediate: 'bg-[rgba(255,122,0,0.12)] text-cta border-[#FF7A00]',
   Advanced:     'bg-[rgba(139,43,226,0.12)] text-[#8B2BE2] border-[#8B2BE2]',
   Expert:       'bg-[rgba(255,77,77,0.12)] text-[#FF4D4D] border-[#FF4D4D]',
 };
@@ -52,7 +52,7 @@ function StarRating({ score }: { score: number }) {
   return (
     <span className="flex gap-0.5" aria-label={`Difficulté : ${score} sur 10`}>
       {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={i < stars ? 'text-[#FF7A00] text-[0.6rem]' : 'text-border text-[0.6rem]'}>
+        <span key={i} className={i < stars ? 'text-cta text-[0.6rem]' : 'text-border text-[0.6rem]'}>
           ★
         </span>
       ))}
@@ -97,7 +97,7 @@ function TrickCard({ trick, onOpen }: { trick: TrickResponse; onOpen: (t: TrickR
         <div className="flex items-start justify-between gap-2 mb-1">
           <p className="font-bold text-white text-sm leading-tight truncate">{trick.name}</p>
           {trick.popular && (
-            <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full shrink-0 bg-[#1A1208] text-[#FF7A00] border border-[#FF7A0033]">
+            <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full shrink-0 bg-[#1A1208] text-cta border border-[#FF7A0033]">
               <span role="img" aria-label="Populaire">🔥</span>{' '}Populaire
             </span>
           )}
@@ -122,7 +122,7 @@ function TrickCard({ trick, onOpen }: { trick: TrickResponse; onOpen: (t: TrickR
         type="button"
         onClick={() => onOpen(trick)}
         aria-label={`Voir la figure ${trick.name}`}
-        className="shrink-0 flex items-center justify-center w-9 h-9 rounded-xl text-xs font-bold text-white bg-gradient-to-br from-[#8B2BE2] to-[#C724B1] transition-opacity hover:opacity-80"
+        className="shrink-0 flex items-center justify-center w-9 h-9 rounded-xl text-xs font-bold text-white bg-linear-to-br from-[#8B2BE2] to-[#C724B1] transition-opacity hover:opacity-80"
       >
         →
       </button>
@@ -159,7 +159,7 @@ function TrickDetailDrawer({ trick, onClose }: { trick: TrickResponse | null; on
         role="dialog"
         aria-modal="true"
         aria-label={`Détail de la figure : ${trick.name}`}
-        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-y-auto bg-[#0D1235] border border-border max-w-[430px] mx-auto max-h-[85vh]"
+        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-y-auto bg-[#0D1235] border border-border max-w-107.5 mx-auto max-h-[85vh]"
       >
         <div className="flex justify-center pt-3 pb-2">
           <div className="w-10 h-1 rounded-full bg-border" />
@@ -185,12 +185,12 @@ function TrickDetailDrawer({ trick, onClose }: { trick: TrickResponse | null; on
             </button>
           </div>
 
-          <div className="flex items-center justify-center rounded-2xl mb-5 bg-bg-input h-[180px]">
+          <div className="flex items-center justify-center rounded-2xl mb-5 bg-bg-input h-45">
             {trick.jugglingLabAnimationUrl ? (
               <iframe
                 src={trick.jugglingLabAnimationUrl}
                 title={`Animation ${trick.name}`}
-                className="w-full h-[180px] border-0 rounded-2xl bg-bg-input"
+                className="w-full h-45 border-0 rounded-2xl bg-bg-input"
                 scrolling="no"
               />
             ) : (
@@ -235,7 +235,7 @@ function TrickDetailDrawer({ trick, onClose }: { trick: TrickResponse | null; on
 
           <button
             type="button"
-            className="w-full py-3 min-h-12 rounded-xl font-bold text-white text-sm bg-gradient-to-br from-[#8B2BE2] to-[#C724B1]"
+            className="w-full py-3 min-h-12 rounded-xl font-bold text-white text-sm bg-linear-to-br from-[#8B2BE2] to-[#C724B1]"
           >
             Commencer cette figure →
           </button>
@@ -296,7 +296,7 @@ export default function CataloguePage() {
   useEffect(() => { fetchTricks(0, true); }, [fetchTricks]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-[430px] mx-auto pb-20">
+    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
 
       <header className="px-5 pt-12 pb-4 sticky top-0 z-30 bg-[#0D1235] border-b border-border">
         <h1 className="font-display text-xl font-bold text-white mb-4">Catalogue</h1>
@@ -357,7 +357,7 @@ export default function CataloguePage() {
                   type="button"
                   key={trick.id}
                   onClick={() => setSelectedTrick(trick)}
-                  className="shrink-0 p-3 rounded-2xl text-left transition-opacity hover:opacity-80 w-[140px] bg-bg-card border border-border"
+                  className="shrink-0 p-3 rounded-2xl text-left transition-opacity hover:opacity-80 w-35 bg-bg-card border border-border"
                   aria-label={`Voir la figure populaire : ${trick.name}`}
                 >
                   <div className="flex items-center justify-center rounded-xl mb-2 w-full h-20 bg-bg-input" aria-hidden="true">
