@@ -17,7 +17,9 @@ export default function BottomNav({ items }: BottomNavProps) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 flex items-center justify-around h-18 bg-bg-primary border-t border-border pb-2 max-w-[430px] mx-auto">
       {items.map((item) => {
-        const isActive = location.pathname === item.path;
+        const isActive =
+          location.pathname === item.path ||
+          location.pathname.startsWith(`${item.path}/`);
         return (
           <button
             key={item.path}
