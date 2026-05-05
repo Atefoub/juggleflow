@@ -43,7 +43,6 @@ function KpiCard({ label, value, sublabel, icon, iconLabel }: KpiCardProps) {
   return (
     <div className="bg-white border border-[#E0E0E0] rounded-xl p-5 flex items-start gap-4">
       <div className="w-10 h-10 bg-[#F5F5F5] border border-[#E0E0E0] rounded-lg flex items-center justify-center text-lg shrink-0">
-        {/* eslint-disable-next-line jsx-a11y/accessible-emoji */}
         <span role="img" aria-label={iconLabel}>{icon}</span>
       </div>
       <div>

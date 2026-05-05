@@ -68,7 +68,7 @@ export default function StudentListPage() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-[430px] mx-auto pb-20">
+    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
 
       {/* Header */}
       <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">

@@ -80,6 +80,7 @@ export default function ResourcesStudentPage() {
               {VIDEO_TUTORIALS.map((video) => (
                 <div key={video.id} className="rounded-2xl overflow-hidden bg-bg-card border border-border">
                   {/* Thumbnail */}
+                  {/* style intentional — dynamic gradient from data (no Tailwind equivalent) */}
                   <div
                     className="relative h-40 flex items-center justify-center"
                     style={{ background: `linear-gradient(135deg, ${video.thumbColor}40, #111638)` }}
@@ -154,7 +155,7 @@ export default function ResourcesStudentPage() {
             {/* Module card */}
             <div className="rounded-2xl overflow-hidden bg-bg-card border border-border">
               {/* Illustration */}
-              <div className="h-32 flex items-center justify-center bg-linear-to-br from-[#1A0A2E] to-[#0A0E2A] border-b border-border">
+              <div className="h-32 flex items-center justify-center bg-linear-to-br from-[#1A0A2E] to-bg-primary border-b border-border">
                 <span role="img" aria-label="cerveau" className="text-5xl">🧠</span>
               </div>
               <div className="p-4">
