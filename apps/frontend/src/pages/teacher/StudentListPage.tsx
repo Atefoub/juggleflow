@@ -13,7 +13,7 @@ import {
 const navItems = [
   { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
   { label: 'Élèves',         icon: '👦', path: '/teacher/eleves'    },
-  { label: 'Parcours',       icon: '📚', path: '/teacher/parcours'  },
+  { label: 'Parcours',       icon: '📚', path: '/teacher/parcours/assigner'  },
   { label: 'Ressources',     icon: '📁', path: '/teacher/ressources'},
 ];
 
