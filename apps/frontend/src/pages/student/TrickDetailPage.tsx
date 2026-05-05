@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import { catalogueApi, LEVEL_LABELS, scoreToStars, type TrickResponse } from '../../api/catalogueApi';
-import { studentApi } from '../../api/studentApi';
+import { studentApi, type TrickProgress } from '../../api/studentApi';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -52,11 +52,33 @@ export default function TrickDetailPage() {
 
   useEffect(() => {
     if (!id) return;
+    const trickId = Number(id);
+    if (Number.isNaN(trickId)) {
+      setError('Identifiant de figure invalide.');
+      setLoading(false);
+      return;
+    }
     catalogueApi
-      .getTrickById(Number(id))
+      .getTrickById(trickId)
       .then(setTrick)
       .catch(() => setError('Impossible de charger cette figure.'))
       .finally(() => setLoading(false));
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    const trickId = Number(id);
+    if (Number.isNaN(trickId)) return;
+
+    studentApi
+      .getMyProgress()
+      .then((progress: TrickProgress[]) => {
+        const p = progress.find((x) => x.trickId === trickId);
+        if (p?.status) setStatus(p.status);
+      })
+      .catch(() => {
+        // silencieux : la page reste fonctionnelle même si la progression ne charge pas
+      });
   }, [id]);
 
   const level      = trick?.levelName ?? 'Beginner';
