@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import {
   teacherApi,
@@ -30,6 +30,19 @@ type Step = 1 | 2 | 3;
 
 export default function AssignPathPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const preselect = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const classId = params.get('classId');
+    const studentId = params.get('studentId');
+    const pathId = params.get('pathId');
+    return {
+      classId: classId ? Number(classId) : null,
+      studentId: studentId ? Number(studentId) : null,
+      pathId: pathId ? Number(pathId) : null,
+    };
+  }, [location.search]);
 
   const [step, setStep]                 = useState<Step>(1);
   const [paths, setPaths]               = useState<LearningPathSummary[]>([]);
@@ -51,10 +64,16 @@ export default function AssignPathPage() {
   useEffect(() => {
     teacherApi
       .getAllPaths()
-      .then(setPaths)
+      .then((p) => {
+        setPaths(p);
+        if (preselect.pathId) {
+          const found = p.find((x) => x.id === preselect.pathId) ?? null;
+          if (found) setSelectedPath(found);
+        }
+      })
       .catch(() => setError('Impossible de charger les parcours.'))
       .finally(() => setLoadingPaths(false));
-  }, []);
+  }, [preselect.pathId]);
 
   // Chargement des classes
   useEffect(() => {
@@ -62,21 +81,36 @@ export default function AssignPathPage() {
       .getMyClasses()
       .then((cls) => {
         setClasses(cls);
-        if (cls.length > 0) setSelectedClass(cls[0]);
+        if (preselect.classId) {
+          const found = cls.find((c) => c.id === preselect.classId) ?? null;
+          setSelectedClass(found ?? (cls[0] ?? null));
+        } else if (cls.length > 0) {
+          setSelectedClass(cls[0]);
+        }
       })
       .catch(() => setError('Impossible de charger les classes.'))
       .finally(() => setLoadingClasses(false));
-  }, []);
+  }, [preselect.classId]);
 
   // Chargement des élèves quand la classe change
   useEffect(() => {
     if (!selectedClass) return;
     setStudents([]);
+    setSelectedStudentIds(new Set());
     teacherApi
       .getClassStudents(selectedClass.id)
-      .then(setStudents)
+      .then((s) => {
+        setStudents(s);
+        if (preselect.studentId) {
+          const exists = s.some((x) => x.id === preselect.studentId);
+          if (exists) {
+            setSelectedStudentIds(new Set([preselect.studentId]));
+            setStep(2);
+          }
+        }
+      })
       .catch(() => setError('Impossible de charger les élèves de cette classe.'));
-  }, [selectedClass]);
+  }, [selectedClass, preselect.studentId]);
 
   // Filtrage des parcours
   const uniqueLevels = ['Tous', ...Array.from(new Set(paths.map((p) => p.targetLevel ?? 'Tous').filter(Boolean)))];
