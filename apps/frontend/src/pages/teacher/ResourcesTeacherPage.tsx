@@ -44,7 +44,7 @@ const VIDEO_RESOURCES = [
 
 const GUIDE_RESOURCES = [
   { id: 1, title: 'Guide pédagogique cycle 2 — Jonglage',     pages: '20 pages' },
-  { id: 2, title: `Progressions EPS — Manipulation d'objets`, pages: '15 pages' },
+  { id: 2, title: 'Progressions EPS — Manipulation d\'objets', pages: '15 pages' },
 ];
 
 export default function ResourcesTeacherPage() {
@@ -171,13 +171,13 @@ export default function ResourcesTeacherPage() {
                   <p className="font-bold text-text-primary text-sm">{g.title}</p>
                   <p className="text-xs text-text-muted">{g.pages}</p>
                 </div>
-                <a
-                  href="#"
+                <button
+                  type="button"
                   aria-label={`Télécharger ${g.title}`}
-                  className="text-xs px-2 py-1.5 rounded-lg bg-success/10 border border-success/30 text-success font-semibold"
+                  className="text-xs px-2 py-1.5 rounded-lg bg-success/10 border border-success/30 text-success font-semibold hover:opacity-80 transition-opacity"
                 >
                   ↓
-                </a>
+                </button>
               </div>
             ))}
           </div>

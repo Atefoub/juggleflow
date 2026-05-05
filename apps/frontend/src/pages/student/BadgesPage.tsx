@@ -40,7 +40,7 @@ function BadgeItem({ icon, label, unlocked, iconLabel }: {
           {unlocked ? icon : '🔒'}
         </span>
       </div>
-      <span className={`text-[0.65rem] text-center leading-tight max-w-[60px] ${unlocked ? 'text-text-primary' : 'text-text-muted'}`}>
+      <span className={`text-[0.65rem] text-center leading-tight max-w-15 ${unlocked ? 'text-text-primary' : 'text-text-muted'}`}>
         {label}
       </span>
     </div>

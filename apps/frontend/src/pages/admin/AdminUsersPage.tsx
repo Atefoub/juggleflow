@@ -128,6 +128,7 @@ export default function AdminUsersPage() {
             <div key={user.id} className="p-4 rounded-2xl bg-bg-card border border-border">
               <div className="flex items-center gap-3">
                 {/* Avatar */}
+                {/* style intentional — dynamic role color from runtime map */}
                 <div
                   className="flex items-center justify-center w-10 h-10 rounded-full text-xs font-bold text-white shrink-0"
                   style={{ backgroundColor: ROLE_COLORS[user.role] }}

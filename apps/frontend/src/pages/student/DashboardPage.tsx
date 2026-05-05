@@ -3,238 +3,130 @@ import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 
 const navItems = [
-  { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
-  { label: 'Catalogue',   icon: '🎯', path: '/student/catalogue' },
-  { label: 'Progression', icon: '📊', path: '/student/progression' },
-  { label: 'Profil',      icon: '👤', path: '/student/profil' },
+  { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard'  },
+  { label: 'Élèves',         icon: '👦', path: '/teacher/eleves'     },
+  { label: 'Parcours',       icon: '📚', path: '/teacher/parcours'   },
+  { label: 'Ressources',     icon: '📁', path: '/teacher/ressources' },
 ];
 
-// Données mockées
-const mockData = {
-  xp: 240,
-  xpMax: 500,
-  level: 'Débutant',
-  streak: 7,
-  figuresLearned: 12,
-  challenge: {
-    title: 'Jongle 2 balles × 10',
-    description: "Répète l'enchaînement sans interruption",
-  },
-  currentPath: {
-    title: 'Fondamentaux — 3 balles',
-    teacher: 'Mme Dupont',
-    progress: 75,
-    done: 12,
-    total: 16,
-  },
-  badges: [
-    { label: 'Premiers pas', unlocked: true, icon: '⭐' },
-    { label: 'Précision', unlocked: true, icon: '🎯' },
-    { label: 'Champion', unlocked: false, icon: '🏆' },
-  ],
-};
+const mockGroups = [
+  { name: 'Groupe Vert',   count: 8,  progress: 85, color: '#22C55E', status: 'En avance'           },
+  { name: 'Groupe Orange', count: 10, progress: 65, color: '#FF7A00', status: 'Progression normale'  },
+  { name: 'Groupe Rouge',  count: 6,  progress: 45, color: '#FF4D4D', status: 'Nécessite attention'  },
+];
 
-export default function StudentDashboardPage() {
+export default function TeacherDashboardPage() {
   const { user, logout } = useAuth();
-  const initials = user
-    ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
-    : 'LM';
-  const xpPercent = (mockData.xp / mockData.xpMax) * 100;
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{
-        backgroundColor: '#0A0E2A',
-        fontFamily: 'DM Sans, sans-serif',
-        maxWidth: '430px',
-        margin: '0 auto',
-        paddingBottom: '80px',
-      }}
-    >
+    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+
       {/* Header */}
-      <div
-        className="px-5 pt-12 pb-4"
-        style={{ backgroundColor: '#0D1235', borderBottom: '1px solid #1E2847' }}
-      >
-        <div className="flex items-center gap-3 mb-4">
-          <div
-            className="flex items-center justify-center rounded-full font-bold text-white flex-shrink-0"
-            style={{
-              width: '44px',
-              height: '44px',
-              background: 'linear-gradient(135deg, #8B2BE2, #C724B1)',
-              fontSize: '0.85rem',
-            }}
-          >
-            {initials}
+      <div className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl font-bold text-white shrink-0 text-xs bg-teacher">
+            Prof
           </div>
           <div className="flex-1">
-            <p className="text-xs" style={{ color: '#A0AABF' }}>Bonjour</p>
-            <p className="font-bold text-white text-base">
-              {user ? `${user.firstName} ${user.lastName}` : 'Lucas Martin'}
+            <p className="font-display font-bold text-text-primary text-sm">
+              {user ? `${user.firstName} ${user.lastName}` : 'CE1 — Classe de Mme Dupont'}
             </p>
-            <p className="text-xs" style={{ color: '#5A6480' }}>
-              CE1 — École Jules Ferry
+            <p className="text-xs text-text-muted">
+              École Primaire Jules Ferry · 24 élèves
             </p>
           </div>
           <button
             onClick={logout}
-            className="text-xs px-3 py-1 rounded-lg"
-            style={{ backgroundColor: '#1E2847', color: '#A0AABF' }}
+            className="text-xs px-3 py-1 rounded-lg bg-border text-text-secondary hover:opacity-80 transition-opacity"
           >
             Quitter
           </button>
         </div>
-
-        {/* Barre XP */}
-        <div className="flex justify-between mb-2">
-          <span className="text-xs" style={{ color: '#A0AABF' }}>
-            Niveau {mockData.level}
-          </span>
-          <span className="text-xs" style={{ color: '#A0AABF' }}>
-            {mockData.xp} / {mockData.xpMax} XP
-          </span>
-        </div>
-        <ProgressBar
-          value={xpPercent}
-          color="linear-gradient(90deg, #8B2BE2, #C724B1)"
-          height="8px"
-        />
       </div>
 
-      {/* Contenu scrollable */}
+      {/* Contenu */}
       <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
 
-        {/* Défi du jour */}
-        <div
-          className="p-4 rounded-2xl"
-          style={{ backgroundColor: '#111638', border: '1px solid #1E2847' }}
-        >
-          <p
-            className="text-xs font-bold uppercase tracking-widest mb-2"
-            style={{ color: '#FF7A00' }}
-          >
-            Défi du jour
-          </p>
-          <p className="font-bold text-white text-base mb-1">
-            {mockData.challenge.title}
-          </p>
-          <p className="text-xs mb-4" style={{ color: '#A0AABF' }}>
-            {mockData.challenge.description}
-          </p>
-          <button
-            className="w-full py-2 rounded-xl font-bold text-white text-sm"
-            style={{ backgroundColor: '#FF7A00', minHeight: '44px' }}
-          >
-            Commencer le défi
-          </button>
-        </div>
-
-        {/* Parcours en cours */}
-        <div>
-          <div className="flex justify-between items-center mb-3">
-            <h2
-              className="font-bold text-white text-sm uppercase tracking-wider"
-              style={{ fontFamily: 'Syne, sans-serif' }}
-            >
-              Parcours en cours
-            </h2>
-            <button className="text-xs underline" style={{ color: '#A0AABF' }}>
-              Voir tout
-            </button>
+        {/* Progression moyenne */}
+        <div className="p-4 rounded-2xl flex items-center gap-4 bg-bg-card border border-border">
+          <div className="flex-1">
+            <p className="text-xs uppercase tracking-widest mb-1 text-text-muted">
+              Progression moyenne
+            </p>
+            <p className="font-display text-4xl font-bold text-text-primary">68%</p>
+            <p className="text-xs mt-1 text-success">↑ +5% vs semaine dernière</p>
           </div>
-          <div
-            className="p-4 rounded-2xl"
-            style={{ backgroundColor: '#111638', border: '1px solid #1E2847' }}
-          >
-            <p className="font-bold text-white text-sm mb-1">
-              {mockData.currentPath.title}
-            </p>
-            <p className="text-xs mb-3" style={{ color: '#5A6480' }}>
-              Assigné par {mockData.currentPath.teacher} ·{' '}
-              {mockData.currentPath.done}/{mockData.currentPath.total} figures
-            </p>
-            <ProgressBar value={mockData.currentPath.progress} color="#8B2BE2" />
-            <div className="flex justify-between mt-2">
-              <span className="text-xs" style={{ color: '#A0AABF' }}>
-                {mockData.currentPath.progress}% complété
-              </span>
-              <span className="text-xs font-bold text-white">
-                {mockData.currentPath.total - mockData.currentPath.done} restantes
-              </span>
-            </div>
+          {/* Donut simplifié */}
+          <div className="flex items-center justify-center w-18 h-18 rounded-full shrink-0 border-4 border-brand text-xs font-bold text-text-primary">
+            68%
           </div>
         </div>
 
-        {/* Stats rapides */}
+        {/* Groupes d'élèves */}
         <div>
-          <h2
-            className="font-bold text-white text-sm uppercase tracking-wider mb-3"
-            style={{ fontFamily: 'Syne, sans-serif' }}
-          >
-            Mes stats
+          <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
+            Groupes d'élèves
           </h2>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { value: mockData.figuresLearned, label: 'Figures apprises' },
-              { value: mockData.streak, label: 'Jours de suite' },
-              { value: mockData.xp, label: 'Points XP' },
-            ].map((stat) => (
+          <div className="rounded-2xl overflow-hidden border border-border divide-y divide-border">
+            {mockGroups.map((group) => (
               <div
-                key={stat.label}
-                className="p-3 rounded-xl flex flex-col gap-1"
-                style={{ backgroundColor: '#111638', border: '1px solid #1E2847' }}
+                key={group.name}
+                className="flex items-center gap-3 p-4 bg-bg-card"
               >
-                <span
-                  className="text-2xl font-bold text-white"
-                  style={{ fontFamily: 'Syne, sans-serif' }}
-                >
-                  {stat.value}
-                </span>
-                <span className="text-xs" style={{ color: '#5A6480' }}>
-                  {stat.label}
-                </span>
+                {/* Dot — color is runtime data */}
+                <div
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{ backgroundColor: group.color }}
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-text-primary">{group.name}</p>
+                  <p className="text-xs text-text-muted">
+                    {group.count} élèves · {group.status}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-17.5">
+                    <ProgressBar value={group.progress} color={group.color} height="6px" />
+                  </div>
+                  <span className="text-sm font-bold text-text-primary min-w-8 text-right">
+                    {group.progress}%
+                  </span>
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Badges récents */}
+        {/* Alerte élèves bloqués */}
+        <div className="p-4 rounded-2xl flex items-start gap-3 bg-[#1A1020] border border-[#2A1A10] border-l-4 border-l-cta">
+          <span className="text-lg shrink-0" role="img" aria-label="alerte">⚠️</span>
+          <div>
+            <p className="text-sm font-bold text-text-primary mb-1">
+              3 élèves bloqués à l'exercice 4
+            </p>
+            <p className="text-xs text-text-secondary">
+              Lucas M., Tom B., Léa P. · Voir le détail →
+            </p>
+          </div>
+        </div>
+
+        {/* Actions rapides */}
         <div>
-          <h2
-            className="font-bold text-white text-sm uppercase tracking-wider mb-3"
-            style={{ fontFamily: 'Syne, sans-serif' }}
-          >
-            Badges récents
+          <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
+            Actions rapides
           </h2>
-          <div className="flex gap-4">
-            {mockData.badges.map((badge) => (
-              <div
-                key={badge.label}
-                className="flex flex-col items-center gap-2"
+          <div className="flex flex-wrap gap-2">
+            {[
+              '+ Assigner un parcours',
+              '↓ Générer rapport',
+              '+ Ajouter un élève',
+            ].map((action) => (
+              <button
+                key={action}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-bg-card border border-border text-text-secondary min-h-11 hover:border-teacher/50 hover:text-text-primary transition-colors"
               >
-                <div
-                  className="flex items-center justify-center rounded-xl"
-                  style={{
-                    width: '52px',
-                    height: '52px',
-                    background: badge.unlocked
-                      ? 'linear-gradient(135deg, #8B2BE2, #C724B1)'
-                      : '#1E2847',
-                    opacity: badge.unlocked ? 1 : 0.45,
-                    fontSize: '1.4rem',
-                  }}
-                >
-                  {badge.icon}
-                </div>
-                <span
-                  className="text-xs text-center"
-                  style={{ color: badge.unlocked ? '#FFFFFF' : '#5A6480' }}
-                >
-                  {badge.label}
-                </span>
-              </div>
+                {action}
+              </button>
             ))}
           </div>
         </div>
