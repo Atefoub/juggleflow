@@ -17,9 +17,17 @@ export default function BottomNav({ items }: BottomNavProps) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 flex items-center justify-around h-18 bg-bg-primary border-t border-border pb-2 max-w-[430px] mx-auto">
       {items.map((item) => {
+        const pathname = location.pathname;
         const isActive =
-          location.pathname === item.path ||
-          location.pathname.startsWith(`${item.path}/`);
+          pathname === item.path ||
+          pathname.startsWith(`${item.path}/`) ||
+          // Détails élève : /student/trick/:id → onglet "Catalogue" actif
+          (item.path === '/student/catalogue' && (
+            pathname.startsWith('/student/trick/') ||
+            pathname.startsWith('/student/session/')
+          )) ||
+          // Détails enseignant : /teacher/eleve/:id → onglet "Élèves" actif
+          (item.path === '/teacher/eleves' && pathname.startsWith('/teacher/eleve/'));
         return (
           <button
             key={item.path}
