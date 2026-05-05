@@ -211,13 +211,24 @@ export default function StudentDetailPage() {
             {/* Actions */}
             <section className="flex flex-col gap-3">
               <button
-                onClick={() => navigate('/teacher/parcours/assigner')}
+                type="button"
+                onClick={() => {
+                  const params = new URLSearchParams();
+                  if (classId) params.set('classId', String(classId));
+                  if (student?.id) params.set('studentId', String(student.id));
+                  if (selectedPathId) params.set('pathId', String(selectedPathId));
+                  navigate(`/teacher/parcours/assigner?${params.toString()}`);
+                }}
                 className="w-full py-3 rounded-2xl text-sm font-semibold text-white bg-teacher min-h-11 hover:opacity-90 transition-opacity"
               >
                 Assigner un parcours à cet élève
               </button>
-              <button className="w-full py-3 rounded-2xl text-sm font-semibold border border-border text-text-secondary bg-bg-card min-h-11 hover:opacity-80 transition-opacity">
-                Envoyer un message
+              <button
+                type="button"
+                onClick={() => navigate('/teacher/eleves')}
+                className="w-full py-3 rounded-2xl text-sm font-semibold border border-border text-text-secondary bg-bg-card min-h-11 hover:opacity-80 transition-opacity"
+              >
+                Voir la liste des élèves
               </button>
             </section>
           </>
