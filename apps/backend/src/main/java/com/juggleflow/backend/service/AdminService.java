@@ -16,8 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -67,44 +70,62 @@ public class AdminService {
             "lastPracticeAt"
         );
 
-        List<com.juggleflow.backend.model.SchoolClass> classes = schoolClassRepository.findAll();
-        String body = classes.stream()
-            .filter(sc -> schoolYear == null || sc.getSchoolYear() == schoolYear)
-            .flatMap(sc -> studentRepository.findBySchoolClass_Id(sc.getId()).stream().map(student -> {
-                var progressList = userProgressRepository.findByUser_Id(student.getId());
+        // Optimisation : un seul fetch des élèves + une seule requête d'agrégats
+        List<Student> students = studentRepository.findStudentsForProgressExport(schoolYear);
+        if (students.isEmpty()) {
+            return header + "\n";
+        }
 
-                int totalTricks = progressList.size();
-                long mastered = userProgressRepository.countMasteredByUserId(student.getId());
-                long inProgress = userProgressRepository
-                    .findByUser_IdAndStatus(student.getId(),
-                        com.juggleflow.backend.model.UserProgress.ProgressStatus.IN_PROGRESS)
-                    .size();
+        List<Long> studentIds = students.stream().map(Student::getId).toList();
+        Map<Long, UserProgressRepository.ProgressAggregateRow> aggByStudentId =
+            userProgressRepository.aggregateProgressByUserIds(studentIds)
+                .stream()
+                .collect(Collectors.toMap(
+                    UserProgressRepository.ProgressAggregateRow::getUserId,
+                    r -> r
+                ));
 
-                int percent = totalTricks == 0 ? 0 : (int) ((mastered * 100L) / totalTricks);
+        // Grouping par classe (préserve l'info classId/className sans nouvelles requêtes)
+        Map<Long, List<Student>> byClassId = students.stream()
+            .collect(Collectors.groupingBy(s -> s.getSchoolClass().getId()));
 
-                Instant lastPracticeAt = progressList.stream()
-                    .map(com.juggleflow.backend.model.UserProgress::getLastPractice)
-                    .filter(java.util.Objects::nonNull)
-                    .max(Comparator.naturalOrder())
-                    .orElse(null);
+        // Classes triées par nom pour stabilité du CSV
+        List<com.juggleflow.backend.model.SchoolClass> sortedClasses = byClassId.values().stream()
+            .map(list -> list.get(0).getSchoolClass())
+            .sorted(Comparator.comparing(com.juggleflow.backend.model.SchoolClass::getName))
+            .toList();
 
-                return String.join(",",
-                    String.valueOf(sc.getId()),
-                    csvEscape(sc.getName()),
-                    csvEscape(sc.getSchoolLevel()),
-                    String.valueOf(sc.getSchoolYear()),
-                    String.valueOf(student.getId()),
-                    csvEscape(student.getFirstName()),
-                    csvEscape(student.getLastName()),
-                    String.valueOf(totalTricks),
-                    String.valueOf(mastered),
-                    String.valueOf(inProgress),
-                    String.valueOf(percent),
-                    csvEscape(lastPracticeAt != null ? lastPracticeAt.toString() : "")
-                );
-            }))
-            .reduce((a, b) -> a + "\n" + b)
-            .orElse("");
+        String body = sortedClasses.stream()
+            .flatMap(sc -> {
+                List<Student> classStudents = byClassId.getOrDefault(sc.getId(), List.of());
+                return classStudents.stream()
+                    .sorted(Comparator.comparing(Student::getLastName).thenComparing(Student::getFirstName))
+                    .map(student -> {
+                        UserProgressRepository.ProgressAggregateRow agg = aggByStudentId.get(student.getId());
+
+                        long totalTricks = agg != null ? agg.getTotalTricks() : 0;
+                        long mastered = agg != null ? agg.getMasteredTricks() : 0;
+                        long inProgress = agg != null ? agg.getInProgressTricks() : 0;
+                        int percent = totalTricks == 0 ? 0 : (int) ((mastered * 100L) / totalTricks);
+                        Instant lastPracticeAt = agg != null ? agg.getLastPracticeAt() : null;
+
+                        return String.join(",",
+                            String.valueOf(sc.getId()),
+                            csvEscape(sc.getName()),
+                            csvEscape(sc.getSchoolLevel()),
+                            String.valueOf(sc.getSchoolYear()),
+                            String.valueOf(student.getId()),
+                            csvEscape(student.getFirstName()),
+                            csvEscape(student.getLastName()),
+                            String.valueOf(totalTricks),
+                            String.valueOf(mastered),
+                            String.valueOf(inProgress),
+                            String.valueOf(percent),
+                            csvEscape(lastPracticeAt != null ? lastPracticeAt.toString() : "")
+                        );
+                    });
+            })
+            .collect(Collectors.joining("\n"));
 
         if (body.isBlank()) {
             return header + "\n";
