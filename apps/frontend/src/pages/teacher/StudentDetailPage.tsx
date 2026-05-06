@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import {
@@ -8,8 +8,8 @@ import {
   GROUP_LABEL_MAP,
   type StudentSummary,
   type LearningPathSummary,
+  type StudentPathProgress,
 } from '../../api/teacherApi';
-import { studentApi, type TrickProgress } from '../../api/studentApi';
 
 const navItems = [
   { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
@@ -27,9 +27,21 @@ const STATUS_CONFIG = {
 export default function StudentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const query = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const classId = useMemo(() => {
+    const raw = query.get('classId');
+    return raw ? Number(raw) : null;
+  }, [query]);
+  const pathId = useMemo(() => {
+    const raw = query.get('pathId');
+    return raw ? Number(raw) : null;
+  }, [query]);
 
   const [student, setStudent]   = useState<StudentSummary | null>(null);
   const [paths, setPaths]       = useState<LearningPathSummary[]>([]);
+  const [pathProgress, setPathProgress] = useState<StudentPathProgress | null>(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
 
@@ -44,10 +56,14 @@ export default function StudentDetailPage() {
         // 1. Trouver l'élève dans toutes les classes
         const classes = await teacherApi.getMyClasses();
         let found: StudentSummary | null = null;
+        let foundClassId: number | null = null;
         for (const cls of classes) {
           const students = await teacherApi.getClassStudents(cls.id);
           found = students.find((s) => s.id === Number(id)) ?? null;
-          if (found) break;
+          if (found) {
+            foundClassId = cls.id;
+            break;
+          }
         }
         if (!found) {
           setError('Élève introuvable.');
@@ -58,6 +74,16 @@ export default function StudentDetailPage() {
         // 2. Charger les parcours disponibles
         const allPaths = await teacherApi.getAllPaths();
         setPaths(allPaths);
+
+        // 3. Si on a un contexte (classId + pathId), charger la progression sur CE parcours
+        const effectiveClassId = (Number.isFinite(classId ?? NaN) ? classId : foundClassId) ?? null;
+        if (effectiveClassId && Number.isFinite(pathId ?? NaN)) {
+          const all = await teacherApi.getStudentProgress(effectiveClassId, pathId as number);
+          const me = all.find((p) => p.studentId === Number(id)) ?? null;
+          setPathProgress(me);
+        } else {
+          setPathProgress(null);
+        }
       } catch {
         setError("Impossible de charger les données de l'élève.");
       } finally {
@@ -65,13 +91,11 @@ export default function StudentDetailPage() {
       }
     };
     load();
-  }, [id]);
+  }, [id, classId, pathId]);
 
-  // Calculs à partir des données disponibles
-  const tricksLearned   = 0; // sera affiché depuis l'API
-  const daysActive      = student?.lastActivityAt
-    ? Math.max(1, Math.ceil((Date.now() - new Date(student.lastActivityAt).getTime()) / (1000 * 60 * 60 * 24)))
-    : 0;
+  const selectedPath = pathId
+    ? paths.find((p) => p.id === pathId) ?? null
+    : null;
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -208,6 +232,57 @@ export default function StudentDetailPage() {
               </section>
             )}
 
+            {/* Progression sur le parcours (si contexte fourni) */}
+            {pathId && (
+              <section>
+                <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
+                  Progression sur le parcours
+                </h2>
+
+                {selectedPath && (
+                  <div className="p-4 rounded-2xl bg-bg-card border border-border mb-3">
+                    <p className="font-bold text-text-primary text-sm">{selectedPath.pathName}</p>
+                    <p className="text-xs text-text-muted mt-1">
+                      {selectedPath.stepCount} figure{selectedPath.stepCount > 1 ? 's' : ''}
+                      {selectedPath.targetLevel ? ` · ${selectedPath.targetLevel}` : ''}
+                    </p>
+                    <div className="mt-3">
+                      <ProgressBar value={pathProgress?.completionPercent ?? 0} color={chipColor} height="8px" />
+                    </div>
+                  </div>
+                )}
+
+                {!pathProgress ? (
+                  <div className="p-4 rounded-2xl bg-bg-card border border-border text-sm text-text-secondary">
+                    Aucune donnée de progression pour ce parcours.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {pathProgress.trickDetails.map((t) => {
+                      const key = (t.status as keyof typeof STATUS_CONFIG);
+                      const cfg = STATUS_CONFIG[key] ?? STATUS_CONFIG.NOT_STARTED;
+                      return (
+                        <div
+                          key={t.trickId}
+                          className="p-3 rounded-2xl bg-bg-card border border-border flex items-center justify-between gap-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-text-primary truncate">{t.trickName}</p>
+                            <p className={`text-xs ${cfg.textClass}`}>
+                              <span role="img" aria-label={cfg.label}>{cfg.icon}</span> {cfg.label}
+                            </p>
+                          </div>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${cfg.bgClass}`}>
+                            {cfg.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            )}
+
             {/* Actions */}
             <section className="flex flex-col gap-3">
               <button
@@ -216,7 +291,7 @@ export default function StudentDetailPage() {
                   const params = new URLSearchParams();
                   if (classId) params.set('classId', String(classId));
                   if (student?.id) params.set('studentId', String(student.id));
-                  if (selectedPathId) params.set('pathId', String(selectedPathId));
+                  if (pathId) params.set('pathId', String(pathId));
                   navigate(`/teacher/parcours/assigner?${params.toString()}`);
                 }}
                 className="w-full py-3 rounded-2xl text-sm font-semibold text-white bg-teacher min-h-11 hover:opacity-90 transition-opacity"
