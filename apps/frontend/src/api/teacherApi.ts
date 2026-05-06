@@ -75,6 +75,17 @@ export const teacherApi = {
     return res.data;
   },
 
+  getStudentProgressForStudent: async (
+    classId: number,
+    pathId: number,
+    studentId: number
+  ): Promise<StudentPathProgress> => {
+    const res = await api.get<StudentPathProgress>(
+      `/enseignant/classes/${classId}/paths/${pathId}/students/${studentId}`
+    );
+    return res.data;
+  },
+
   getAllPaths: async (level?: string): Promise<LearningPathSummary[]> => {
     // Alignement backend: les parcours sont exposés sous /api/learning-paths
     const res = await api.get<LearningPathSummary[]>('/learning-paths', {
