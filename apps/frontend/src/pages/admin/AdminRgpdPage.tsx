@@ -60,6 +60,7 @@ export default function AdminRgpdPage() {
   const [search, setSearch] = useState('');
   const [classes, setClasses] = useState<AdminSchoolClass[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [selectedSchoolYear, setSelectedSchoolYear] = useState<number | null>(null);
 
   const [rows, setRows] = useState<ConsentStatusRow[]>([]);
   const [pendingCount, setPendingCount] = useState<number>(0);
@@ -76,6 +77,7 @@ export default function AdminRgpdPage() {
         if (cancelled) return;
         setClasses(data);
         if (data.length > 0) setSelectedClassId(data[0].id);
+        if (data.length > 0) setSelectedSchoolYear(data[0].schoolYear);
       } catch {
         if (!cancelled) setError('Impossible de charger la liste des classes.');
       }
@@ -132,6 +134,12 @@ export default function AdminRgpdPage() {
       `${r.firstName} ${r.lastName}`.toLowerCase().includes(q)
     );
   }, [rows, search]);
+
+  const availableSchoolYears = useMemo(() => {
+    const years = Array.from(new Set(classes.map((c) => c.schoolYear)));
+    years.sort((a, b) => b - a);
+    return years;
+  }, [classes]);
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -320,6 +328,24 @@ export default function AdminRgpdPage() {
           <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
             Export des données
           </h2>
+
+          <div className="p-4 rounded-2xl bg-bg-card border border-border mb-3">
+            <p className="text-xs text-text-muted mb-2">Année scolaire (pour le bilan de progression)</p>
+            <select
+              className="w-full px-3 py-2.5 rounded-xl bg-bg-primary border border-border text-sm text-text-primary outline-none"
+              value={selectedSchoolYear ?? ''}
+              onChange={(e) => setSelectedSchoolYear(Number(e.target.value))}
+              disabled={availableSchoolYears.length === 0}
+            >
+              {availableSchoolYears.length === 0 && (
+                <option value="">Aucune année</option>
+              )}
+              {availableSchoolYears.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+
           <div className="flex flex-col gap-3">
             {[
               {
@@ -372,9 +398,11 @@ export default function AdminRgpdPage() {
                       if (item.id === 'progress-csv') {
                         try {
                           setIsExporting(true);
-                          const csv = await adminApi.exportProgressCsv();
+                          const csv = await adminApi.exportProgressCsv(selectedSchoolYear ?? undefined);
                           downloadText(
-                            'progress_report.csv',
+                            selectedSchoolYear != null
+                              ? `progress_report_${selectedSchoolYear}.csv`
+                              : 'progress_report.csv',
                             csv,
                             'text/csv;charset=utf-8'
                           );
