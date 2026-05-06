@@ -22,9 +22,14 @@ export interface StudentPathProgress {
   studentId: number;
   firstName: string;
   lastName: string;
-  progressionPercent: number;
-  tricksCompleted: number;
-  totalTricks: number;
+  completionPercent: number;
+  masteredCount: number;
+  totalSteps: number;
+  trickDetails: Array<{
+    trickId: number;
+    trickName: string;
+    status: 'MASTERED' | 'IN_PROGRESS' | 'NOT_STARTED' | string;
+  }>;
 }
 
 export interface LearningPathSummary {
