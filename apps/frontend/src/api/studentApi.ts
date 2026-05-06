@@ -52,7 +52,8 @@ export const studentApi = {
   },
 
   getMyLearningPaths: async (): Promise<LearningPath[]> => {
-    const res = await api.get<LearningPath[]>('/tricks/paths');
+    // Alignement backend: les parcours sont exposés sous /api/learning-paths
+    const res = await api.get<LearningPath[]>('/learning-paths');
     return res.data;
   },
 
