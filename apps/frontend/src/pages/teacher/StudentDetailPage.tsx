@@ -30,17 +30,20 @@ export default function StudentDetailPage() {
   const location = useLocation();
 
   const query = useMemo(() => new URLSearchParams(location.search), [location.search]);
-  const classId = useMemo(() => {
+  const classIdFromQuery = useMemo(() => {
     const raw = query.get('classId');
     return raw ? Number(raw) : null;
   }, [query]);
-  const pathId = useMemo(() => {
+  const pathIdFromQuery = useMemo(() => {
     const raw = query.get('pathId');
     return raw ? Number(raw) : null;
   }, [query]);
 
   const [student, setStudent]   = useState<StudentSummary | null>(null);
-  const [paths, setPaths]       = useState<LearningPathSummary[]>([]);
+  const [paths, setPaths]       = useState<LearningPathSummary[]>([]); // catalogue global (fallback)
+  const [assignedPaths, setAssignedPaths] = useState<LearningPathSummary[]>([]);
+  const [effectiveClassId, setEffectiveClassId] = useState<number | null>(null);
+  const [selectedPathId, setSelectedPathId] = useState<number | null>(null);
   const [pathProgress, setPathProgress] = useState<StudentPathProgress | null>(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
@@ -71,14 +74,32 @@ export default function StudentDetailPage() {
         }
         setStudent(found);
 
-        // 2. Charger les parcours disponibles
+        // 2. Charger les parcours disponibles (catalogue global)
         const allPaths = await teacherApi.getAllPaths();
         setPaths(allPaths);
 
-        // 3. Si on a un contexte (classId + pathId), charger la progression sur CE parcours
-        const effectiveClassId = (Number.isFinite(classId ?? NaN) ? classId : foundClassId) ?? null;
-        if (effectiveClassId && Number.isFinite(pathId ?? NaN)) {
-          const all = await teacherApi.getStudentProgress(effectiveClassId, pathId as number);
+        // 3. Déterminer la classe (query > découverte)
+        const resolvedClassId =
+          (Number.isFinite(classIdFromQuery ?? NaN) ? classIdFromQuery : foundClassId) ?? null;
+        setEffectiveClassId(resolvedClassId);
+
+        // 4. Charger les parcours assignés à cette classe (si connu)
+        let assigned: LearningPathSummary[] = [];
+        if (resolvedClassId) {
+          assigned = await teacherApi.getAssignedPathsForClass(resolvedClassId);
+          setAssignedPaths(assigned);
+        } else {
+          setAssignedPaths([]);
+        }
+
+        // 5. Choix du parcours: query > premier assigné > rien
+        const resolvedPathId =
+          (Number.isFinite(pathIdFromQuery ?? NaN) ? (pathIdFromQuery as number) : (assigned[0]?.id ?? null));
+        setSelectedPathId(resolvedPathId);
+
+        // 6. Charger la progression détaillée pour ce parcours (si on a classId + pathId)
+        if (resolvedClassId && resolvedPathId) {
+          const all = await teacherApi.getStudentProgress(resolvedClassId, resolvedPathId);
           const me = all.find((p) => p.studentId === Number(id)) ?? null;
           setPathProgress(me);
         } else {
@@ -91,10 +112,12 @@ export default function StudentDetailPage() {
       }
     };
     load();
-  }, [id, classId, pathId]);
+  }, [id, classIdFromQuery, pathIdFromQuery]);
 
-  const selectedPath = pathId
-    ? paths.find((p) => p.id === pathId) ?? null
+  const selectedPath = selectedPathId
+    ? (assignedPaths.find((p) => p.id === selectedPathId)
+        ?? paths.find((p) => p.id === selectedPathId)
+        ?? null)
     : null;
 
   return (
@@ -232,20 +255,63 @@ export default function StudentDetailPage() {
               </section>
             )}
 
-            {/* Progression sur le parcours (si contexte fourni) */}
-            {pathId && (
+            {/* Progression sur le parcours */}
+            {(assignedPaths.length > 0 || selectedPathId) && (
               <section>
                 <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
                   Progression sur le parcours
                 </h2>
 
+                {assignedPaths.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1 mb-3">
+                    {assignedPaths.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={async () => {
+                          if (!effectiveClassId) return;
+                          setSelectedPathId(p.id);
+                          try {
+                            const all = await teacherApi.getStudentProgress(effectiveClassId, p.id);
+                            const me = all.find((x) => x.studentId === Number(id)) ?? null;
+                            setPathProgress(me);
+                          } catch {
+                            setPathProgress(null);
+                          }
+                        }}
+                        className={[
+                          'shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors',
+                          selectedPathId === p.id
+                            ? 'bg-teacher border-teacher text-white'
+                            : 'bg-bg-card border-border text-text-muted',
+                        ].join(' ')}
+                      >
+                        {p.pathName}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {selectedPath && (
                   <div className="p-4 rounded-2xl bg-bg-card border border-border mb-3">
-                    <p className="font-bold text-text-primary text-sm">{selectedPath.pathName}</p>
-                    <p className="text-xs text-text-muted mt-1">
-                      {selectedPath.stepCount} figure{selectedPath.stepCount > 1 ? 's' : ''}
-                      {selectedPath.targetLevel ? ` · ${selectedPath.targetLevel}` : ''}
-                    </p>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-bold text-text-primary text-sm truncate">{selectedPath.pathName}</p>
+                        <p className="text-xs text-text-muted mt-1">
+                          {selectedPath.stepCount} figure{selectedPath.stepCount > 1 ? 's' : ''}
+                          {selectedPath.targetLevel ? ` · ${selectedPath.targetLevel}` : ''}
+                        </p>
+                      </div>
+                      {effectiveClassId && selectedPathId && (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/teacher/classe/${effectiveClassId}/parcours/${selectedPathId}`)}
+                          className="shrink-0 text-xs px-3 py-1.5 rounded-xl bg-border border border-border text-text-secondary font-semibold"
+                        >
+                          Voir ce parcours →
+                        </button>
+                      )}
+                    </div>
                     <div className="mt-3">
                       <ProgressBar value={pathProgress?.completionPercent ?? 0} color={chipColor} height="8px" />
                     </div>
@@ -289,9 +355,9 @@ export default function StudentDetailPage() {
                 type="button"
                 onClick={() => {
                   const params = new URLSearchParams();
-                  if (classId) params.set('classId', String(classId));
+                  if (effectiveClassId) params.set('classId', String(effectiveClassId));
                   if (student?.id) params.set('studentId', String(student.id));
-                  if (pathId) params.set('pathId', String(pathId));
+                  if (selectedPathId) params.set('pathId', String(selectedPathId));
                   navigate(`/teacher/parcours/assigner?${params.toString()}`);
                 }}
                 className="w-full py-3 rounded-2xl text-sm font-semibold text-white bg-teacher min-h-11 hover:opacity-90 transition-opacity"
