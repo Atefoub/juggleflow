@@ -31,6 +31,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -207,6 +209,31 @@ class LearningPathControllerTest {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.studentId").value(studentId))
       .andExpect(jsonPath("$.trickDetails").isArray());
+  }
+
+  @Test
+  @DisplayName("exportStudentProgressCsv → 200 et CSV téléchargeable")
+  void exportStudentProgressCsv_shouldReturn200_withCsv() throws Exception {
+    String teacherToken = registerAndGetToken("teacher@csv.fr", "teacher");
+    Long classId = createClass(teacherToken);
+
+    LearningPath path = learningPathRepository.save(
+      buildPath("CSV", LearningPath.TargetLevel.BEGINNER));
+
+    AssignPathRequest req = buildAssignRequest(path.getId(), classId);
+    mockMvc.perform(post("/api/enseignant/classes/" + classId + "/paths")
+        .header("Authorization", "Bearer " + teacherToken)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(req)))
+      .andExpect(status().isCreated());
+
+    mockMvc.perform(get("/api/enseignant/classes/" + classId
+        + "/paths/" + path.getId() + "/progress/export")
+        .header("Authorization", "Bearer " + teacherToken))
+      .andExpect(status().isOk())
+      .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
+      .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment")))
+      .andExpect(content().string(org.hamcrest.Matchers.containsString("studentId,firstName,lastName")));
   }
 
   @Test
