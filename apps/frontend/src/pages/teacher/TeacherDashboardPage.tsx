@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
@@ -8,6 +9,7 @@ import {
   GROUP_LABEL_MAP,
   type SchoolClass,
   type StudentSummary,
+  type LearningPathSummary,
 } from '../../api/teacherApi';
 
 const navItems = [
@@ -36,11 +38,15 @@ function averageProgress(students: StudentSummary[]): number {
 
 export default function TeacherDashboardPage() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [classes, setClasses]   = useState<SchoolClass[]>([]);
   const [students, setStudents] = useState<StudentSummary[]>([]);
+  const [assignedPaths, setAssignedPaths] = useState<LearningPathSummary[]>([]);
   const [selectedClass, setSelectedClass] = useState<SchoolClass | null>(null);
   const [loading, setLoading]   = useState(true);
+  const [loadingPaths, setLoadingPaths] = useState(false);
+  const [pathsError, setPathsError] = useState<string | null>(null);
   const [error, setError]       = useState<string | null>(null);
 
   useEffect(() => {
@@ -57,11 +63,34 @@ export default function TeacherDashboardPage() {
   useEffect(() => {
     if (!selectedClass) return;
     setStudents([]);
+    setAssignedPaths([]);
+    setLoadingPaths(true);
+    setPathsError(null);
     teacherApi
       .getClassStudents(selectedClass.id)
       .then(setStudents)
       .catch(() => setError('Impossible de charger les élèves de cette classe.'));
+
+    teacherApi
+      .getAssignedPathsForClass(selectedClass.id)
+      .then(setAssignedPaths)
+      .catch(() => setPathsError("Impossible de charger les parcours de cette classe."))
+      .finally(() => setLoadingPaths(false));
   }, [selectedClass]);
+
+  async function handleUnassign(pathId: number) {
+    if (!selectedClass) return;
+    const ok = window.confirm('Désassigner ce parcours de la classe ?');
+    if (!ok) return;
+
+    try {
+      await teacherApi.unassignPathFromClass(selectedClass.id, pathId);
+      const refreshed = await teacherApi.getAssignedPathsForClass(selectedClass.id);
+      setAssignedPaths(refreshed);
+    } catch {
+      setPathsError("Erreur lors de la désassignation. Veuillez réessayer.");
+    }
+  }
 
   const groups          = groupStudents(students);
   const avgProgress     = averageProgress(students);
@@ -215,6 +244,77 @@ export default function TeacherDashboardPage() {
               </div>
             )}
 
+            {/* Parcours assignés */}
+            {selectedClass && (
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-display font-bold text-white text-sm uppercase tracking-wider">
+                    Parcours assignés
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/teacher/parcours/assigner?classId=${selectedClass.id}`)}
+                    className="text-xs px-3 py-1.5 rounded-xl bg-teacher text-white font-semibold"
+                  >
+                    + Assigner
+                  </button>
+                </div>
+
+                {pathsError && (
+                  <div className="p-3 rounded-2xl text-xs text-alert bg-[#2A1020] border border-alert mb-3">
+                    {pathsError}
+                  </div>
+                )}
+
+                {loadingPaths ? (
+                  <div className="flex flex-col gap-2">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="h-16 rounded-2xl animate-pulse bg-bg-card" />
+                    ))}
+                  </div>
+                ) : assignedPaths.length === 0 ? (
+                  <div className="p-4 rounded-2xl bg-bg-card border border-border text-sm text-text-secondary">
+                    Aucun parcours assigné pour l'instant.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {assignedPaths.map((p) => (
+                      <div
+                        key={p.id}
+                        className="p-4 rounded-2xl bg-bg-card border border-border flex items-start justify-between gap-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-white truncate">{p.pathName}</p>
+                          <p className="text-xs text-text-muted mt-0.5">
+                            {p.stepCount} figure{p.stepCount > 1 ? 's' : ''}
+                            {p.estimatedDurationDays ? ` · ~${p.estimatedDurationDays} jours` : ''}
+                            {p.targetLevel ? ` · ${p.targetLevel}` : ''}
+                          </p>
+                        </div>
+
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/teacher/parcours/assigner?classId=${selectedClass.id}&pathId=${p.id}`)}
+                            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-border border border-border text-text-secondary"
+                          >
+                            Voir
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUnassign(p.id)}
+                            className="px-3 py-1.5 rounded-xl text-xs font-semibold text-alert border border-alert/40 bg-alert/10"
+                          >
+                            Désassigner
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
             {/* Aucune classe */}
             {classes.length === 0 && (
               <div className="p-4 rounded-2xl text-sm bg-bg-card border border-border text-text-secondary">
@@ -228,18 +328,31 @@ export default function TeacherDashboardPage() {
                 Actions rapides
               </h2>
               <div className="flex flex-wrap gap-2">
-                {[
-                  '+ Assigner un parcours',
-                  '↓ Générer rapport',
-                  '+ Ajouter un élève',
-                ].map((action) => (
-                  <button
-                    key={action}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold min-h-11 bg-bg-card border-[1.5px] border-border text-text-secondary"
-                  >
-                    {action}
-                  </button>
-                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedClass) navigate(`/teacher/parcours/assigner?classId=${selectedClass.id}`);
+                    else navigate('/teacher/parcours/assigner');
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold min-h-11 bg-bg-card border-[1.5px] border-border text-text-secondary"
+                >
+                  + Assigner un parcours
+                </button>
+
+                <button
+                  type="button"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold min-h-11 bg-bg-card border-[1.5px] border-border text-text-secondary"
+                >
+                  ↓ Générer rapport
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/teacher/eleves')}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold min-h-11 bg-bg-card border-[1.5px] border-border text-text-secondary"
+                >
+                  + Ajouter un élève
+                </button>
               </div>
             </div>
           </>

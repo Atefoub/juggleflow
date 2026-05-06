@@ -78,6 +78,14 @@ export const teacherApi = {
     return res.data;
   },
 
+  /**
+   * Parcours déjà assignés à une classe (vue enseignant).
+   */
+  getAssignedPathsForClass: async (classId: number): Promise<LearningPathSummary[]> => {
+    const res = await api.get<LearningPathSummary[]>(`/enseignant/classes/${classId}/paths`);
+    return res.data;
+  },
+
   getPathById: async (id: number): Promise<LearningPathSummary> => {
     const res = await api.get<LearningPathSummary>(`/learning-paths/${id}`);
     return res.data;
