@@ -2,6 +2,7 @@ package com.juggleflow.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.juggleflow.backend.dto.RegisterRequest;
+import com.juggleflow.backend.dto.SchoolClassRequest;
 import com.juggleflow.backend.model.Administrator;
 import com.juggleflow.backend.repository.GdprConsentRepository;
 import com.juggleflow.backend.repository.SchoolClassRepository;
@@ -25,6 +26,7 @@ import org.springframework.web.context.WebApplicationContext;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -99,6 +101,58 @@ class AdminControllerTest {
             .andExpect(status().isForbidden());
     }
 
+    @Test
+    @DisplayName("GET /api/admin/classes → 200 (admin) et contient la classe créée")
+    void getAllClasses_shouldReturn200_andContainCreatedClass_whenAdmin() throws Exception {
+        String adminToken = createAdminAndLogin("admin@class.fr");
+        String teacherToken = registerAndGetToken("teacher@class.fr", "teacher");
+
+        Long classId = createClass(teacherToken, "CE1 — Admin", "CE1", 2026);
+
+        mockMvc.perform(get("/api/admin/classes")
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$[?(@.id==" + classId + ")]").exists());
+    }
+
+    @Test
+    @DisplayName("GET /api/admin/classes → 403 si non admin")
+    void getAllClasses_shouldReturn403_whenNotAdmin() throws Exception {
+        String teacherToken = registerAndGetToken("teacher2@class.fr", "teacher");
+
+        mockMvc.perform(get("/api/admin/classes")
+                .header("Authorization", "Bearer " + teacherToken))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /api/admin/users → 200 (admin) et retourne des rôles + consentement élève")
+    void getAllUsers_shouldReturn200_andIncludeStudentConsent_whenAdmin() throws Exception {
+        String adminToken = createAdminAndLogin("admin@users.fr");
+        registerAndGetToken("teacher@users.fr", "teacher");
+        String studentToken = registerAndGetToken("student@users.fr", "student");
+
+        // Sans consentement parental enregistré => missing attendu côté AdminUserResponse
+        Long studentId = getUserId(studentToken);
+
+        mockMvc.perform(get("/api/admin/users")
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$[?(@.id==" + studentId + ")].parentalConsentStatus").value("missing"));
+    }
+
+    @Test
+    @DisplayName("GET /api/admin/users → 403 si non admin")
+    void getAllUsers_shouldReturn403_whenNotAdmin() throws Exception {
+        String teacherToken = registerAndGetToken("teacher3@users.fr", "teacher");
+
+        mockMvc.perform(get("/api/admin/users")
+                .header("Authorization", "Bearer " + teacherToken))
+            .andExpect(status().isForbidden());
+    }
+
     // ── Helpers ──────────────────────────────────────────────────
 
     private String registerAndGetToken(String email, String role) throws Exception {
@@ -142,6 +196,33 @@ class AdminControllerTest {
             .get("accessToken").asText();
         assertThat(token).isNotBlank();
         return token;
+    }
+
+    private Long getUserId(String token) throws Exception {
+        MvcResult result = mockMvc.perform(get("/api/auth/me")
+                .header("Authorization", "Bearer " + token))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        return objectMapper.readTree(result.getResponse().getContentAsString())
+            .get("id").asLong();
+    }
+
+    private Long createClass(String teacherToken, String name, String level, int year) throws Exception {
+        SchoolClassRequest req = new SchoolClassRequest();
+        req.setName(name);
+        req.setSchoolLevel(level);
+        req.setSchoolYear(year);
+
+        MvcResult result = mockMvc.perform(post("/api/enseignant/classes")
+                .header("Authorization", "Bearer " + teacherToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+            .andExpect(status().isCreated())
+            .andReturn();
+
+        return objectMapper.readTree(result.getResponse().getContentAsString())
+            .get("id").asLong();
     }
 }
 
