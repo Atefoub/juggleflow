@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
+import { adminApi, type AdminSchoolClass } from '../../api/adminApi';
+import { adminGdprApi, type ConsentStatusRow } from '../../api/adminGdprApi';
 
 const navItems = [
   { label: 'Utilisateurs', icon: '👥', path: '/admin/users' },
@@ -8,12 +10,118 @@ const navItems = [
   { label: 'RGPD',         icon: '🔒', path: '/admin/rgpd' },
 ];
 
-const CONSENT_STATS = { accordes: 45, manquants: 3, expires: 2 };
 const DELETE_DATE   = '30/06/2026';
+
+function formatDate(iso: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('fr-FR');
+}
+
+function toConsentCsv(rows: ConsentStatusRow[]): string {
+  const esc = (v: string) => `"${v.replaceAll('"', '""')}"`;
+  const header = [
+    'userId',
+    'firstName',
+    'lastName',
+    'hasParentalConsent',
+    'consentDate',
+    'policyVersion',
+  ].join(',');
+
+  const body = rows.map((r) => ([
+    String(r.userId),
+    esc(r.firstName ?? ''),
+    esc(r.lastName ?? ''),
+    String(r.hasParentalConsent),
+    esc(r.consentDate ?? ''),
+    esc(r.policyVersion ?? ''),
+  ].join(','))).join('\n');
+
+  return `${header}\n${body}\n`;
+}
+
+function downloadText(filename: string, content: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 
 export default function AdminRgpdPage() {
   const [deleteMode, setDeleteMode] = useState(false);
-  const total = CONSENT_STATS.accordes + CONSENT_STATS.manquants + CONSENT_STATS.expires;
+  const [classes, setClasses] = useState<AdminSchoolClass[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+
+  const [rows, setRows] = useState<ConsentStatusRow[]>([]);
+  const [pendingCount, setPendingCount] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadClasses = async () => {
+      try {
+        const data = await adminApi.getClasses();
+        if (cancelled) return;
+        setClasses(data);
+        if (data.length > 0) setSelectedClassId(data[0].id);
+      } catch {
+        if (!cancelled) setError('Impossible de charger la liste des classes.');
+      }
+    };
+
+    loadClasses();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (selectedClassId == null) return;
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const [status, pending] = await Promise.all([
+          adminGdprApi.getClassConsentStatus(selectedClassId),
+          adminGdprApi.getPendingCount(selectedClassId),
+        ]);
+        if (cancelled) return;
+        setRows(status);
+        setPendingCount(pending);
+      } catch {
+        if (!cancelled) setError('Impossible de charger les consentements RGPD.');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    load();
+    return () => { cancelled = true; };
+  }, [selectedClassId]);
+
+  const consentStats = useMemo(() => {
+    const accordes = rows.filter((r) => r.hasParentalConsent).length;
+    const manquants = rows.filter((r) => !r.hasParentalConsent).length;
+    return { accordes, manquants, expires: 0 };
+  }, [rows]);
+
+  const total = consentStats.accordes + consentStats.manquants + consentStats.expires;
+  const progressValue = total === 0 ? 0 : Math.round((consentStats.accordes / total) * 100);
+
+  const missingRows = useMemo(
+    () => rows.filter((r) => !r.hasParentalConsent),
+    [rows]
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -26,6 +134,29 @@ export default function AdminRgpdPage() {
 
       <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
 
+        {/* Class selector */}
+        <section className="p-4 rounded-2xl bg-bg-card border border-border">
+          <p className="text-xs text-text-muted mb-2">Classe</p>
+          <select
+            className="w-full px-3 py-2.5 rounded-xl bg-bg-primary border border-border text-sm text-text-primary outline-none"
+            value={selectedClassId ?? ''}
+            onChange={(e) => setSelectedClassId(Number(e.target.value))}
+            disabled={classes.length === 0}
+          >
+            {classes.length === 0 && (
+              <option value="">Aucune classe</option>
+            )}
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} ({c.schoolYear})
+              </option>
+            ))}
+          </select>
+          {error && (
+            <p className="text-xs text-alert mt-2">{error}</p>
+          )}
+        </section>
+
         {/* Consent stats */}
         <section>
           <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
@@ -33,9 +164,9 @@ export default function AdminRgpdPage() {
           </h2>
           <div className="grid grid-cols-3 gap-3 mb-3">
             {[
-              { value: CONSENT_STATS.accordes,  label: 'Accordés',  color: 'text-success', bg: 'bg-success/10 border-success/30' },
-              { value: CONSENT_STATS.manquants, label: 'Manquants', color: 'text-alert',   bg: 'bg-alert/10   border-alert/30'   },
-              { value: CONSENT_STATS.expires,   label: 'Expirés',   color: 'text-cta',     bg: 'bg-cta/10     border-cta/30'     },
+              { value: consentStats.accordes,  label: 'Accordés',  color: 'text-success', bg: 'bg-success/10 border-success/30' },
+              { value: consentStats.manquants, label: 'Manquants', color: 'text-alert',   bg: 'bg-alert/10   border-alert/30'   },
+              { value: consentStats.expires,   label: 'Expirés',   color: 'text-cta',     bg: 'bg-cta/10     border-cta/30'     },
             ].map((stat) => (
               <div key={stat.label} className={`p-3 rounded-xl border flex flex-col items-center gap-1 ${stat.bg}`}>
                 <span className={`font-display text-3xl font-bold ${stat.color}`}>{stat.value}</span>
@@ -45,20 +176,67 @@ export default function AdminRgpdPage() {
           </div>
 
           <ProgressBar
-            value={Math.round((CONSENT_STATS.accordes / total) * 100)}
+            value={progressValue}
             color="#22C55E"
             height="6px"
           />
-          <p className="text-xs text-text-muted mt-1">{CONSENT_STATS.accordes} / {total} consentements accordés</p>
+          <p className="text-xs text-text-muted mt-1">
+            {consentStats.accordes} / {total} consentements accordés
+            {selectedClassId != null && (
+              <>
+                {' '}· {pendingCount} en attente
+              </>
+            )}
+          </p>
 
           <div className="flex gap-2 mt-3">
-            <button className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-cta min-h-10 hover:opacity-90 transition-opacity">
-              Relancer ({CONSENT_STATS.manquants})
+            <button
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-cta min-h-10 hover:opacity-90 transition-opacity disabled:opacity-50"
+              disabled={isLoading || missingRows.length === 0}
+              title="À implémenter : relance (email/ENT) via backend"
+            >
+              Relancer ({missingRows.length})
             </button>
             <button className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-border text-text-secondary bg-bg-card min-h-10">
               Voir détails
             </button>
           </div>
+
+          {!isLoading && !error && rows.length > 0 && (
+            <div className="mt-4 p-4 rounded-2xl bg-bg-card border border-border">
+              <p className="text-xs text-text-muted mb-3">Détail (classe sélectionnée)</p>
+              <div className="flex flex-col gap-2">
+                {rows.slice(0, 8).map((r) => (
+                  <div
+                    key={r.userId}
+                    className="flex items-center justify-between p-3 rounded-xl bg-bg-primary border border-border"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm text-text-primary font-semibold truncate">
+                        {r.firstName} {r.lastName}
+                      </p>
+                      <p className="text-xs text-text-muted">
+                        Dernière mise à jour : {formatDate(r.consentDate)}
+                      </p>
+                    </div>
+                    <span className={[
+                      'text-xs font-semibold px-2 py-0.5 rounded-full border shrink-0',
+                      r.hasParentalConsent
+                        ? 'text-success bg-success/10 border-success/30'
+                        : 'text-alert bg-alert/10 border-alert/30',
+                    ].join(' ')}>
+                      {r.hasParentalConsent ? 'Consentement ✓' : 'Consentement ✗'}
+                    </span>
+                  </div>
+                ))}
+                {rows.length > 8 && (
+                  <p className="text-xs text-text-muted text-center pt-2">
+                    + {rows.length - 8} autre(s) élève(s)
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Right to be forgotten */}
@@ -148,6 +326,31 @@ export default function AdminRgpdPage() {
                   <button
                     aria-label={`Télécharger ${item.title}`}
                     className="text-xs px-2 py-1 rounded-lg bg-border text-text-secondary"
+                    disabled={
+                      item.id !== 'pdf'
+                      || selectedClassId == null
+                      || isLoading
+                      || isExporting
+                      || rows.length === 0
+                    }
+                    onClick={async () => {
+                      if (item.id !== 'pdf') return;
+                      if (selectedClassId == null) return;
+                      try {
+                        setIsExporting(true);
+                        const exportRows = await adminGdprApi.exportConsentRegister(selectedClassId);
+                        const csv = toConsentCsv(exportRows);
+                        downloadText(
+                          `consents_class_${selectedClassId}.csv`,
+                          csv,
+                          'text/csv;charset=utf-8'
+                        );
+                      } catch {
+                        setError('Impossible d’exporter le registre des consentements.');
+                      } finally {
+                        setIsExporting(false);
+                      }
+                    }}
                   >
                     ↓
                   </button>
