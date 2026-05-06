@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import BottomNav from '../../components/BottomNav';
+import { adminApi, type AdminUser } from '../../api/adminApi';
 
 const navItems = [
   { label: 'Utilisateurs', icon: '👥', path: '/admin/users' },
@@ -17,40 +18,87 @@ interface AppUser {
   initials: string;
   firstName: string;
   lastName: string;
-  role: 'Enseignant' | 'Élève';
+  role: 'Enseignant' | 'Élève' | 'Admin';
   group: string;
   status: UserStatus;
   consent: ConsentStatus;
 }
 
-const MOCK_USERS: AppUser[] = [
-  { id: 1, initials: 'MD', firstName: 'Mme',  lastName: 'Dupont',   role: 'Enseignant', group: 'CE1',  status: 'Actif',  consent: 'none'    },
-  { id: 2, initials: 'PL', firstName: 'M.',   lastName: 'Lefebvre', role: 'Enseignant', group: 'CM2',  status: 'Actif',  consent: 'none'    },
-  { id: 3, initials: 'LM', firstName: 'Lucas',lastName: 'Martin',   role: 'Élève',      group: 'CE1',  status: 'Actif',  consent: 'ok'      },
-  { id: 4, initials: 'SF', firstName: 'Sara', lastName: 'Fontaine', role: 'Élève',      group: 'CE1',  status: 'Actif',  consent: 'missing' },
-  { id: 5, initials: 'AB', firstName: 'Alex', lastName: 'Bernard',  role: 'Élève',      group: 'CM2',  status: 'Actif',  consent: 'ok'      },
-];
+function makeInitials(firstName: string, lastName: string): string {
+  const fi = firstName?.trim().charAt(0) ?? '';
+  const li = lastName?.trim().charAt(0) ?? '';
+  const initials = `${fi}${li}`.toUpperCase();
+  return initials === '' ? '?' : initials;
+}
 
-const MISSING_CONSENT = MOCK_USERS.filter((u) => u.consent === 'missing');
+function toAppUser(u: AdminUser): AppUser {
+  const role: AppUser['role'] =
+    u.role === 'ROLE_ENSEIGNANT' ? 'Enseignant'
+      : u.role === 'ROLE_ELEVE' ? 'Élève'
+        : 'Admin';
+
+  return {
+    id: u.id,
+    initials: makeInitials(u.firstName, u.lastName),
+    firstName: u.firstName,
+    lastName: u.lastName,
+    role,
+    group: u.className ?? '—',
+    status: u.enabled ? 'Actif' : 'Inactif',
+    consent: u.parentalConsentStatus,
+  };
+}
 
 const ROLE_COLORS: Record<AppUser['role'], string> = {
   Enseignant: '#4068D8',
   Élève:      '#C724B1',
+  Admin:      '#8B2BE2',
 };
 
 export default function AdminUsersPage() {
   const { logout } = useAuth();
   const [roleFilter, setRoleFilter] = useState<Role>('Tous');
   const [search, setSearch]         = useState('');
+  const [users, setUsers] = useState<AppUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filtered = MOCK_USERS.filter((u) => {
-    const matchRole = roleFilter === 'Tous'
-      || (roleFilter === 'Enseignants' && u.role === 'Enseignant')
-      || (roleFilter === 'Élèves' && u.role === 'Élève');
-    const matchSearch = search === ''
-      || `${u.firstName} ${u.lastName}`.toLowerCase().includes(search.toLowerCase());
-    return matchRole && matchSearch;
-  });
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const apiUsers = await adminApi.getUsers();
+        if (cancelled) return;
+        setUsers(apiUsers.map(toAppUser));
+      } catch {
+        if (!cancelled) setError('Impossible de charger les utilisateurs.');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  const filtered = useMemo(() => {
+    return users.filter((u) => {
+      const matchRole = roleFilter === 'Tous'
+        || (roleFilter === 'Enseignants' && u.role === 'Enseignant')
+        || (roleFilter === 'Élèves' && u.role === 'Élève');
+      const matchSearch = search === ''
+        || `${u.firstName} ${u.lastName}`.toLowerCase().includes(search.toLowerCase());
+      return matchRole && matchSearch;
+    });
+  }, [roleFilter, search, users]);
+
+  const missingConsent = useMemo(
+    () => users.filter((u) => u.consent === 'missing'),
+    [users]
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -71,7 +119,7 @@ export default function AdminUsersPage() {
             </button>
           </div>
         </div>
-        <p className="text-xs text-text-muted mb-4">École Jules Ferry · 3 enseignants · 48 élèves</p>
+        <p className="text-xs text-text-muted mb-4">Gestion des utilisateurs</p>
 
         {/* Role filter */}
         <div className="flex gap-2 mb-3">
@@ -107,12 +155,12 @@ export default function AdminUsersPage() {
       <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
 
         {/* Missing consent alert */}
-        {MISSING_CONSENT.length > 0 && (
+        {missingConsent.length > 0 && (
           <div className="flex items-start gap-3 p-4 rounded-2xl bg-[#1A1020] border border-cta/40">
             <span role="img" aria-label="attention" className="text-lg shrink-0">⚠️</span>
             <div className="flex-1">
               <p className="text-sm font-bold text-text-primary mb-0.5">
-                {MISSING_CONSENT.length} consentement{MISSING_CONSENT.length > 1 ? 's' : ''} manquant{MISSING_CONSENT.length > 1 ? 's' : ''}
+                {missingConsent.length} consentement{missingConsent.length > 1 ? 's' : ''} manquant{missingConsent.length > 1 ? 's' : ''}
               </p>
               <p className="text-xs text-text-secondary">Ces élèves ne peuvent pas accéder à l'application.</p>
             </div>
@@ -122,9 +170,18 @@ export default function AdminUsersPage() {
           </div>
         )}
 
+        {isLoading && (
+          <p className="text-sm text-text-muted text-center py-8">Chargement…</p>
+        )}
+
+        {!isLoading && error && (
+          <p className="text-sm text-alert text-center py-8">{error}</p>
+        )}
+
         {/* User list */}
-        <div className="flex flex-col gap-2">
-          {filtered.map((user) => (
+        {!isLoading && !error && (
+          <div className="flex flex-col gap-2">
+            {filtered.map((user) => (
             <div key={user.id} className="p-4 rounded-2xl bg-bg-card border border-border">
               <div className="flex items-center gap-3">
                 {/* Avatar */}
@@ -187,9 +244,10 @@ export default function AdminUsersPage() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
 
-        {filtered.length === 0 && (
+        {!isLoading && !error && filtered.length === 0 && (
           <p className="text-sm text-text-muted text-center py-8">Aucun utilisateur trouvé.</p>
         )}
       </main>
