@@ -11,6 +11,7 @@ import com.juggleflow.backend.repository.SchoolClassRepository;
 import com.juggleflow.backend.repository.StudentRepository;
 import com.juggleflow.backend.repository.TeacherRepository;
 import com.juggleflow.backend.repository.UserRepository;
+import com.juggleflow.backend.model.Student;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -166,6 +167,46 @@ class LearningPathControllerTest {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.length()").value(1))
       .andExpect(jsonPath("$[0].pathName").value("Liste"));
+  }
+
+  @Test
+  @DisplayName("getStudentProgressForStudent → 200 avec détail par figure")
+  void getStudentProgressForStudent_shouldReturn200_withDetails() throws Exception {
+    String teacherToken = registerAndGetToken("teacher@student.fr", "teacher");
+    Long classId = createClass(teacherToken);
+
+    // Crée un élève + l'attache à la classe
+    String studentToken = registerAndGetToken("eleve@student.fr", "student");
+    Long studentId = objectMapper.readTree(
+      mockMvc.perform(get("/api/auth/me")
+          .header("Authorization", "Bearer " + studentToken))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString()
+    ).get("id").asLong();
+
+    Student student = studentRepository.findById(studentId).orElseThrow();
+    student.setSchoolClass(schoolClassRepository.findById(classId).orElseThrow());
+    studentRepository.save(student);
+
+    LearningPath path = learningPathRepository.save(
+      buildPath("Solo", LearningPath.TargetLevel.BEGINNER));
+
+    AssignPathRequest req = buildAssignRequest(path.getId(), classId);
+    mockMvc.perform(post("/api/enseignant/classes/" + classId + "/paths")
+        .header("Authorization", "Bearer " + teacherToken)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(req)))
+      .andExpect(status().isCreated());
+
+    mockMvc.perform(get("/api/enseignant/classes/" + classId
+        + "/paths/" + path.getId()
+        + "/students/" + studentId)
+        .header("Authorization", "Bearer " + teacherToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.studentId").value(studentId))
+      .andExpect(jsonPath("$.trickDetails").isArray());
   }
 
   @Test
