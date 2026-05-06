@@ -32,6 +32,7 @@ export default function TeacherPathDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUnassigning, setIsUnassigning] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   async function handleUnassign() {
     if (!Number.isFinite(classId) || !Number.isFinite(pathId)) return;
@@ -48,6 +49,28 @@ export default function TeacherPathDetailPage() {
       setError("Erreur lors de la désassignation. Veuillez réessayer.");
     } finally {
       setIsUnassigning(false);
+    }
+  }
+
+  async function handleDownloadCsv() {
+    if (!Number.isFinite(classId) || !Number.isFinite(pathId)) return;
+    if (isDownloading) return;
+    setIsDownloading(true);
+    setError(null);
+    try {
+      const blob = await teacherApi.downloadPathProgressCsv(classId, pathId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `progress_class_${classId}_path_${pathId}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError("Impossible de télécharger le CSV.");
+    } finally {
+      setIsDownloading(false);
     }
   }
 
@@ -93,6 +116,14 @@ export default function TeacherPathDetailPage() {
           </button>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleDownloadCsv}
+              disabled={isDownloading}
+              className="text-xs px-3 py-1.5 rounded-xl bg-border border border-border text-text-secondary font-semibold disabled:opacity-60"
+            >
+              {isDownloading ? '…' : 'CSV'}
+            </button>
             <button
               type="button"
               onClick={() => navigate(`/teacher/parcours/assigner?classId=${classId}&pathId=${pathId}`)}
