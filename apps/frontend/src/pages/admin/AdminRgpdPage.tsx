@@ -56,6 +56,8 @@ function downloadText(filename: string, content: string, mime: string) {
 
 export default function AdminRgpdPage() {
   const [deleteMode, setDeleteMode] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [search, setSearch] = useState('');
   const [classes, setClasses] = useState<AdminSchoolClass[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
 
@@ -122,6 +124,14 @@ export default function AdminRgpdPage() {
     () => rows.filter((r) => !r.hasParentalConsent),
     [rows]
   );
+
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (q === '') return rows;
+    return rows.filter((r) =>
+      `${r.firstName} ${r.lastName}`.toLowerCase().includes(q)
+    );
+  }, [rows, search]);
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -197,16 +207,31 @@ export default function AdminRgpdPage() {
             >
               Relancer ({missingRows.length})
             </button>
-            <button className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-border text-text-secondary bg-bg-card min-h-10">
-              Voir détails
+            <button
+              type="button"
+              onClick={() => setShowDetails((v) => !v)}
+              disabled={isLoading || rows.length === 0}
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-border text-text-secondary bg-bg-card min-h-10 disabled:opacity-50"
+            >
+              {showDetails ? 'Masquer' : 'Voir détails'}
             </button>
           </div>
 
-          {!isLoading && !error && rows.length > 0 && (
+          {showDetails && !isLoading && !error && rows.length > 0 && (
             <div className="mt-4 p-4 rounded-2xl bg-bg-card border border-border">
               <p className="text-xs text-text-muted mb-3">Détail (classe sélectionnée)</p>
+              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-bg-primary border border-border mb-3">
+                <span role="img" aria-label="recherche" className="text-sm">🔍</span>
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Rechercher un élève…"
+                  className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
+                />
+              </div>
               <div className="flex flex-col gap-2">
-                {rows.slice(0, 8).map((r) => (
+                {filteredRows.map((r) => (
                   <div
                     key={r.userId}
                     className="flex items-center justify-between p-3 rounded-xl bg-bg-primary border border-border"
@@ -229,9 +254,14 @@ export default function AdminRgpdPage() {
                     </span>
                   </div>
                 ))}
-                {rows.length > 8 && (
+                {filteredRows.length === 0 && (
+                  <p className="text-xs text-text-muted text-center py-4">
+                    Aucun élève trouvé.
+                  </p>
+                )}
+                {filteredRows.length > 0 && (
                   <p className="text-xs text-text-muted text-center pt-2">
-                    + {rows.length - 8} autre(s) élève(s)
+                    {filteredRows.length} élève(s)
                   </p>
                 )}
               </div>
@@ -293,22 +323,22 @@ export default function AdminRgpdPage() {
           <div className="flex flex-col gap-3">
             {[
               {
-                id: 'csv',
+                id: 'progress-csv',
                 icon: '📊',
                 iconLabel: 'CSV',
                 title: 'Bilan de progression',
-                subtitle: 'Toutes les classes · Année en cours',
+                subtitle: 'À implémenter (backend)',
                 badge: 'CSV',
                 badgeClass: 'text-info bg-info/10 border-info/30',
               },
               {
-                id: 'pdf',
+                id: 'consents-csv',
                 icon: '📋',
-                iconLabel: 'PDF',
+                iconLabel: 'CSV',
                 title: 'Registre des consentements',
-                subtitle: 'Format PDF signé · RGPD conforme',
-                badge: 'PDF',
-                badgeClass: 'text-alert bg-alert/10 border-alert/30',
+                subtitle: 'Export CSV (RGPD)',
+                badge: 'CSV',
+                badgeClass: 'text-info bg-info/10 border-info/30',
               },
             ].map((item) => (
               <div key={item.id} className="flex items-center gap-3 p-4 rounded-2xl bg-bg-card border border-border">
@@ -327,14 +357,14 @@ export default function AdminRgpdPage() {
                     aria-label={`Télécharger ${item.title}`}
                     className="text-xs px-2 py-1 rounded-lg bg-border text-text-secondary"
                     disabled={
-                      item.id !== 'pdf'
+                      item.id !== 'consents-csv'
                       || selectedClassId == null
                       || isLoading
                       || isExporting
                       || rows.length === 0
                     }
                     onClick={async () => {
-                      if (item.id !== 'pdf') return;
+                      if (item.id !== 'consents-csv') return;
                       if (selectedClassId == null) return;
                       try {
                         setIsExporting(true);
