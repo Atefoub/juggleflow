@@ -1,31 +1,12 @@
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
+import { useEffect, useMemo, useState } from 'react';
+import { adminApi, type AdminSchoolClass } from '../../api/adminApi';
 
 const navItems = [
   { label: 'Utilisateurs', icon: '👥', path: '/admin/users' },
   { label: 'Classes',      icon: '🏫', path: '/admin/classes' },
   { label: 'RGPD',         icon: '🔒', path: '/admin/rgpd' },
-];
-
-const MOCK_CLASSES = [
-  {
-    id: 1,
-    name: 'CE1 — Mme Dupont',
-    students: 24,
-    cycle: 'Cycle 2',
-    active: 21,
-    pending: 3,
-    progress: 73,
-  },
-  {
-    id: 2,
-    name: 'CM2 — M. Lefebvre',
-    students: 27,
-    cycle: 'Cycle 3',
-    active: 27,
-    pending: 0,
-    progress: 61,
-  },
 ];
 
 const LICENSE = {
@@ -35,9 +16,43 @@ const LICENSE = {
   expiresAt: '30/06/2026',
 };
 
+function cycleLabel(level: string): string {
+  if (['PS', 'MS', 'GS'].includes(level)) return 'Cycle 1';
+  if (['CP', 'CE1', 'CE2'].includes(level)) return 'Cycle 2';
+  if (['CM1', 'CM2'].includes(level)) return 'Cycle 3';
+  return '—';
+}
+
 export default function AdminClassesPage() {
   const usedPercent = Math.round((LICENSE.usedUsers / LICENSE.maxUsers) * 100);
   const available   = LICENSE.maxUsers - LICENSE.usedUsers;
+  const [classes, setClasses] = useState<AdminSchoolClass[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await adminApi.getClasses();
+        if (!cancelled) setClasses(data);
+      } catch {
+        if (!cancelled) setError('Impossible de charger les classes.');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  const sorted = useMemo(() => {
+    return [...classes].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  }, [classes]);
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -92,39 +107,52 @@ export default function AdminClassesPage() {
             </button>
           </div>
 
-          <div className="flex flex-col gap-3">
-            {MOCK_CLASSES.map((cls) => (
-              <div key={cls.id} className="p-4 rounded-2xl bg-bg-card border border-border">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="font-bold text-text-primary">{cls.name}</p>
-                    <p className="text-xs text-text-muted">{cls.students} élèves · {cls.cycle}</p>
-                  </div>
-                  <button className="text-xs px-3 py-1.5 rounded-lg bg-border text-text-secondary min-h-8">
-                    Gérer
-                  </button>
-                </div>
+          {isLoading && (
+            <p className="text-sm text-text-muted text-center py-8">Chargement…</p>
+          )}
 
-                {/* Active/Pending */}
-                <div className="flex gap-3 mb-3">
-                  <div className="flex-1 p-2 rounded-xl bg-bg-primary border border-border text-center">
-                    <p className="font-display font-bold text-success text-xl">{cls.active}</p>
-                    <p className="text-[0.6rem] text-text-muted">Actifs</p>
-                  </div>
-                  <div className="flex-1 p-2 rounded-xl bg-bg-primary border border-border text-center">
-                    <p className="font-display font-bold text-cta text-xl">{cls.pending}</p>
-                    <p className="text-[0.6rem] text-text-muted">En attente</p>
-                  </div>
-                  <div className="flex-1 p-2 rounded-xl bg-bg-primary border border-border text-center">
-                    <p className="font-display font-bold text-brand text-xl">{cls.progress}%</p>
-                    <p className="text-[0.6rem] text-text-muted">Progression</p>
-                  </div>
-                </div>
+          {!isLoading && error && (
+            <p className="text-sm text-alert text-center py-8">{error}</p>
+          )}
 
-                <ProgressBar value={cls.progress} color="#8B2BE2" height="5px" />
-              </div>
-            ))}
-          </div>
+          {!isLoading && !error && (
+            <div className="flex flex-col gap-3">
+              {sorted.map((cls) => (
+                <div key={cls.id} className="p-4 rounded-2xl bg-bg-card border border-border">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="font-bold text-text-primary">{cls.name}</p>
+                      <p className="text-xs text-text-muted">
+                        {cls.studentCount} élèves · {cycleLabel(cls.schoolLevel)}
+                      </p>
+                    </div>
+                    <button className="text-xs px-3 py-1.5 rounded-lg bg-border text-text-secondary min-h-8">
+                      Gérer
+                    </button>
+                  </div>
+
+                  <div className="flex gap-3 mb-3">
+                    <div className="flex-1 p-2 rounded-xl bg-bg-primary border border-border text-center">
+                      <p className="font-display font-bold text-brand text-xl">{cls.studentCount}</p>
+                      <p className="text-[0.6rem] text-text-muted">Élèves</p>
+                    </div>
+                    <div className="flex-1 p-2 rounded-xl bg-bg-primary border border-border text-center">
+                      <p className="font-display font-bold text-text-primary text-xl">
+                        {cls.homeroomTeacherName ?? '—'}
+                      </p>
+                      <p className="text-[0.6rem] text-text-muted">Enseignant</p>
+                    </div>
+                    <div className="flex-1 p-2 rounded-xl bg-bg-primary border border-border text-center">
+                      <p className="font-display font-bold text-text-muted text-xl">{cls.schoolYear}</p>
+                      <p className="text-[0.6rem] text-text-muted">Année</p>
+                    </div>
+                  </div>
+
+                  <ProgressBar value={0} color="#8B2BE2" height="5px" />
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </main>
 
