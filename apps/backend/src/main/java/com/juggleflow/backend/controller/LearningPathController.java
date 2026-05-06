@@ -11,6 +11,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Contrôleur des parcours pédagogiques.
@@ -169,6 +172,30 @@ public class LearningPathController {
     }
 
     /**
+     * GET /api/enseignant/classes/{classId}/paths/{pathId}/progress/export
+     * Export CSV de la progression des élèves sur un parcours.
+     */
+    @GetMapping(value = "/api/enseignant/classes/{classId}/paths/{pathId}/progress/export",
+            produces = "text/csv")
+    @Operation(summary = "Exporter la progression d'un parcours (CSV)")
+    public ResponseEntity<String> exportStudentProgressCsv(
+            @PathVariable Long classId,
+            @PathVariable Long pathId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        List<StudentPathProgressResponse> rows =
+                learningPathService.getStudentProgress(classId, pathId, userDetails.getUsername());
+
+        String csv = toCsv(rows);
+
+        String filename = "progress_class_" + classId + "_path_" + pathId + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(csv);
+    }
+
+    /**
      * GET /api/enseignant/classes/{classId}/paths/{pathId}/students/{studentId}
      * Progression d'un élève sur un parcours donné.
      */
@@ -183,5 +210,37 @@ public class LearningPathController {
         return ResponseEntity.ok(
                 learningPathService.getStudentProgressForStudent(
                         classId, pathId, studentId, userDetails.getUsername()));
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private String csvEscape(String value) {
+        if (value == null) return "";
+        String v = value.replace("\"", "\"\"");
+        return "\"" + v + "\"";
+    }
+
+    private String toCsv(List<StudentPathProgressResponse> rows) {
+        String header = String.join(",",
+                "studentId",
+                "firstName",
+                "lastName",
+                "completionPercent",
+                "masteredCount",
+                "totalSteps"
+        );
+
+        String body = rows.stream()
+                .map(r -> String.join(",",
+                        String.valueOf(r.getStudentId()),
+                        csvEscape(r.getFirstName()),
+                        csvEscape(r.getLastName()),
+                        String.valueOf(r.getCompletionPercent()),
+                        String.valueOf(r.getMasteredCount()),
+                        String.valueOf(r.getTotalSteps())
+                ))
+                .collect(Collectors.joining("\n"));
+
+        return header + "\n" + body + "\n";
     }
 }

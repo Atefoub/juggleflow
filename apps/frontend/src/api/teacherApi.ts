@@ -86,6 +86,14 @@ export const teacherApi = {
     return res.data;
   },
 
+  downloadPathProgressCsv: async (classId: number, pathId: number): Promise<Blob> => {
+    const res = await api.get(
+      `/enseignant/classes/${classId}/paths/${pathId}/progress/export`,
+      { responseType: 'blob' }
+    );
+    return res.data as Blob;
+  },
+
   getAllPaths: async (level?: string): Promise<LearningPathSummary[]> => {
     // Alignement backend: les parcours sont exposés sous /api/learning-paths
     const res = await api.get<LearningPathSummary[]>('/learning-paths', {
