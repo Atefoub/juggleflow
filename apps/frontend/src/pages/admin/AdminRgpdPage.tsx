@@ -327,7 +327,7 @@ export default function AdminRgpdPage() {
                 icon: '📊',
                 iconLabel: 'CSV',
                 title: 'Bilan de progression',
-                subtitle: 'À implémenter (backend)',
+                subtitle: 'Export CSV (toutes classes)',
                 badge: 'CSV',
                 badgeClass: 'text-info bg-info/10 border-info/30',
               },
@@ -357,13 +357,35 @@ export default function AdminRgpdPage() {
                     aria-label={`Télécharger ${item.title}`}
                     className="text-xs px-2 py-1 rounded-lg bg-border text-text-secondary"
                     disabled={
-                      item.id !== 'consents-csv'
-                      || selectedClassId == null
-                      || isLoading
-                      || isExporting
-                      || rows.length === 0
+                      (item.id === 'consents-csv' && (
+                        selectedClassId == null
+                        || isLoading
+                        || isExporting
+                        || rows.length === 0
+                      ))
+                      || (item.id === 'progress-csv' && (
+                        isLoading
+                        || isExporting
+                      ))
                     }
                     onClick={async () => {
+                      if (item.id === 'progress-csv') {
+                        try {
+                          setIsExporting(true);
+                          const csv = await adminApi.exportProgressCsv();
+                          downloadText(
+                            'progress_report.csv',
+                            csv,
+                            'text/csv;charset=utf-8'
+                          );
+                        } catch {
+                          setError('Impossible d’exporter le bilan de progression.');
+                        } finally {
+                          setIsExporting(false);
+                        }
+                        return;
+                      }
+
                       if (item.id !== 'consents-csv') return;
                       if (selectedClassId == null) return;
                       try {
