@@ -5,6 +5,7 @@ import com.juggleflow.backend.dto.ConsentRequest;
 import com.juggleflow.backend.dto.RegisterRequest;
 import com.juggleflow.backend.dto.SchoolClassRequest;
 import com.juggleflow.backend.model.GdprConsent.ConsentType;
+import com.juggleflow.backend.model.Administrator;
 import com.juggleflow.backend.repository.GdprConsentRepository;
 import com.juggleflow.backend.repository.SchoolClassRepository;
 import com.juggleflow.backend.repository.StudentRepository;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -38,6 +40,7 @@ class GdprControllerTest {
     @Autowired private GdprConsentRepository gdprConsentRepository;
     @Autowired private SchoolClassRepository schoolClassRepository;
     @Autowired private StudentRepository studentRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
 
     private MockMvc mockMvc;
 
@@ -56,7 +59,7 @@ class GdprControllerTest {
     @Test
     @DisplayName("recordConsent → 400 si PARENTAL_MINOR sans legalGuardianId")
     void recordConsent_shouldReturn400_whenParentalConsentMissingGuardian() throws Exception {
-        String adminToken = registerAndGetToken("admin@gdpr.fr", "administrator");
+        String adminToken = createAdminAndLogin("admin@gdpr.fr");
 
         String studentToken = registerAndGetToken("eleve@gdpr.fr", "student");
         Long studentId = getUserId(studentToken);
@@ -79,8 +82,8 @@ class GdprControllerTest {
     @Test
     @DisplayName("revokeParentalConsent → désactive le compte de l'élève")
     void revokeParentalConsent_shouldDisableUserAccount() throws Exception {
-        String adminToken    = registerAndGetToken("admin2@gdpr.fr", "administrator");
-        String guardianToken = registerAndGetToken("guardian@gdpr.fr", "administrator");
+        String adminToken    = createAdminAndLogin("admin2@gdpr.fr");
+        String guardianToken = createAdminAndLogin("guardian@gdpr.fr");
         String studentToken  = registerAndGetToken("eleve2@gdpr.fr", "student");
 
         Long studentId  = getUserId(studentToken);
@@ -117,7 +120,7 @@ class GdprControllerTest {
     @DisplayName("exportRegister → 200 avec la liste complète des élèves de la classe")
     void exportRegister_shouldReturn200_withAllStudents() throws Exception {
         String teacherToken = registerAndGetToken("teacher@gdpr.fr", "teacher");
-        String adminToken   = registerAndGetToken("admin3@gdpr.fr", "administrator");
+        String adminToken   = createAdminAndLogin("admin3@gdpr.fr");
         String studentToken = registerAndGetToken("eleve3@gdpr.fr", "student");
 
         Long classId   = createClass(teacherToken);
@@ -160,6 +163,29 @@ class GdprControllerTest {
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        return objectMapper.readTree(result.getResponse().getContentAsString())
+                .get("accessToken").asText();
+    }
+
+    /**
+     * Crée un administrateur directement en base (l'inscription publique refuse
+     * les rôles admin par design) puis récupère un access token via /login.
+     */
+    private String createAdminAndLogin(String email) throws Exception {
+        userRepository.save(Administrator.builder()
+                .email(email)
+                .password(passwordEncoder.encode("Test2026!"))
+                .firstName("Admin")
+                .lastName("Test")
+                .enabled(true)
+                .build());
+
+        MvcResult result = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + email + "\",\"password\":\"Test2026!\"}"))
                 .andExpect(status().isOk())
                 .andReturn();
 

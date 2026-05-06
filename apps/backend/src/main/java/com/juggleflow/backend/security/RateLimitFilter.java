@@ -67,6 +67,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
   private boolean trustedProxy;
 
   /**
+   * Permet de désactiver le rate limiting (ex: tests automatisés).
+   * Valeur par défaut : true (sécurisé).
+   */
+  @Value("${app.rate-limit.enabled:true}")
+  private boolean rateLimitEnabled;
+
+  /**
    * [VULN-10] Map bornée à MAX_BUCKET_ENTRIES entrées.
    * Bucket4j gère l'expiration via la fenêtre de refill (1 min).
    */
@@ -77,6 +84,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
                                   HttpServletResponse response,
                                   FilterChain filterChain)
     throws ServletException, IOException {
+
+    if (!rateLimitEnabled) {
+      filterChain.doFilter(request, response);
+      return;
+    }
 
     String path = request.getRequestURI();
 

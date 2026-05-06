@@ -10,6 +10,12 @@ import java.util.Optional;
 public interface StudentRepository extends JpaRepository<Student, Long> {
 
     /**
+     * Recherche un élève par email (champ porté par la table parent "users").
+     * Utile pour retrouver la classe de l'élève connecté via son principal Spring Security.
+     */
+    Optional<Student> findByEmail(String email);
+
+    /**
      * Retourne tous les élèves d'une classe donnée.
      */
     List<Student> findBySchoolClass_Id(Long classId);
