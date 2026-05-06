@@ -27,7 +27,9 @@ export default function BottomNav({ items }: BottomNavProps) {
             pathname.startsWith('/student/session/')
           )) ||
           // Détails enseignant : /teacher/eleve/:id → onglet "Élèves" actif
-          (item.path === '/teacher/eleves' && pathname.startsWith('/teacher/eleve/'));
+          (item.path === '/teacher/eleves' && pathname.startsWith('/teacher/eleve/')) ||
+          // Détail parcours enseignant : /teacher/classe/:classId/parcours/:pathId → onglet "Parcours" actif
+          (item.path === '/teacher/parcours/assigner' && pathname.startsWith('/teacher/classe/'));
         return (
           <button
             key={item.path}
