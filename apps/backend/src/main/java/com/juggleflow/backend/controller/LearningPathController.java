@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -68,6 +69,21 @@ public class LearningPathController {
             @RequestParam(required = false) String level) {
 
         return ResponseEntity.ok(learningPathService.getAllPaths(level));
+    }
+
+    /**
+     * GET /api/eleve/learning-paths
+     * Retourne les parcours assignés à la classe de l'élève connecté.
+     *
+     * (Le catalogue global est accessible via /api/learning-paths)
+     */
+    @GetMapping("/api/eleve/learning-paths")
+    @PreAuthorize("hasAuthority('ROLE_ELEVE')")
+    @Operation(summary = "Lister mes parcours assignés (élève)")
+    public ResponseEntity<List<LearningPathResponse>> getMyAssignedPaths(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(
+                learningPathService.getMyAssignedPaths(userDetails.getUsername()));
     }
 
     /**

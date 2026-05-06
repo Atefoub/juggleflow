@@ -68,8 +68,8 @@ class JwtUtilsTest {
     @DisplayName("Constructeur → exception si secret trop court")
     void constructor_shouldThrow_whenSecretTooShort() {
         assertThatThrownBy(() -> new JwtUtils("court", 900_000L, 604_800_000L))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("JWT_SECRET");
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("jwt.secret");
     }
 
     @Test
