@@ -103,6 +103,19 @@ public class LearningPathController {
     // ── Endpoints enseignant (/api/enseignant/classes/{classId}/paths) ───────
 
     /**
+     * GET /api/enseignant/classes/{classId}/paths
+     * Liste les parcours déjà assignés à une classe.
+     */
+    @GetMapping("/api/enseignant/classes/{classId}/paths")
+    @Operation(summary = "Lister les parcours assignés à une classe")
+    public ResponseEntity<List<LearningPathResponse>> getAssignedPathsForClass(
+            @PathVariable Long classId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(
+                learningPathService.getAssignedPathsForClass(classId, userDetails.getUsername()));
+    }
+
+    /**
      * POST /api/enseignant/classes/{classId}/paths
      * Assigne un parcours à une classe.
      * Réservé à ROLE_ENSEIGNANT et ROLE_ADMINISTRATEUR.

@@ -146,6 +146,29 @@ class LearningPathControllerTest {
   }
 
   @Test
+  @DisplayName("getAssignedPathsForClass → 200 avec parcours assignés")
+  void getAssignedPathsForClass_shouldReturn200_withAssignedPaths() throws Exception {
+    String teacherToken = registerAndGetToken("teacher@list.fr", "teacher");
+    Long classId = createClass(teacherToken);
+    LearningPath path = learningPathRepository.save(
+      buildPath("Liste", LearningPath.TargetLevel.BEGINNER));
+
+    AssignPathRequest req = buildAssignRequest(path.getId(), classId);
+
+    mockMvc.perform(post("/api/enseignant/classes/" + classId + "/paths")
+        .header("Authorization", "Bearer " + teacherToken)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(req)))
+      .andExpect(status().isCreated());
+
+    mockMvc.perform(get("/api/enseignant/classes/" + classId + "/paths")
+        .header("Authorization", "Bearer " + teacherToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.length()").value(1))
+      .andExpect(jsonPath("$[0].pathName").value("Liste"));
+  }
+
+  @Test
   @DisplayName("getAllPaths → 401 sans token")
   void getAllPaths_shouldReturn401_withoutToken() throws Exception {
     mockMvc.perform(get("/api/learning-paths"))
