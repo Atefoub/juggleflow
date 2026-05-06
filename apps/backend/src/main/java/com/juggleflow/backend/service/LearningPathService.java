@@ -87,6 +87,21 @@ public class LearningPathService {
     }
 
     /**
+     * Retourne les parcours assignés à une classe donnée (vue enseignant).
+     * Vérifie que l'enseignant connecté est bien titulaire de la classe.
+     */
+    public List<LearningPathResponse> getAssignedPathsForClass(Long classId, String teacherEmail) {
+        Teacher teacher = findTeacherByEmail(teacherEmail);
+        assertClassOwnership(classId, teacher.getId());
+
+        return classLearningPathRepository.findBySchoolClass_Id(classId).stream()
+                .map(ClassLearningPath::getLearningPath)
+                .distinct()
+                .map(LearningPathResponse::from)
+                .toList();
+    }
+
+    /**
      * Retourne le détail complet d'un parcours avec ses étapes et figures.
      *
      * @param id l'identifiant du parcours
