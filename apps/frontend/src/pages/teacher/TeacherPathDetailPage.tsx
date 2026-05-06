@@ -76,7 +76,7 @@ export default function TeacherPathDetailPage() {
   const classAvg = useMemo(() => {
     if (progress.length === 0) return 0;
     return Math.round(
-      progress.reduce((sum, s) => sum + s.progressionPercent, 0) / progress.length
+      progress.reduce((sum, s) => sum + (s.completionPercent ?? 0), 0) / progress.length
     );
   }, [progress]);
 
@@ -156,14 +156,14 @@ export default function TeacherPathDetailPage() {
           <div className="flex flex-col gap-2">
             {progress
               .slice()
-              .sort((a, b) => b.progressionPercent - a.progressionPercent)
+              .sort((a, b) => (b.completionPercent ?? 0) - (a.completionPercent ?? 0))
               .map((s) => {
-                const p = s.totalTricks ? pct(s.tricksCompleted, s.totalTricks) : s.progressionPercent;
+                const p = s.totalSteps ? pct(s.masteredCount, s.totalSteps) : (s.completionPercent ?? 0);
                 return (
                   <button
                     key={s.studentId}
                     type="button"
-                    onClick={() => navigate(`/teacher/eleve/${s.studentId}`)}
+                    onClick={() => navigate(`/teacher/eleve/${s.studentId}?classId=${classId}&pathId=${pathId}`)}
                     className="p-4 rounded-2xl bg-bg-card border border-border text-left hover:bg-white/5 transition-colors"
                   >
                     <div className="flex items-center justify-between gap-3">
@@ -172,7 +172,7 @@ export default function TeacherPathDetailPage() {
                           {s.firstName} {s.lastName}
                         </p>
                         <p className="text-xs text-text-muted">
-                          {s.tricksCompleted} / {s.totalTricks} figures maîtrisées
+                          {s.masteredCount} / {s.totalSteps} figures maîtrisées
                         </p>
                       </div>
                       <div className="text-sm font-bold text-white shrink-0">{p}%</div>
