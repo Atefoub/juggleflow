@@ -22,6 +22,7 @@ import StudentDetailPage     from '../pages/teacher/StudentDetailPage';
 import StudentListPage       from '../pages/teacher/StudentListPage';
 import AssignPathPage        from '../pages/teacher/AssignPathPage';
 import ResourcesTeacherPage  from '../pages/teacher/ResourcesTeacherPage';
+import TeacherPathDetailPage from '../pages/teacher/TeacherPathDetailPage';
 
 // Admin
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage';
@@ -110,6 +111,7 @@ export default function AppRouter() {
         <Route path="/teacher/eleves"           element={teacher(<StudentListPage />)} />
         <Route path="/teacher/eleve/:id"        element={teacher(<StudentDetailPage />)} />
         <Route path="/teacher/parcours/assigner" element={teacher(<AssignPathPage />)} />
+        <Route path="/teacher/classe/:classId/parcours/:pathId" element={teacher(<TeacherPathDetailPage />)} />
         <Route path="/teacher/ressources"       element={teacher(<ResourcesTeacherPage />)} />
 
         {/* ── Administrateur ── */}
