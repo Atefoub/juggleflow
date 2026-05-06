@@ -254,6 +254,70 @@ public class LearningPathService {
         }).toList();
     }
 
+    /**
+     * Retourne la progression d'UN élève sur un parcours donné (vue enseignant).
+     * Optimisation: évite de renvoyer la liste complète de la classe.
+     */
+    public StudentPathProgressResponse getStudentProgressForStudent(
+            Long classId, Long pathId, Long studentId, String teacherEmail) {
+
+        Teacher teacher = findTeacherByEmail(teacherEmail);
+        assertClassOwnership(classId, teacher.getId());
+
+        LearningPath path = learningPathRepository.findById(pathId)
+                .orElseThrow(() -> new ResourceNotFoundException("Parcours", pathId));
+
+        Student student = studentRepository.findByIdAndSchoolClass_Id(studentId, classId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Élève introuvable dans cette classe : " + studentId));
+
+        List<LearningPathStep> steps = path.getSteps();
+        List<Long> trickIds = steps.stream()
+                .map(s -> s.getTrick().getId())
+                .toList();
+
+        List<UserProgress> allProgress = userProgressRepository.findByUser_Id(student.getId());
+
+        Map<Long, UserProgress> progressByTrickId = allProgress.stream()
+                .filter(p -> trickIds.contains(p.getTrick().getId()))
+                .collect(Collectors.toMap(
+                        p -> p.getTrick().getId(),
+                        p -> p
+                ));
+
+        List<StudentPathProgressResponse.TrickProgressDetail> details =
+                steps.stream().map(step -> {
+                    Long trickId = step.getTrick().getId();
+                    UserProgress progress = progressByTrickId.get(trickId);
+                    String status = progress != null
+                            ? progress.getStatus().name()
+                            : UserProgress.ProgressStatus.NOT_STARTED.name();
+
+                    return StudentPathProgressResponse.TrickProgressDetail.builder()
+                            .trickId(trickId)
+                            .trickName(step.getTrick().getName())
+                            .status(status)
+                            .build();
+                }).toList();
+
+        long masteredCount = details.stream()
+                .filter(d -> UserProgress.ProgressStatus.MASTERED.name().equals(d.getStatus()))
+                .count();
+
+        int total = steps.size();
+        int percent = total == 0 ? 0 : (int) ((masteredCount * 100L) / total);
+
+        return StudentPathProgressResponse.builder()
+                .studentId(student.getId())
+                .firstName(student.getFirstName())
+                .lastName(student.getLastName())
+                .completionPercent(percent)
+                .masteredCount((int) masteredCount)
+                .totalSteps(total)
+                .trickDetails(details)
+                .build();
+    }
+
     // ── Helpers privés ───────────────────────────────────────────
 
     private Teacher findTeacherByEmail(String email) {

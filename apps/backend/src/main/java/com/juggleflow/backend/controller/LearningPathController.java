@@ -167,4 +167,21 @@ public class LearningPathController {
                 learningPathService.getStudentProgress(
                     classId, pathId, userDetails.getUsername()));
     }
+
+    /**
+     * GET /api/enseignant/classes/{classId}/paths/{pathId}/students/{studentId}
+     * Progression d'un élève sur un parcours donné.
+     */
+    @GetMapping("/api/enseignant/classes/{classId}/paths/{pathId}/students/{studentId}")
+    @Operation(summary = "Progression d'un élève sur un parcours donné")
+    public ResponseEntity<StudentPathProgressResponse> getStudentProgressForStudent(
+            @PathVariable Long classId,
+            @PathVariable Long pathId,
+            @PathVariable Long studentId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        return ResponseEntity.ok(
+                learningPathService.getStudentProgressForStudent(
+                        classId, pathId, studentId, userDetails.getUsername()));
+    }
 }

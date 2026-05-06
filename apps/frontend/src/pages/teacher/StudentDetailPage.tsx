@@ -99,8 +99,11 @@ export default function StudentDetailPage() {
 
         // 6. Charger la progression détaillée pour ce parcours (si on a classId + pathId)
         if (resolvedClassId && resolvedPathId) {
-          const all = await teacherApi.getStudentProgress(resolvedClassId, resolvedPathId);
-          const me = all.find((p) => p.studentId === Number(id)) ?? null;
+          const me = await teacherApi.getStudentProgressForStudent(
+            resolvedClassId,
+            resolvedPathId,
+            Number(id)
+          );
           setPathProgress(me);
         } else {
           setPathProgress(null);
@@ -272,8 +275,11 @@ export default function StudentDetailPage() {
                           if (!effectiveClassId) return;
                           setSelectedPathId(p.id);
                           try {
-                            const all = await teacherApi.getStudentProgress(effectiveClassId, p.id);
-                            const me = all.find((x) => x.studentId === Number(id)) ?? null;
+                            const me = await teacherApi.getStudentProgressForStudent(
+                              effectiveClassId,
+                              p.id,
+                              Number(id)
+                            );
                             setPathProgress(me);
                           } catch {
                             setPathProgress(null);
