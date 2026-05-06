@@ -71,14 +71,15 @@ export const teacherApi = {
   },
 
   getAllPaths: async (level?: string): Promise<LearningPathSummary[]> => {
-    const res = await api.get<LearningPathSummary[]>('/tricks/paths', {
+    // Alignement backend: les parcours sont exposés sous /api/learning-paths
+    const res = await api.get<LearningPathSummary[]>('/learning-paths', {
       params: level ? { level } : undefined,
     });
     return res.data;
   },
 
   getPathById: async (id: number): Promise<LearningPathSummary> => {
-    const res = await api.get<LearningPathSummary>(`/tricks/paths/${id}`);
+    const res = await api.get<LearningPathSummary>(`/learning-paths/${id}`);
     return res.data;
   },
 
