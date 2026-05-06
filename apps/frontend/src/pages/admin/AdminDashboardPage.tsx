@@ -1,34 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface SchoolClass {
-  id: number;
-  nom: string;
-  niveauScolaire: string;
-  enseignant: string;
-  nombreEleves: number;
-  progressionMoyenne: number;
-  statut: 'actif' | 'inactif';
-}
-
-interface ConsentStats {
-  accordes: number;
-  enAttente: number;
-  expires: number;
-}
-
-// ─── Données mockées (à remplacer par un adminApi quand le backend expose ces routes) ──
-
-const MOCK_CLASSES: SchoolClass[] = [
-  { id: 1, nom: 'CE1 — Groupe A', niveauScolaire: 'CE1', enseignant: 'Mme Dupont',  nombreEleves: 24, progressionMoyenne: 73, statut: 'actif' },
-  { id: 2, nom: 'CE2 — Groupe B', niveauScolaire: 'CE2', enseignant: 'M. Lefebvre', nombreEleves: 22, progressionMoyenne: 58, statut: 'actif' },
-  { id: 3, nom: 'CM1 — Groupe C', niveauScolaire: 'CM1', enseignant: 'Mme Bernard', nombreEleves: 27, progressionMoyenne: 81, statut: 'actif' },
-  { id: 4, nom: 'CM2 — Groupe D', niveauScolaire: 'CM2', enseignant: 'M. Moreau',   nombreEleves: 19, progressionMoyenne: 44, statut: 'inactif' },
-];
-
-const MOCK_CONSENT: ConsentStats = { accordes: 78, enAttente: 5, expires: 2 };
+import { adminApi, type AdminSchoolClass } from '../../api/adminApi';
+import { adminGdprApi, type ConsentStatusRow } from '../../api/adminGdprApi';
 
 // ─── Sous-composants ──────────────────────────────────────────────────────────
 
@@ -67,18 +40,98 @@ function ProgressBar({ value }: { value: number }) {
   );
 }
 
+function formatDate(iso: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('fr-FR');
+}
+
 // ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function AdminDashboardPage() {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<'classes' | 'rgpd'>('classes');
 
-  const totalEleves        = MOCK_CLASSES.reduce((s, c) => s + c.nombreEleves, 0);
-  const classesActives     = MOCK_CLASSES.filter((c) => c.statut === 'actif').length;
-  const progressionGlobale = Math.round(
-    MOCK_CLASSES.reduce((s, c) => s + c.progressionMoyenne, 0) / MOCK_CLASSES.length
+  const [classes, setClasses] = useState<AdminSchoolClass[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [consentRows, setConsentRows] = useState<ConsentStatusRow[]>([]);
+  const [pendingByClass, setPendingByClass] = useState<Record<number, number>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingRgpd, setIsLoadingRgpd] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await adminApi.getClasses();
+        if (cancelled) return;
+        setClasses(data);
+        if (data.length > 0) setSelectedClassId(data[0].id);
+
+        // Alertes RGPD: pending consents par classe (N appels, acceptable pour un établissement)
+        const pendingPairs = await Promise.all(
+          data.map(async (c) => [c.id, await adminGdprApi.getPendingCount(c.id)] as const)
+        );
+        if (cancelled) return;
+        setPendingByClass(Object.fromEntries(pendingPairs));
+      } catch {
+        if (!cancelled) setError('Impossible de charger le dashboard admin.');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (selectedClassId == null) return;
+    let cancelled = false;
+
+    const loadRgpd = async () => {
+      try {
+        setIsLoadingRgpd(true);
+        const rows = await adminGdprApi.getClassConsentStatus(selectedClassId);
+        if (!cancelled) setConsentRows(rows);
+      } catch {
+        if (!cancelled) setConsentRows([]);
+      } finally {
+        if (!cancelled) setIsLoadingRgpd(false);
+      }
+    };
+
+    loadRgpd();
+    return () => { cancelled = true; };
+  }, [selectedClassId]);
+
+  const totalEleves = useMemo(
+    () => classes.reduce((s, c) => s + c.studentCount, 0),
+    [classes]
   );
-  const alertesRgpd = MOCK_CONSENT.enAttente + MOCK_CONSENT.expires;
+
+  const teacherCount = useMemo(() => {
+    const names = classes
+      .map((c) => c.homeroomTeacherName)
+      .filter((n): n is string => n != null && n.trim() !== '');
+    return new Set(names).size;
+  }, [classes]);
+
+  const alertesRgpd = useMemo(
+    () => Object.values(pendingByClass).reduce((s, n) => s + n, 0),
+    [pendingByClass]
+  );
+
+  const consentStats = useMemo(() => {
+    const accordes = consentRows.filter((r) => r.hasParentalConsent).length;
+    const manquants = consentRows.filter((r) => !r.hasParentalConsent).length;
+    return { accordes, manquants };
+  }, [consentRows]);
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] flex flex-col">
@@ -110,11 +163,38 @@ export default function AdminDashboardPage() {
             Vue d'ensemble
           </h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <KpiCard icon="🏫" iconLabel="Établissement" label="Classes actives"    value={classesActives}           sublabel={`sur ${MOCK_CLASSES.length} classes`} />
-            <KpiCard icon="👦" iconLabel="Élèves"        label="Élèves inscrits"    value={totalEleves}              sublabel="cette année" />
-            <KpiCard icon="👩‍🏫" iconLabel="Enseignants"  label="Enseignants"        value={4}                        sublabel="comptes actifs" />
-            <KpiCard icon="📈" iconLabel="Progression"   label="Progression globale" value={`${progressionGlobale}%`} sublabel="moyenne établissement" />
+            <KpiCard
+              icon="🏫"
+              iconLabel="Établissement"
+              label="Classes"
+              value={isLoading ? '—' : classes.length}
+              sublabel="dans l'établissement"
+            />
+            <KpiCard
+              icon="👦"
+              iconLabel="Élèves"
+              label="Élèves inscrits"
+              value={isLoading ? '—' : totalEleves}
+              sublabel="toutes classes"
+            />
+            <KpiCard
+              icon="👩‍🏫"
+              iconLabel="Enseignants"
+              label="Enseignants"
+              value={isLoading ? '—' : teacherCount}
+              sublabel="titulaires uniques"
+            />
+            <KpiCard
+              icon="🔒"
+              iconLabel="RGPD"
+              label="Consentements manquants"
+              value={isLoading ? '—' : alertesRgpd}
+              sublabel="toutes classes"
+            />
           </div>
+          {error && (
+            <p className="text-sm text-[#B00020] mt-3">{error}</p>
+          )}
         </section>
 
         {/* ── Actions rapides ── */}
@@ -177,40 +257,40 @@ export default function AdminDashboardPage() {
                 ))}
               </div>
 
-              {MOCK_CLASSES.map((cls, i) => (
+              {classes.map((cls, i) => (
                 <div
                   key={cls.id}
-                  className={`px-5 py-4 ${i < MOCK_CLASSES.length - 1 ? 'border-b border-[#F0F0F0]' : ''}`}
+                  className={`px-5 py-4 ${i < classes.length - 1 ? 'border-b border-[#F0F0F0]' : ''}`}
                 >
                   {/* Mobile */}
                   <div className="sm:hidden space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-sm text-[#111]">{cls.nom}</span>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cls.statut === 'actif' ? 'bg-[#EBEBEB] text-[#333]' : 'bg-[#F5F5F5] text-[#AAA]'}`}>
-                        {cls.statut === 'actif' ? 'Actif' : 'Inactif'}
+                      <span className="font-semibold text-sm text-[#111]">{cls.name}</span>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#EBEBEB] text-[#333]">
+                        Actif
                       </span>
                     </div>
                     <div className="text-xs text-[#888]">
-                      {cls.enseignant} · {cls.nombreEleves} élèves · {cls.niveauScolaire}
+                      {(cls.homeroomTeacherName ?? '—')} · {cls.studentCount} élèves · {cls.schoolLevel}
                     </div>
                     <div className="flex items-center gap-2">
-                      <ProgressBar value={cls.progressionMoyenne} />
-                      <span className="text-xs font-bold text-[#111] w-10 text-right">{cls.progressionMoyenne}%</span>
+                      <ProgressBar value={0} />
+                      <span className="text-xs font-bold text-[#111] w-10 text-right">—</span>
                     </div>
                   </div>
 
                   {/* Desktop */}
                   <div className="hidden sm:grid grid-cols-[2fr_1fr_1fr_1fr_2fr_1fr] gap-4 items-center">
-                    <span className="font-semibold text-sm text-[#111]">{cls.nom}</span>
-                    <span className="text-sm text-[#555]">{cls.niveauScolaire}</span>
-                    <span className="text-sm text-[#555]">{cls.enseignant}</span>
-                    <span className="text-sm text-[#555]">{cls.nombreEleves}</span>
+                    <span className="font-semibold text-sm text-[#111]">{cls.name}</span>
+                    <span className="text-sm text-[#555]">{cls.schoolLevel}</span>
+                    <span className="text-sm text-[#555]">{cls.homeroomTeacherName ?? '—'}</span>
+                    <span className="text-sm text-[#555]">{cls.studentCount}</span>
                     <div className="flex items-center gap-2">
-                      <ProgressBar value={cls.progressionMoyenne} />
-                      <span className="text-xs font-bold text-[#111] w-9 text-right">{cls.progressionMoyenne}%</span>
+                      <ProgressBar value={0} />
+                      <span className="text-xs font-bold text-[#111] w-9 text-right">—</span>
                     </div>
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full w-fit ${cls.statut === 'actif' ? 'bg-[#EBEBEB] text-[#333]' : 'bg-[#F5F5F5] text-[#AAA]'}`}>
-                      {cls.statut === 'actif' ? 'Actif' : 'Inactif'}
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full w-fit bg-[#EBEBEB] text-[#333]">
+                      Actif
                     </span>
                   </div>
                 </div>
@@ -225,20 +305,68 @@ export default function AdminDashboardPage() {
               {/* Consentements */}
               <div className="bg-white border border-[#E0E0E0] rounded-xl p-5">
                 <h3 className="text-sm font-bold text-[#111] mb-4">Consentements parentaux</h3>
+
+                <div className="mb-4">
+                  <div className="text-xs text-[#888] mb-2">Classe</div>
+                  <select
+                    className="w-full h-10 px-3 border border-[#DDD] rounded-lg text-sm text-[#111] bg-white"
+                    value={selectedClassId ?? ''}
+                    onChange={(e) => setSelectedClassId(Number(e.target.value))}
+                    disabled={classes.length === 0}
+                  >
+                    {classes.length === 0 && (
+                      <option value="">Aucune classe</option>
+                    )}
+                    {classes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.schoolYear})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="grid grid-cols-3 gap-3 mb-5">
                   <div className="bg-[#F5F5F5] rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold text-[#111]">{MOCK_CONSENT.accordes}</div>
+                    <div className="text-2xl font-bold text-[#111]">
+                      {isLoadingRgpd ? '—' : consentStats.accordes}
+                    </div>
                     <div className="text-xs text-[#888] mt-1">Accordés</div>
                   </div>
                   <div className="bg-[#F0F0F0] rounded-lg p-3 text-center border border-[#DDD]">
-                    <div className="text-2xl font-bold text-[#111]">{MOCK_CONSENT.enAttente}</div>
+                    <div className="text-2xl font-bold text-[#111]">
+                      {isLoadingRgpd ? '—' : (selectedClassId != null ? (pendingByClass[selectedClassId] ?? 0) : 0)}
+                    </div>
                     <div className="text-xs font-semibold text-[#555] mt-1">En attente</div>
                   </div>
                   <div className="bg-[#F5F5F5] rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold text-[#777]">{MOCK_CONSENT.expires}</div>
+                    <div className="text-2xl font-bold text-[#777]">0</div>
                     <div className="text-xs text-[#999] mt-1">Expirés</div>
                   </div>
                 </div>
+
+                {!isLoadingRgpd && consentRows.length > 0 && (
+                  <div className="space-y-2">
+                    {consentRows.slice(0, 6).map((r) => (
+                      <div
+                        key={r.userId}
+                        className="flex items-center justify-between p-3 border border-[#E0E0E0] rounded-lg"
+                      >
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-[#111] truncate">
+                            {r.firstName} {r.lastName}
+                          </div>
+                          <div className="text-xs text-[#999]">
+                            {formatDate(r.consentDate)}
+                          </div>
+                        </div>
+                        <div className="text-xs font-semibold">
+                          {r.hasParentalConsent ? 'Consentement ✓' : 'Consentement ✗'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex flex-wrap gap-2">
                   <button type="button" className="h-9 px-4 bg-[#111] text-white rounded-lg text-sm font-semibold hover:bg-[#333] transition-colors">
                     Relancer ({alertesRgpd})
