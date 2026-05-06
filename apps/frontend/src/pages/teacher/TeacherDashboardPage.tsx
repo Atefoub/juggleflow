@@ -295,7 +295,7 @@ export default function TeacherDashboardPage() {
                         <div className="flex gap-2 shrink-0">
                           <button
                             type="button"
-                            onClick={() => navigate(`/teacher/parcours/assigner?classId=${selectedClass.id}&pathId=${p.id}`)}
+                            onClick={() => navigate(`/teacher/classe/${selectedClass.id}/parcours/${p.id}`)}
                             className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-border border border-border text-text-secondary"
                           >
                             Voir
