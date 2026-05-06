@@ -7,8 +7,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -41,6 +44,26 @@ public class AdminController {
     @Operation(summary = "Lister tous les utilisateurs (admin)")
     public ResponseEntity<List<AdminUserResponse>> getAllUsers() {
         return ResponseEntity.ok(adminService.getAllUsers());
+    }
+
+    /**
+     * GET /api/admin/progress/export?schoolYear=2026
+     * Exporte un bilan de progression au format CSV.
+     */
+    @GetMapping(value = "/progress/export", produces = "text/csv")
+    @Operation(summary = "Exporter le bilan de progression (CSV)")
+    public ResponseEntity<String> exportProgressCsv(
+        @RequestParam(required = false) Integer schoolYear) {
+
+        String csv = adminService.exportProgressCsv(schoolYear);
+        String filename = schoolYear != null
+            ? "progress_report_" + schoolYear + ".csv"
+            : "progress_report.csv";
+
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+            .body(csv);
     }
 }
 

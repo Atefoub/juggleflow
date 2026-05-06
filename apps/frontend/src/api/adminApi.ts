@@ -31,5 +31,13 @@ export const adminApi = {
     const res = await api.get<AdminUser[]>('/admin/users');
     return res.data;
   },
+
+  exportProgressCsv: async (schoolYear?: number): Promise<string> => {
+    const res = await api.get<string>('/admin/progress/export', {
+      params: schoolYear ? { schoolYear } : undefined,
+      responseType: 'text' as never,
+    });
+    return res.data;
+  },
 };
 
