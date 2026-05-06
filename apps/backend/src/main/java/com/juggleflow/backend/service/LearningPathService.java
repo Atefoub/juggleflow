@@ -63,6 +63,30 @@ public class LearningPathService {
     }
 
     /**
+     * Retourne les parcours assignés à la classe de l'élève connecté.
+     * Si l'élève n'a pas de classe rattachée, retourne une liste vide.
+     *
+     * Note: l'assignation se fait au niveau classe (class_learning_path).
+     */
+    public List<LearningPathResponse> getMyAssignedPaths(String studentEmail) {
+        Student student = studentRepository.findByEmail(studentEmail)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Élève introuvable ou accès non autorisé"));
+
+        if (student.getSchoolClass() == null) {
+            return List.of();
+        }
+
+        Long classId = student.getSchoolClass().getId();
+
+        return classLearningPathRepository.findBySchoolClass_Id(classId).stream()
+                .map(ClassLearningPath::getLearningPath)
+                .distinct()
+                .map(LearningPathResponse::from)
+                .toList();
+    }
+
+    /**
      * Retourne le détail complet d'un parcours avec ses étapes et figures.
      *
      * @param id l'identifiant du parcours

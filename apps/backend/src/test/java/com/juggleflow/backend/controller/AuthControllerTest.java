@@ -73,8 +73,8 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req)))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.message").exists());
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.message").value("Email ou mot de passe incorrect"));
     }
 
     @Test

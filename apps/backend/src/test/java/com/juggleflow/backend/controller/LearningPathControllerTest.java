@@ -70,7 +70,7 @@ class LearningPathControllerTest {
     learningPathRepository.save(buildPath("Fondamentaux", LearningPath.TargetLevel.BEGINNER));
     learningPathRepository.save(buildPath("Avancé", LearningPath.TargetLevel.ADVANCED));
 
-    mockMvc.perform(get("/api/tricks/paths?level=BEGINNER")
+    mockMvc.perform(get("/api/learning-paths?level=BEGINNER")
         .header("Authorization", "Bearer " + token))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.length()").value(1))
@@ -148,7 +148,7 @@ class LearningPathControllerTest {
   @Test
   @DisplayName("getAllPaths → 401 sans token")
   void getAllPaths_shouldReturn401_withoutToken() throws Exception {
-    mockMvc.perform(get("/api/tricks/paths"))
+    mockMvc.perform(get("/api/learning-paths"))
       .andExpect(status().isForbidden());
   }
 
