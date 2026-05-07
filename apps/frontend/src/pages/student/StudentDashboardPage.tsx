@@ -235,6 +235,30 @@ export default function StudentDashboardPage() {
                 </div>
               )}
             </section>
+
+            {/* ── À explorer (wireframes) ── */}
+            <section>
+              <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
+                À explorer
+              </h2>
+              <div className="p-4 rounded-2xl bg-bg-card border border-border flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="font-bold text-text-primary text-sm truncate">
+                    Vidéos, exercices et modules
+                  </p>
+                  <p className="text-xs text-text-muted mt-1">
+                    Pour progresser entre deux sessions.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/student/resources')}
+                  className="shrink-0 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-bg-card border border-border hover:opacity-80 transition-opacity min-h-11"
+                >
+                  Voir →
+                </button>
+              </div>
+            </section>
           </>
         )}
       </main>

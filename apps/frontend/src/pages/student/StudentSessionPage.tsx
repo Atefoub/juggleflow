@@ -82,7 +82,10 @@ export default function StudentSessionPage() {
     }
   }
 
-  const targetSeconds = 5 * 60;
+  const targetSeconds = Math.max(
+    60,
+    ((trick?.estimatedLearningDuration ?? 5) * 60)
+  );
   const percent = Math.min((elapsed / targetSeconds) * 100, 100);
 
   return (
@@ -128,7 +131,9 @@ export default function StudentSessionPage() {
             <section className="p-4 rounded-2xl bg-bg-card border border-border">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-text-muted">Objectif (suggestion)</span>
-                <span className="text-xs text-text-muted">5 min</span>
+                <span className="text-xs text-text-muted">
+                  {Math.round(targetSeconds / 60)} min
+                </span>
               </div>
               <ProgressBar value={percent} color="linear-gradient(90deg, #8B2BE2, #C724B1)" height="8px" />
               <p className="text-xs text-text-secondary mt-2">
@@ -177,7 +182,7 @@ export default function StudentSessionPage() {
                 onClick={() => navigate(`/student/trick/${trick.id}`)}
                 className="w-full py-3 rounded-2xl text-sm font-semibold border border-border text-text-secondary bg-bg-card min-h-11 hover:opacity-80 transition-opacity"
               >
-                Voir le détail de la figure
+                Retour à la fiche de la figure
               </button>
             </section>
           </>
