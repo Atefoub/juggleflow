@@ -86,6 +86,7 @@ export default function TrickDetailPage() {
   const level      = trick?.levelName ?? 'Beginner';
   const xp         = XP_BY_LEVEL[level] ?? 100;
   const xpPercent  = Math.min((xp / XP_NEXT) * 100, 100);
+  const xpDisplay  = Math.min(xp, XP_NEXT);
   const levelLabel = LEVEL_LABELS[level] ?? level;
   const chipClass  = LEVEL_CHIP[level] ?? LEVEL_CHIP.Beginner;
 
@@ -212,7 +213,7 @@ export default function TrickDetailPage() {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-xs text-text-muted mb-0.5">Points d'expérience</p>
-                  <p className="font-display font-bold text-3xl text-text-primary">{xp} XP</p>
+                  <p className="font-display font-bold text-3xl text-text-primary">{xpDisplay} XP</p>
                   <p className="text-xs text-text-muted mt-0.5">Rang : Bronze</p>
                 </div>
                 <div className="flex items-center justify-center w-14 h-14 rounded-full border-4 border-cta shrink-0">
@@ -220,11 +221,11 @@ export default function TrickDetailPage() {
                 </div>
               </div>
               <div className="flex justify-between text-xs text-text-muted mb-1">
-                <span>Bronze · {xp} XP</span>
+                <span>Bronze · {xpDisplay} XP</span>
                 <span>Argent · {XP_NEXT} XP</span>
               </div>
               <ProgressBar value={xpPercent} color="linear-gradient(90deg, #FF7A00, #FFB347)" height="6px" />
-              <p className="text-xs text-text-muted mt-1">{XP_NEXT - xp} XP pour atteindre le rang Argent</p>
+              <p className="text-xs text-text-muted mt-1">{Math.max(0, XP_NEXT - xpDisplay)} XP pour atteindre le rang Argent</p>
             </section>
 
             {/* Tabs */}

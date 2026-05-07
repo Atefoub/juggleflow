@@ -112,6 +112,7 @@ export default function BadgesPage() {
   ];
 
   const xp = (stats?.totalTricksLearned ?? 0) * XP_PER_TRICK;
+  const xpDisplay = Math.min(xp, XP_MAX);
   const streakDays = computeStreakFromProgress(progress);
   const masteredCount = stats?.totalTricksLearned ?? 0;
 
@@ -127,7 +128,7 @@ export default function BadgesPage() {
           <div className="flex items-end justify-between mb-3">
             <div>
                 <p className="text-xs text-text-muted mb-1">Points d'expérience</p>
-                <p className="font-display font-bold text-5xl text-text-primary leading-none">{xp} XP</p>
+                <p className="font-display font-bold text-5xl text-text-primary leading-none">{xpDisplay} XP</p>
                 <p className="text-xs text-text-muted mt-1">Continue comme ça pour débloquer de nouveaux rangs.</p>
             </div>
             <div className="flex flex-col items-end gap-1">
@@ -139,7 +140,7 @@ export default function BadgesPage() {
             </div>
           </div>
           <div className="flex justify-between text-xs text-text-muted mb-1">
-            <span>{RANK_LABEL} · {xp} XP</span>
+            <span>{RANK_LABEL} · {xpDisplay} XP</span>
             <span>{RANK_NEXT} · {XP_MAX} XP</span>
           </div>
           <ProgressBar
@@ -147,7 +148,7 @@ export default function BadgesPage() {
             color="linear-gradient(90deg, #8B2BE2, #C724B1)"
             height="8px"
           />
-          <p className="text-xs text-text-muted mt-1">{Math.max(0, XP_MAX - xp)} XP pour atteindre le rang {RANK_NEXT}</p>
+          <p className="text-xs text-text-muted mt-1">{Math.max(0, XP_MAX - xpDisplay)} XP pour atteindre le rang {RANK_NEXT}</p>
         </div>
       </header>
 

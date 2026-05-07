@@ -133,6 +133,7 @@ export default function ProgressPage() {
 
   const xp        = (stats?.totalTricksLearned ?? 0) * XP_PER_TRICK;
   const xpPercent = Math.min((xp / XP_MAX) * 100, 100);
+  const xpDisplay = Math.min(xp, XP_MAX);
 
   const onboardingLevel = getOnboardingLevel(user?.id) ?? 'BEGINNER';
   const LEVEL_LABEL: Record<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED', string> = {
@@ -194,12 +195,12 @@ export default function ProgressPage() {
             </div>
             <div className="text-right">
               <p className="text-xs text-text-muted">Points XP</p>
-              <p className="font-display font-bold text-brand text-sm">{xp} / {XP_MAX}</p>
+              <p className="font-display font-bold text-brand text-sm">{xpDisplay} / {XP_MAX}</p>
             </div>
           </div>
           <ProgressBar value={xpPercent} color="linear-gradient(90deg, #8B2BE2, #C724B1)" height="8px" />
           <p className="text-xs text-text-muted mt-1">
-            {Math.max(0, XP_MAX - xp)} XP pour le niveau suivant
+            {Math.max(0, XP_MAX - xpDisplay)} XP pour le niveau suivant
           </p>
         </div>
       </header>
