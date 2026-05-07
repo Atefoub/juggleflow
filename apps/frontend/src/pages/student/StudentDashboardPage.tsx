@@ -49,6 +49,7 @@ export default function StudentDashboardPage() {
 
   const xp          = (stats?.totalTricksLearned ?? 0) * XP_PER_TRICK;
   const xpPercent   = Math.min((xp / XP_MAX) * 100, 100);
+  const xpDisplay   = Math.min(xp, XP_MAX);
   const currentPath = paths[0] ?? null;
 
   const unlockedIds   = new Set(badges.map((b) => b.id));
@@ -88,7 +89,7 @@ export default function StudentDashboardPage() {
         {/* Barre XP */}
         <div className="flex justify-between mb-2">
           <span className="text-xs text-text-secondary">Points XP</span>
-          <span className="text-xs text-text-secondary">{xp} / {XP_MAX} XP</span>
+          <span className="text-xs text-text-secondary">{xpDisplay} / {XP_MAX} XP</span>
         </div>
         <ProgressBar value={xpPercent} color="linear-gradient(90deg, #8B2BE2, #C724B1)" height="8px" />
       </header>
@@ -253,7 +254,7 @@ export default function StudentDashboardPage() {
                 <button
                   type="button"
                   onClick={() => navigate('/student/resources')}
-                  className="shrink-0 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-bg-card border border-border hover:opacity-80 transition-opacity min-h-11"
+                  className="shrink-0 px-4 py-2 rounded-xl text-xs font-semibold text-text-secondary bg-bg-card border border-border hover:opacity-80 transition-opacity min-h-11"
                 >
                   Voir →
                 </button>

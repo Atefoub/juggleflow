@@ -52,6 +52,7 @@ export default function StudentProfilePage() {
 
   const xp          = (stats?.totalTricksLearned ?? 0) * XP_PER_TRICK;
   const xpPercent   = Math.min((xp / XP_MAX) * 100, 100);
+  const xpDisplay   = Math.min(xp, XP_MAX);
   const currentPath = paths[0] ?? null;
 
   const pathProgressPercent = currentPath && currentPath.stepCount > 0
@@ -85,7 +86,7 @@ export default function StudentProfilePage() {
         {/* XP badge */}
         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-bg-card border border-border">
           <span role="img" aria-label="XP" className="text-sm">⭐</span>
-          <span className="text-sm font-bold text-text-primary">{xp} XP</span>
+          <span className="text-sm font-bold text-text-primary">{xpDisplay} XP</span>
           <span className="text-xs text-text-muted">· Bronze</span>
         </div>
       </header>
@@ -148,12 +149,12 @@ export default function StudentProfilePage() {
               </div>
               <div className="text-right">
                 <p className="text-xs text-text-muted mb-0.5">Points XP</p>
-                <p className="font-display font-bold text-brand text-base">{xp} / {XP_MAX}</p>
+                <p className="font-display font-bold text-brand text-base">{xpDisplay} / {XP_MAX}</p>
               </div>
             </div>
             <ProgressBar value={xpPercent} color="linear-gradient(90deg, #8B2BE2, #C724B1)" height="8px" />
             <p className="text-xs text-text-muted mt-1">
-              {Math.max(0, XP_MAX - xp)} XP pour atteindre le rang Argent
+              {Math.max(0, XP_MAX - xpDisplay)} XP pour atteindre le rang Argent
             </p>
           </div>
         </section>
