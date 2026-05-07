@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
-import { studentApi, type BadgeData } from '../../api/studentApi';
+import { studentApi, type BadgeData, type StudentStats, type TrickProgress } from '../../api/studentApi';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -10,22 +10,55 @@ const navItems = [
   { label: 'Profil',      icon: '👤', path: '/student/profil' },
 ];
 
-const XP_CURRENT = 240;
-const XP_MAX     = 500;
-const RANK_LABEL = 'Bronze';
-const RANK_NEXT  = 'Argent';
+const XP_PER_TRICK = 100;
+const XP_MAX       = 500;
+const RANK_LABEL   = 'Bronze';
+const RANK_NEXT    = 'Argent';
 
 const STREAK_BADGES = [
-  { id: 's1', icon: '🔥', label: '7 jours',   requirement: 7,   unlocked: true  },
-  { id: 's2', icon: '⚡', label: '30 jours',  requirement: 30,  unlocked: false },
-  { id: 's3', icon: '💎', label: '100 jours', requirement: 100, unlocked: false },
+  { id: 's1', icon: '🔥', label: '7 jours',   requirement: 7  },
+  { id: 's2', icon: '⚡', label: '30 jours',  requirement: 30 },
+  { id: 's3', icon: '💎', label: '100 jours', requirement: 100 },
 ];
 
 const MILESTONE_BADGES = [
-  { id: 'm1', icon: '🌱', label: '10 figures', requirement: 10, unlocked: true  },
-  { id: 'm2', icon: '🌿', label: '25 figures', requirement: 25, unlocked: false },
-  { id: 'm3', icon: '🌳', label: '50 figures', requirement: 50, unlocked: false },
+  { id: 'm1', icon: '🌱', label: '10 figures', requirement: 10 },
+  { id: 'm2', icon: '🌿', label: '25 figures', requirement: 25 },
+  { id: 'm3', icon: '🌳', label: '50 figures', requirement: 50 },
 ];
+
+function dayKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function addDays(d: Date, days: number): Date {
+  const next = new Date(d);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function computeStreakFromProgress(progress: TrickProgress[]): number {
+  const days = new Set<string>();
+  for (const p of progress) {
+    if (!p.updatedAt) continue;
+    const date = new Date(p.updatedAt);
+    if (Number.isNaN(date.getTime())) continue;
+    days.add(dayKey(date));
+  }
+
+  if (days.size === 0) return 0;
+
+  let streak = 0;
+  let cursor = new Date();
+  if (!days.has(dayKey(cursor))) cursor = addDays(cursor, -1);
+
+  while (days.has(dayKey(cursor))) {
+    streak += 1;
+    cursor = addDays(cursor, -1);
+  }
+
+  return streak;
+}
 
 function BadgeItem({ icon, label, unlocked, iconLabel }: {
   icon: string; label: string; unlocked: boolean; iconLabel?: string;
@@ -50,12 +83,24 @@ function BadgeItem({ icon, label, unlocked, iconLabel }: {
 export default function BadgesPage() {
   const [badges, setBadges]       = useState<BadgeData[]>([]);
   const [allBadges, setAllBadges] = useState<BadgeData[]>([]);
+  const [stats, setStats]         = useState<StudentStats | null>(null);
+  const [progress, setProgress]   = useState<TrickProgress[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([studentApi.getUnlockedBadges(), studentApi.getAllBadges()])
-      .then(([unlocked, all]) => { setBadges(unlocked); setAllBadges(all); })
+    Promise.all([
+      studentApi.getUnlockedBadges(),
+      studentApi.getAllBadges(),
+      studentApi.getStatistics(),
+      studentApi.getMyProgress(),
+    ])
+      .then(([unlocked, all, s, p]) => {
+        setBadges(unlocked);
+        setAllBadges(all);
+        setStats(s);
+        setProgress(p);
+      })
       .catch(() => setError('Impossible de charger les badges.'))
       .finally(() => setLoading(false));
   }, []);
@@ -65,6 +110,10 @@ export default function BadgesPage() {
     ...badges,
     ...allBadges.filter((b) => !unlockedIds.has(b.id)),
   ];
+
+  const xp = (stats?.totalTricksLearned ?? 0) * XP_PER_TRICK;
+  const streakDays = computeStreakFromProgress(progress);
+  const masteredCount = stats?.totalTricksLearned ?? 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -78,7 +127,7 @@ export default function BadgesPage() {
           <div className="flex items-end justify-between mb-3">
             <div>
               <p className="text-xs text-text-muted mb-1">Progression moyenne</p>
-              <p className="font-display font-bold text-5xl text-text-primary leading-none">{XP_CURRENT} XP</p>
+                <p className="font-display font-bold text-5xl text-text-primary leading-none">{xp} XP</p>
               <p className="text-xs text-success mt-1">↑ +5% vs semaine dernière</p>
             </div>
             <div className="flex flex-col items-end gap-1">
@@ -90,15 +139,15 @@ export default function BadgesPage() {
             </div>
           </div>
           <div className="flex justify-between text-xs text-text-muted mb-1">
-            <span>{RANK_LABEL} · {XP_CURRENT} XP</span>
+            <span>{RANK_LABEL} · {xp} XP</span>
             <span>{RANK_NEXT} · {XP_MAX} XP</span>
           </div>
           <ProgressBar
-            value={Math.min((XP_CURRENT / XP_MAX) * 100, 100)}
+            value={Math.min((xp / XP_MAX) * 100, 100)}
             color="linear-gradient(90deg, #8B2BE2, #C724B1)"
             height="8px"
           />
-          <p className="text-xs text-text-muted mt-1">{XP_MAX - XP_CURRENT} XP pour atteindre le rang {RANK_NEXT}</p>
+          <p className="text-xs text-text-muted mt-1">{Math.max(0, XP_MAX - xp)} XP pour atteindre le rang {RANK_NEXT}</p>
         </div>
       </header>
 
@@ -148,16 +197,19 @@ export default function BadgesPage() {
                 Badges de régularité
               </h2>
               <div className="flex gap-4 mb-3">
-                {STREAK_BADGES.map((b) => (
-                  <BadgeItem key={b.id} icon={b.icon} label={b.label} unlocked={b.unlocked} />
-                ))}
+                {STREAK_BADGES.map((b) => {
+                  const isUnlocked = streakDays >= b.requirement;
+                  return (
+                    <BadgeItem key={b.id} icon={b.icon} label={b.label} unlocked={isUnlocked} />
+                  );
+                })}
               </div>
               <div className="p-3 rounded-xl bg-bg-card border border-border">
                 <div className="flex justify-between mb-1">
                   <span className="text-xs text-text-secondary">Streak actuel</span>
-                  <span className="text-xs text-cta font-bold">7 / 30 jours</span>
+                  <span className="text-xs text-cta font-bold">{Math.min(streakDays, 30)} / 30 jours</span>
                 </div>
-                <ProgressBar value={(7 / 30) * 100} color="#FF7A00" height="6px" />
+                <ProgressBar value={Math.min((streakDays / 30) * 100, 100)} color="#FF7A00" height="6px" />
               </div>
             </section>
 
@@ -167,16 +219,19 @@ export default function BadgesPage() {
                 Badges jalons
               </h2>
               <div className="flex gap-4 mb-3">
-                {MILESTONE_BADGES.map((b) => (
-                  <BadgeItem key={b.id} icon={b.icon} label={b.label} unlocked={b.unlocked} />
-                ))}
+                {MILESTONE_BADGES.map((b) => {
+                  const isUnlocked = masteredCount >= b.requirement;
+                  return (
+                    <BadgeItem key={b.id} icon={b.icon} label={b.label} unlocked={isUnlocked} />
+                  );
+                })}
               </div>
               <div className="p-3 rounded-xl bg-bg-card border border-border">
                 <div className="flex justify-between mb-1">
                   <span className="text-xs text-text-secondary">Figures maîtrisées</span>
-                  <span className="text-xs text-success font-bold">12 / 25</span>
+                  <span className="text-xs text-success font-bold">{Math.min(masteredCount, 25)} / 25</span>
                 </div>
-                <ProgressBar value={(12 / 25) * 100} color="#22C55E" height="6px" />
+                <ProgressBar value={Math.min((masteredCount / 25) * 100, 100)} color="#22C55E" height="6px" />
               </div>
             </section>
           </>

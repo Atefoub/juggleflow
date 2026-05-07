@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import { studentApi, type StudentStats, type BadgeData, type LearningPath } from '../../api/studentApi';
@@ -16,6 +17,7 @@ const XP_MAX = 500;
 
 export default function StudentDashboardPage() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [stats, setStats]         = useState<StudentStats | null>(null);
   const [badges, setBadges]       = useState<BadgeData[]>([]);
@@ -112,6 +114,28 @@ export default function StudentDashboardPage() {
 
         {!loading && !error && (
           <>
+            {/* ── Défi du jour (wireframes) ── */}
+            <section>
+              <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
+                Défi du jour
+              </h2>
+              <div className="p-4 rounded-2xl bg-bg-card border border-border flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="font-bold text-text-primary text-sm truncate">Jongle 2 balles × 10</p>
+                  <p className="text-xs text-text-muted mt-1">
+                    Répète l'enchaînement sans interruption
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/student/catalogue')}
+                  className="shrink-0 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-linear-to-br from-brand to-brand-end min-h-11 hover:opacity-90 transition-opacity"
+                >
+                  Commencer
+                </button>
+              </div>
+            </section>
+
             {/* ── Parcours en cours ── */}
             {currentPath ? (
               <section>
