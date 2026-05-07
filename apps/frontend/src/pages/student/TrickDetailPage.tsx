@@ -202,6 +202,7 @@ export default function TrickDetailPage() {
               disabled={status === 'MASTERED' || savingStatus}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold text-white bg-linear-to-br from-brand to-brand-end min-h-11 hover:opacity-90 transition-opacity disabled:opacity-50"
             >
+              <span aria-hidden="true">↗</span>
               <span role="img" aria-label="chronomètre">⏱️</span>
               {status === 'IN_PROGRESS' ? 'Continuer la session' : 'Démarrer une session'}
             </button>
@@ -240,15 +241,17 @@ export default function TrickDetailPage() {
                         : 'text-text-muted hover:text-text-secondary',
                     ].join(' ')}
                   >
-                    {t === 'prerequis' ? 'Prérequis' : t.charAt(0).toUpperCase() + t.slice(1)}
+                    {t === 'description' ? 'Description' : t === 'conseils' ? 'Conseils' : 'Prérequis'}
                   </button>
                 ))}
               </div>
 
               {tab === 'description' && (
-                <p className="text-sm text-text-secondary leading-relaxed">
-                  {trick.description || 'Aucune description disponible pour cette figure.'}
-                </p>
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm text-text-secondary leading-relaxed">
+                    {trick.description || 'Aucune description disponible pour cette figure.'}
+                  </p>
+                </div>
               )}
 
               {tab === 'conseils' && (
@@ -278,6 +281,9 @@ export default function TrickDetailPage() {
 
               {tab === 'prerequis' && (
                 <div className="flex flex-col gap-2">
+                  <p className="text-xs text-text-muted">
+                    Prérequis avant cette figure :
+                  </p>
                   {trick.prerequisiteNames.length === 0 ? (
                     <p className="text-sm text-text-muted">Aucun prérequis — figure accessible à tous !</p>
                   ) : (

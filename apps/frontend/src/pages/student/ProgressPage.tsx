@@ -22,10 +22,9 @@ const XP_PER_TRICK = 100;
 const XP_MAX = 500;
 
 const STREAK_BADGES = [
-  { id: 's1', name: '3 days',  icon: '🔥', requirement: 3  },
-  { id: 's2', name: '7 days',  icon: '⚡', requirement: 7  },
-  { id: 's3', name: '14 days', icon: '🌟', requirement: 14 },
-  { id: 's4', name: '30 days', icon: '💎', requirement: 30 },
+  { id: 's1', name: '7 jours',   icon: '🔥', requirement: 7   },
+  { id: 's2', name: '30 jours',  icon: '⚡', requirement: 30  },
+  { id: 's3', name: '100 jours', icon: '💎', requirement: 100 },
 ];
 
 type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED';

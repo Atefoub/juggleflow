@@ -251,6 +251,9 @@ export default function CataloguePage() {
 
   useEffect(() => { fetchTricks(0, true); }, [fetchTricks]);
 
+  const activeFiltersCount =
+    (activeFilter !== 'Tous' ? 1 : 0) + (debouncedSearch ? 1 : 0);
+
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
 
@@ -292,6 +295,25 @@ export default function CataloguePage() {
             );
           })}
         </div>
+
+        {/* Indicateur "filtre(s) actif(s)" — wireframes */}
+        {activeFiltersCount > 0 && (
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-xs text-text-muted">
+              {activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''} actif{activeFiltersCount > 1 ? 's' : ''}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveFilter('Tous');
+                setSearch('');
+              }}
+              className="text-xs font-semibold text-text-secondary hover:opacity-80 transition-opacity"
+            >
+              Réinitialiser
+            </button>
+          </div>
+        )}
       </header>
 
       <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
