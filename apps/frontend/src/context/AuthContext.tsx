@@ -21,6 +21,7 @@ import {
 import type { UserProfile, Role } from '../types/auth';
 import { authApi, setAccessToken, clearAccessToken, getAccessToken } from '../api/authApi';
 import { resetOnboarding } from '../utils/onboarding';
+import { resetPreferences } from '../utils/preferences';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -81,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async (): Promise<void> => {
     if (user?.id) {
       resetOnboarding(user.id);
+      resetPreferences(user.id);
     }
 
     await authApi.logout().catch(() => {

@@ -4,6 +4,8 @@ import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import { studentApi, type StudentStats, type LearningPath } from '../../api/studentApi';
 import { getOnboardingLevel } from '../../utils/onboarding';
+import { getOfflineMode, setOfflineMode } from '../../utils/preferences';
+import { catalogueApi } from '../../api/catalogueApi';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -25,6 +27,9 @@ export default function StudentProfilePage() {
 
   const [notificationsOn, setNotificationsOn] = useState(true);
   const [darkMode, setDarkMode]               = useState(true);
+  const [offlineMode, setOfflineModeState]    = useState(() => getOfflineMode(user?.id));
+  const [offlinePrefetching, setOfflinePrefetching] = useState(false);
+  const [offlineHint, setOfflineHint]         = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -38,6 +43,34 @@ export default function StudentProfilePage() {
       .catch(() => setError('Impossible de charger les données du profil.'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    setOfflineModeState(getOfflineMode(user?.id));
+  }, [user?.id]);
+
+  async function enableOfflineMode() {
+    setOfflineHint(null);
+    setOfflinePrefetching(true);
+    try {
+      // Précharge quelques endpoints clés.
+      // Les réponses GET /api/* sont déjà prises en charge par le cache PWA (NetworkFirst).
+      await Promise.all([
+        studentApi.getStatistics().catch(() => null),
+        studentApi.getMyLearningPaths().catch(() => null),
+        studentApi.getMyProgress().catch(() => null),
+        catalogueApi.getPopular().catch(() => null),
+        catalogueApi.getTricks({ page: 0, size: 10 }).catch(() => null),
+      ]);
+
+      // Attend le SW si dispo (meilleur UX, pas obligatoire).
+      if ('serviceWorker' in navigator) {
+        await navigator.serviceWorker.ready.catch(() => null);
+      }
+      setOfflineHint('Contenus préchargés. Tu peux consulter certaines pages même sans connexion.');
+    } finally {
+      setOfflinePrefetching(false);
+    }
+  }
 
   const initials = user
     ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
@@ -250,7 +283,50 @@ export default function StudentProfilePage() {
                 />
               </button>
             </div>
+
+            {/* Offline mode (wireframes) */}
+            <div className="flex items-center justify-between p-4 bg-bg-card">
+              <div className="flex items-center gap-3">
+                <span role="img" aria-label="mode hors-ligne" className="text-lg">📴</span>
+                <div>
+                  <p className="text-sm font-semibold text-text-primary">Mode hors-ligne</p>
+                  <p className="text-xs text-text-muted">
+                    Accès sans connexion (si déjà consulté)
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={async () => {
+                  const next = !offlineMode;
+                  setOfflineModeState(next);
+                  setOfflineMode(next, user?.id);
+                  if (next) await enableOfflineMode();
+                  else setOfflineHint(null);
+                }}
+                disabled={offlinePrefetching}
+                aria-label={offlineMode ? 'Désactiver le mode hors-ligne' : 'Activer le mode hors-ligne'}
+                className={[
+                  'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 disabled:opacity-60',
+                  offlineMode ? 'bg-brand' : 'bg-border',
+                ].join(' ')}
+              >
+                <span
+                  className={[
+                    'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
+                    offlineMode ? 'translate-x-5' : 'translate-x-0.5',
+                  ].join(' ')}
+                />
+              </button>
+            </div>
           </div>
+
+          {(offlinePrefetching || offlineHint) && (
+            <div className="mt-3 p-3 rounded-xl bg-bg-card border border-border">
+              <p className="text-xs text-text-muted">
+                {offlinePrefetching ? 'Préchargement du contenu pour le hors-ligne…' : offlineHint}
+              </p>
+            </div>
+          )}
         </section>
 
         {/* Logout */}
