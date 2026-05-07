@@ -3,9 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import {
   teacherApi,
-  GROUP_COLOR_MAP,
   type SchoolClass,
-  type StudentSummary,
   type LearningPathSummary,
 } from '../../api/teacherApi';
 
@@ -26,7 +24,7 @@ const LEVEL_CHIP: Record<string, string> = {
   Avancé:       'text-brand    bg-brand/10    border border-brand/30',
 };
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2;
 
 export default function AssignPathPage() {
   const navigate = useNavigate();
@@ -35,11 +33,9 @@ export default function AssignPathPage() {
   const preselect = useMemo(() => {
     const params = new URLSearchParams(location.search);
     const classId = params.get('classId');
-    const studentId = params.get('studentId');
     const pathId = params.get('pathId');
     return {
       classId: classId ? Number(classId) : null,
-      studentId: studentId ? Number(studentId) : null,
       pathId: pathId ? Number(pathId) : null,
     };
   }, [location.search]);
@@ -51,8 +47,6 @@ export default function AssignPathPage() {
 
   const [classes, setClasses]                   = useState<SchoolClass[]>([]);
   const [selectedClass, setSelectedClass]       = useState<SchoolClass | null>(null);
-  const [students, setStudents]                 = useState<StudentSummary[]>([]);
-  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<number>>(new Set());
 
   const [loadingPaths, setLoadingPaths]     = useState(true);
   const [loadingClasses, setLoadingClasses] = useState(true);
@@ -92,43 +86,11 @@ export default function AssignPathPage() {
       .finally(() => setLoadingClasses(false));
   }, [preselect.classId]);
 
-  // Chargement des élèves quand la classe change
-  useEffect(() => {
-    if (!selectedClass) return;
-    setStudents([]);
-    setSelectedStudentIds(new Set());
-    teacherApi
-      .getClassStudents(selectedClass.id)
-      .then((s) => {
-        setStudents(s);
-        if (preselect.studentId) {
-          const exists = s.some((x) => x.id === preselect.studentId);
-          if (exists) {
-            setSelectedStudentIds(new Set([preselect.studentId]));
-            setStep(2);
-          }
-        }
-      })
-      .catch(() => setError('Impossible de charger les élèves de cette classe.'));
-  }, [selectedClass, preselect.studentId]);
-
   // Filtrage des parcours
   const uniqueLevels = ['Tous', ...Array.from(new Set(paths.map((p) => p.targetLevel ?? 'Tous').filter(Boolean)))];
   const filteredPaths = paths.filter(
     (p) => levelFilter === 'Tous' || p.targetLevel === levelFilter
   );
-
-  function toggleStudent(id: number) {
-    setSelectedStudentIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }
-
-  function selectAll() {
-    setSelectedStudentIds(new Set(students.map((s) => s.id)));
-  }
 
   async function handleSubmit() {
     if (!selectedPath || !selectedClass) return;
@@ -145,7 +107,7 @@ export default function AssignPathPage() {
     }
   }
 
-  const STEPS = ['Parcours', 'Élèves', 'Confirmation'];
+  const STEPS = ['Parcours', 'Confirmation'];
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -214,6 +176,32 @@ export default function AssignPathPage() {
               Étape 1 — Choisir un parcours
             </h2>
 
+            {/* Classe */}
+            <section className="p-4 rounded-2xl bg-bg-card border border-border">
+              <p className="text-xs text-text-muted mb-2">Classe</p>
+              {loadingClasses ? (
+                <div className="h-10 rounded-xl animate-pulse bg-bg-input" />
+              ) : classes.length === 0 ? (
+                <p className="text-sm text-text-muted">Aucune classe disponible.</p>
+              ) : (
+                <select
+                  className="w-full px-3 py-2.5 rounded-xl bg-bg-primary border border-border text-sm text-text-primary outline-none"
+                  value={selectedClass?.id ?? ''}
+                  onChange={(e) => {
+                    const id = Number(e.target.value);
+                    const found = classes.find((c) => c.id === id) ?? null;
+                    setSelectedClass(found);
+                  }}
+                >
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.schoolYear})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </section>
+
             {/* Level filter */}
             <div className="flex gap-2 overflow-x-auto pb-1">
               {uniqueLevels.map((level) => (
@@ -278,111 +266,11 @@ export default function AssignPathPage() {
           </>
         )}
 
-        {/* ── Step 2 : Choisir les élèves ── */}
-        {step === 2 && (
-          <>
-            <div className="flex items-center justify-between">
-              <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
-                Étape 2 — Choisir les élèves
-              </h2>
-              <button onClick={selectAll} className="text-xs text-brand underline">
-                Tous sélectionner
-              </button>
-            </div>
-
-            {/* Class selector */}
-            {classes.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {classes.map((cls) => (
-                  <button
-                    key={cls.id}
-                    onClick={() => setSelectedClass(cls)}
-                    className={[
-                      'shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border',
-                      selectedClass?.id === cls.id
-                        ? 'bg-teacher border-teacher text-white'
-                        : 'bg-bg-card border-border text-text-muted',
-                    ].join(' ')}
-                  >
-                    {cls.name}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Selected chips */}
-            {selectedStudentIds.size > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {students
-                  .filter((s) => selectedStudentIds.has(s.id))
-                  .map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => toggleStudent(s.id)}
-                      className="flex items-center gap-1 px-2 py-1 rounded-full bg-brand/20 border border-brand text-xs text-brand"
-                    >
-                      {s.firstName} {s.lastName[0]}.
-                      <span aria-label="Retirer" className="ml-0.5 opacity-70">×</span>
-                    </button>
-                  ))}
-              </div>
-            )}
-
-            {loadingClasses ? (
-              <div className="flex flex-col gap-3">
-                {[1, 2, 3].map((i) => <div key={i} className="h-14 rounded-xl animate-pulse bg-bg-card" />)}
-              </div>
-            ) : students.length === 0 ? (
-              <div className="p-6 rounded-2xl text-center bg-bg-card border border-border text-sm text-text-muted">
-                Aucun élève dans cette classe.
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {students.map((s) => {
-                  const selected = selectedStudentIds.has(s.id);
-                  const color = GROUP_COLOR_MAP[s.groupColor];
-                  return (
-                    <button
-                      key={s.id}
-                      onClick={() => toggleStudent(s.id)}
-                      className={[
-                        'flex items-center gap-3 p-3 rounded-xl border text-left transition-colors',
-                        selected ? 'bg-brand/10 border-brand' : 'bg-bg-card border-border',
-                      ].join(' ')}
-                    >
-                      <div
-                        className="flex items-center justify-center w-9 h-9 rounded-full text-xs font-bold text-white shrink-0"
-                        style={{ background: color }}
-                      >
-                        {s.firstName[0]}{s.lastName[0]}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-text-primary">
-                          {s.firstName} {s.lastName}
-                        </p>
-                        <p className="text-xs text-text-muted">{s.progressionPercent}% de progression</p>
-                      </div>
-                      <div
-                        className={[
-                          'w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center',
-                          selected ? 'bg-brand border-brand' : 'bg-transparent border-border',
-                        ].join(' ')}
-                      >
-                        {selected && <span className="text-white text-xs">✓</span>}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* ── Step 3 : Confirmation ── */}
-        {step === 3 && selectedPath && (
+        {/* ── Step 2 : Confirmation ── */}
+        {step === 2 && selectedPath && (
           <>
             <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
-              Étape 3 — Confirmation
+              Étape 2 — Confirmation
             </h2>
 
             <div className="p-4 rounded-2xl bg-bg-card border border-border flex flex-col gap-3">
@@ -398,23 +286,13 @@ export default function AssignPathPage() {
               <div>
                 <p className="text-xs text-text-muted mb-1">Classe sélectionnée</p>
                 <p className="font-bold text-text-primary">
-                  {selectedClass?.name ?? '—'} · {selectedStudentIds.size || selectedClass?.studentCount || 0} élève{(selectedStudentIds.size || 0) > 1 ? 's' : ''}
+                  {selectedClass?.name ?? '—'} · {selectedClass?.studentCount ?? 0} élève{(selectedClass?.studentCount ?? 0) > 1 ? 's' : ''}
                 </p>
-                {selectedStudentIds.size > 0 && (
-                  <p className="text-xs text-text-muted">
-                    {students
-                      .filter((s) => selectedStudentIds.has(s.id))
-                      .slice(0, 4)
-                      .map((s) => `${s.firstName} ${s.lastName[0]}.`)
-                      .join(', ')}
-                    {selectedStudentIds.size > 4 && ` +${selectedStudentIds.size - 4} autres`}
-                  </p>
-                )}
               </div>
             </div>
 
             <div className="p-3 rounded-xl bg-[#1A1020] border border-cta/30 text-xs text-cta">
-              ⚡ Le parcours sera disponible immédiatement dans le tableau de bord des élèves.
+              ⚡ Le parcours sera assigné à toute la classe.
             </div>
           </>
         )}
@@ -430,13 +308,13 @@ export default function AssignPathPage() {
             ← Retour
           </button>
         )}
-        {step < 3 ? (
+        {step < 2 ? (
           <button
             onClick={() => setStep((s) => (s + 1) as Step)}
-            disabled={step === 1 ? !selectedPath : false}
+            disabled={step === 1 ? !selectedPath || !selectedClass : false}
             className="flex-1 py-3 rounded-2xl text-sm font-semibold text-white bg-teacher min-h-11 disabled:opacity-40"
           >
-            {step === 1 ? 'Continuer →' : 'Confirmer →'}
+            Continuer →
           </button>
         ) : (
           <button

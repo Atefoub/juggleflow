@@ -241,7 +241,11 @@ export default function StudentListPage() {
               return (
                 <button
                   key={student.id}
-                  onClick={() => navigate(`/teacher/eleve/${student.id}`)}
+                  onClick={() => {
+                    const classId = selectedClass?.id;
+                    const qs = classId ? `?classId=${classId}` : '';
+                    navigate(`/teacher/eleve/${student.id}${qs}`);
+                  }}
                   className="w-full p-4 rounded-2xl bg-bg-card border border-border text-left hover:border-teacher/60 transition-colors"
                 >
                   <div className="flex items-center gap-3 mb-3">
