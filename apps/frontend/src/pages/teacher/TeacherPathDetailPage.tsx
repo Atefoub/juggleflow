@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import {
@@ -23,9 +23,14 @@ function pct(done: number, total: number): number {
 export default function TeacherPathDetailPage() {
   const navigate = useNavigate();
   const params = useParams();
+  const location = useLocation();
 
   const classId = useMemo(() => Number(params.classId), [params.classId]);
   const pathId  = useMemo(() => Number(params.pathId),  [params.pathId]);
+  const shouldAutoDownload = useMemo(() => {
+    const q = new URLSearchParams(location.search);
+    return q.get('download') === 'csv';
+  }, [location.search]);
 
   const [path, setPath] = useState<LearningPathSummary | null>(null);
   const [progress, setProgress] = useState<StudentPathProgress[]>([]);
@@ -33,6 +38,7 @@ export default function TeacherPathDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isUnassigning, setIsUnassigning] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const autoDownloadedRef = useRef(false);
 
   async function handleUnassign() {
     if (!Number.isFinite(classId) || !Number.isFinite(pathId)) return;
@@ -95,6 +101,16 @@ export default function TeacherPathDetailPage() {
       .catch(() => setError("Impossible de charger le parcours ou la progression."))
       .finally(() => setLoading(false));
   }, [classId, pathId]);
+
+  useEffect(() => {
+    if (!shouldAutoDownload) return;
+    if (autoDownloadedRef.current) return;
+    if (loading) return;
+    if (error) return;
+    if (!Number.isFinite(classId) || !Number.isFinite(pathId)) return;
+    autoDownloadedRef.current = true;
+    void handleDownloadCsv();
+  }, [shouldAutoDownload, loading, error, classId, pathId]);
 
   const classAvg = useMemo(() => {
     if (progress.length === 0) return 0;
