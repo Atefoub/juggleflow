@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import {
@@ -28,6 +28,17 @@ const GROUP_FILTERS: { value: GroupFilter; label: string }[] = [
 
 export default function StudentListPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const preselect = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const classId = params.get('classId');
+    const group = params.get('group');
+    return {
+      classId: classId ? Number(classId) : null,
+      group: (group === 'VERT' || group === 'ORANGE' || group === 'ROUGE') ? group : null,
+    };
+  }, [location.search]);
 
   const [classes, setClasses]           = useState<SchoolClass[]>([]);
   const [students, setStudents]         = useState<StudentSummary[]>([]);
@@ -45,11 +56,21 @@ export default function StudentListPage() {
       .getMyClasses()
       .then((cls) => {
         setClasses(cls);
-        if (cls.length > 0) setSelectedClass(cls[0]);
+        if (cls.length === 0) return;
+        if (preselect.classId) {
+          const found = cls.find((c) => c.id === preselect.classId) ?? null;
+          setSelectedClass(found ?? cls[0]);
+        } else {
+          setSelectedClass(cls[0]);
+        }
       })
       .catch(() => setError('Impossible de charger vos classes.'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [preselect.classId]);
+
+  useEffect(() => {
+    if (preselect.group) setGroupFilter(preselect.group);
+  }, [preselect.group]);
 
   // Load students when class changes
   useEffect(() => {
