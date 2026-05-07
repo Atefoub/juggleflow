@@ -35,6 +35,29 @@ export interface TrickProgress {
   updatedAt: string | null;
 }
 
+/**
+ * DTO backend (ProgressResponse) :
+ * - masteryPercentage: 0..100
+ * - lastPractice: ISO string (Instant)
+ */
+interface ProgressResponseDto {
+  trickId: number;
+  trickName: string;
+  status: 'MASTERED' | 'IN_PROGRESS' | 'NOT_STARTED';
+  masteryPercentage: number | null;
+  lastPractice: string | null;
+}
+
+function toTrickProgress(dto: ProgressResponseDto): TrickProgress {
+  return {
+    trickId: dto.trickId,
+    trickName: dto.trickName,
+    status: dto.status,
+    masteryScore: dto.masteryPercentage === null ? null : Math.round(dto.masteryPercentage / 10),
+    updatedAt: dto.lastPractice,
+  };
+}
+
 export const studentApi = {
   getStatistics: async (): Promise<StudentStats> => {
     const res = await api.get<StudentStats>('/progress/statistics');
@@ -58,15 +81,20 @@ export const studentApi = {
   },
 
   getMyProgress: async (): Promise<TrickProgress[]> => {
-    const res = await api.get<TrickProgress[]>('/progress');
-    return res.data;
+    const res = await api.get<ProgressResponseDto[]>('/progress');
+    return res.data.map(toTrickProgress);
   },
 
   updateProgress: async (trickId: number, data: {
     status: 'MASTERED' | 'IN_PROGRESS' | 'NOT_STARTED';
     masteryScore?: number;
   }): Promise<TrickProgress> => {
-    const res = await api.put<TrickProgress>(`/progress/${trickId}`, data);
-    return res.data;
+    const payload = {
+      status: data.status,
+      masteryPercentage: data.masteryScore === undefined ? undefined : Math.max(0, Math.min(100, data.masteryScore * 10)),
+    };
+
+    const res = await api.put<ProgressResponseDto>(`/progress/${trickId}`, payload);
+    return toTrickProgress(res.data);
   },
 };
