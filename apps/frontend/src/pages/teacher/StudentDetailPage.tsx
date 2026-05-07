@@ -56,49 +56,58 @@ export default function StudentDetailPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        // 1. Trouver l'élève dans toutes les classes
-        const classes = await teacherApi.getMyClasses();
-        let found: StudentSummary | null = null;
-        let foundClassId: number | null = null;
-        for (const cls of classes) {
-          const students = await teacherApi.getClassStudents(cls.id);
-          found = students.find((s) => s.id === Number(id)) ?? null;
-          if (found) {
-            foundClassId = cls.id;
-            break;
-          }
-        }
-        if (!found) {
-          setError('Élève introuvable.');
-          return;
-        }
-        setStudent(found);
-
-        // 2. Charger les parcours disponibles (catalogue global)
+        // 1. Charger les parcours disponibles (catalogue global)
         const allPaths = await teacherApi.getAllPaths();
         setPaths(allPaths);
 
-        // 3. Déterminer la classe (query > découverte)
-        const resolvedClassId =
-          (Number.isFinite(classIdFromQuery ?? NaN) ? classIdFromQuery : foundClassId) ?? null;
-        setEffectiveClassId(resolvedClassId);
+        // 2. Déterminer la classe (query > découverte)
+        let resolvedClassId: number | null = Number.isFinite(classIdFromQuery ?? NaN)
+          ? classIdFromQuery
+          : null;
 
-        // 4. Charger les parcours assignés à cette classe (si connu)
-        let assigned: LearningPathSummary[] = [];
-        if (resolvedClassId) {
-          assigned = await teacherApi.getAssignedPathsForClass(resolvedClassId);
-          setAssignedPaths(assigned);
+        if (resolvedClassId == null) {
+          // Fallback : découvrir la classe de l'élève en parcourant les classes
+          const classes = await teacherApi.getMyClasses();
+          for (const cls of classes) {
+            const list = await teacherApi.getClassStudents(cls.id);
+            const found = list.find((s) => s.id === Number(id)) ?? null;
+            if (found) {
+              setStudent(found);
+              resolvedClassId = cls.id;
+              break;
+            }
+          }
+          if (resolvedClassId == null) {
+            setError('Élève introuvable.');
+            return;
+          }
         } else {
-          setAssignedPaths([]);
+          // Cas normal : classId fourni → un seul appel API nécessaire
+          const list = await teacherApi.getClassStudents(resolvedClassId);
+          const found = list.find((s) => s.id === Number(id)) ?? null;
+          if (!found) {
+            setError('Élève introuvable.');
+            return;
+          }
+          setStudent(found);
         }
 
-        // 5. Choix du parcours: query > premier assigné > rien
+        setEffectiveClassId(resolvedClassId);
+
+        // 3. Charger les parcours assignés à cette classe
+        let assigned: LearningPathSummary[] = [];
+        if (resolvedClassId != null) {
+          assigned = await teacherApi.getAssignedPathsForClass(resolvedClassId);
+          setAssignedPaths(assigned);
+        }
+
+        // 4. Choix du parcours: query > premier assigné > rien
         const resolvedPathId =
           (Number.isFinite(pathIdFromQuery ?? NaN) ? (pathIdFromQuery as number) : (assigned[0]?.id ?? null));
         setSelectedPathId(resolvedPathId);
 
-        // 6. Charger la progression détaillée pour ce parcours (si on a classId + pathId)
-        if (resolvedClassId && resolvedPathId) {
+        // 5. Charger la progression détaillée pour ce parcours (si on a classId + pathId)
+        if (resolvedClassId != null && resolvedPathId) {
           const me = await teacherApi.getStudentProgressForStudent(
             resolvedClassId,
             resolvedPathId,
