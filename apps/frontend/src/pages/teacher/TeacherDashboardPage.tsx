@@ -229,7 +229,7 @@ export default function TeacherDashboardPage() {
             {blockedStudents.length > 0 && (
               <div className="p-4 rounded-2xl flex items-start gap-3 bg-[#1A1020] border border-[#2A1A10] border-l-[3px] border-l-cta">
                 <span role="img" aria-label="attention" className="text-lg shrink-0">⚠️</span>
-                <div>
+                <div className="flex-1">
                   <p className="text-sm font-bold text-white mb-1">
                     {blockedStudents.length} élève{blockedStudents.length > 1 ? 's' : ''} en difficulté
                   </p>
@@ -241,6 +241,15 @@ export default function TeacherDashboardPage() {
                     {blockedStudents.length > 3 && ` +${blockedStudents.length - 3} autres`}
                   </p>
                 </div>
+                {selectedClass && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/teacher/eleves?classId=${selectedClass.id}&group=ROUGE`)}
+                    className="shrink-0 text-xs font-semibold text-cta underline underline-offset-2"
+                  >
+                    Voir le détail →
+                  </button>
+                )}
               </div>
             )}
 
@@ -341,6 +350,15 @@ export default function TeacherDashboardPage() {
 
                 <button
                   type="button"
+                  onClick={() => {
+                    if (!selectedClass) return;
+                    if (assignedPaths.length === 0) {
+                      setPathsError("Aucun parcours n'est assigné à cette classe.");
+                      return;
+                    }
+                    const pathId = assignedPaths[0].id;
+                    navigate(`/teacher/classe/${selectedClass.id}/parcours/${pathId}?download=csv`);
+                  }}
                   className="px-4 py-2 rounded-xl text-xs font-semibold min-h-11 bg-bg-card border-[1.5px] border-border text-text-secondary"
                 >
                   ↓ Générer rapport
