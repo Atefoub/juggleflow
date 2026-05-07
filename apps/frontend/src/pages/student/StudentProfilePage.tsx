@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import { studentApi, type StudentStats, type LearningPath } from '../../api/studentApi';
+import { getOnboardingLevel } from '../../utils/onboarding';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -42,6 +43,13 @@ export default function StudentProfilePage() {
     ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
     : '??';
 
+  const onboardingLevel = getOnboardingLevel(user?.id) ?? 'BEGINNER';
+  const LEVEL_LABEL: Record<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED', string> = {
+    BEGINNER: 'Débutant',
+    INTERMEDIATE: 'Intermédiaire',
+    ADVANCED: 'Avancé',
+  };
+
   const xp          = (stats?.totalTricksLearned ?? 0) * XP_PER_TRICK;
   const xpPercent   = Math.min((xp / XP_MAX) * 100, 100);
   const currentPath = paths[0] ?? null;
@@ -70,7 +78,7 @@ export default function StudentProfilePage() {
             {user ? `${user.firstName} ${user.lastName}` : '—'}
           </p>
           <p className="text-xs text-text-secondary mt-0.5">
-            Élève {currentPath ? `· ${currentPath.pathName}` : ''}
+            Élève · {LEVEL_LABEL[onboardingLevel]} {currentPath ? `· ${currentPath.pathName}` : ''}
           </p>
         </div>
 
