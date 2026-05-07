@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import BottomNav from '../../components/BottomNav';
@@ -48,6 +48,7 @@ export default function TeacherDashboardPage() {
   const [loadingPaths, setLoadingPaths] = useState(false);
   const [pathsError, setPathsError] = useState<string | null>(null);
   const [error, setError]       = useState<string | null>(null);
+  const [reportPickerOpen, setReportPickerOpen] = useState(false);
 
   useEffect(() => {
     teacherApi
@@ -95,6 +96,10 @@ export default function TeacherDashboardPage() {
   const groups          = groupStudents(students);
   const avgProgress     = averageProgress(students);
   const blockedStudents = students.filter((s) => s.groupColor === 'ROUGE');
+  const sortedAssignedPaths = useMemo(
+    () => assignedPaths.slice().sort((a, b) => a.pathName.localeCompare(b.pathName, 'fr')),
+    [assignedPaths]
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -356,8 +361,13 @@ export default function TeacherDashboardPage() {
                       setPathsError("Aucun parcours n'est assigné à cette classe.");
                       return;
                     }
-                    const pathId = assignedPaths[0].id;
-                    navigate(`/teacher/classe/${selectedClass.id}/parcours/${pathId}?download=csv`);
+                    if (assignedPaths.length === 1) {
+                      const pathId = assignedPaths[0].id;
+                      navigate(`/teacher/classe/${selectedClass.id}/parcours/${pathId}?download=csv`);
+                      return;
+                    }
+                    setPathsError(null);
+                    setReportPickerOpen(true);
                   }}
                   className="px-4 py-2 rounded-xl text-xs font-semibold min-h-11 bg-bg-card border-[1.5px] border-border text-text-secondary"
                 >
@@ -373,6 +383,50 @@ export default function TeacherDashboardPage() {
                 </button>
               </div>
             </div>
+
+            {/* Sélection du parcours pour le rapport */}
+            {reportPickerOpen && selectedClass && sortedAssignedPaths.length > 1 && (
+              <section className="p-4 rounded-2xl bg-bg-card border border-border">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
+                    Choisir un parcours
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setReportPickerOpen(false)}
+                    className="text-xs text-text-muted hover:text-text-secondary transition-colors"
+                    aria-label="Fermer"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  {sortedAssignedPaths.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setReportPickerOpen(false);
+                        navigate(`/teacher/classe/${selectedClass.id}/parcours/${p.id}?download=csv`);
+                      }}
+                      className="w-full p-3 rounded-xl bg-bg-primary border border-border text-left hover:opacity-90 transition-opacity"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-text-primary truncate">{p.pathName}</p>
+                          <p className="text-xs text-text-muted">
+                            {p.stepCount} figure{p.stepCount > 1 ? 's' : ''}
+                            {p.targetLevel ? ` · ${p.targetLevel}` : ''}
+                          </p>
+                        </div>
+                        <span className="text-xs font-semibold text-teacher shrink-0">CSV →</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
           </>
         )}
       </div>

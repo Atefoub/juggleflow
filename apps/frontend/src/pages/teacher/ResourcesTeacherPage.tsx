@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import BottomNav from '../../components/BottomNav';
 
 const navItems = [
@@ -49,6 +49,30 @@ const GUIDE_RESOURCES = [
 
 export default function ResourcesTeacherPage() {
   const [tab, setTab] = useState<Tab>('Études');
+  const [search, setSearch] = useState('');
+
+  const normalizedSearch = search.trim().toLowerCase();
+
+  const filteredPdfs = useMemo(() => {
+    if (normalizedSearch === '') return PDF_RESOURCES;
+    return PDF_RESOURCES.filter((r) => (
+      `${r.title} ${r.authors} ${r.pages} ${r.tags.join(' ')}`.toLowerCase().includes(normalizedSearch)
+    ));
+  }, [normalizedSearch]);
+
+  const filteredVideos = useMemo(() => {
+    if (normalizedSearch === '') return VIDEO_RESOURCES;
+    return VIDEO_RESOURCES.filter((v) => (
+      `${v.title} ${v.duration} ${v.level}`.toLowerCase().includes(normalizedSearch)
+    ));
+  }, [normalizedSearch]);
+
+  const filteredGuides = useMemo(() => {
+    if (normalizedSearch === '') return GUIDE_RESOURCES;
+    return GUIDE_RESOURCES.filter((g) => (
+      `${g.title} ${g.pages}`.toLowerCase().includes(normalizedSearch)
+    ));
+  }, [normalizedSearch]);
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -85,8 +109,20 @@ export default function ResourcesTeacherPage() {
           <input
             type="search"
             placeholder="Rechercher une ressource…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              aria-label="Effacer la recherche"
+              className="text-text-muted hover:text-text-secondary transition-colors text-xs"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         {/* ── Études ── */}
@@ -96,7 +132,11 @@ export default function ResourcesTeacherPage() {
               Études scientifiques — PDF téléchargeables
             </h2>
             <div className="flex flex-col gap-3">
-              {PDF_RESOURCES.map((res) => (
+              {filteredPdfs.length === 0 ? (
+                <div className="p-6 rounded-2xl text-center bg-bg-card border border-border text-sm text-text-muted">
+                  Aucune ressource ne correspond à cette recherche.
+                </div>
+              ) : filteredPdfs.map((res) => (
                 <div key={res.id} className="p-4 rounded-2xl bg-bg-card border border-border">
                   <div className="flex items-start gap-3 mb-3">
                     <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#2A1020] border border-alert/30 shrink-0">
@@ -138,7 +178,11 @@ export default function ResourcesTeacherPage() {
         {/* ── Vidéos ── */}
         {tab === 'Vidéos' && (
           <div className="flex flex-col gap-3">
-            {VIDEO_RESOURCES.map((v) => (
+            {filteredVideos.length === 0 ? (
+              <div className="p-6 rounded-2xl text-center bg-bg-card border border-border text-sm text-text-muted">
+                Aucune ressource ne correspond à cette recherche.
+              </div>
+            ) : filteredVideos.map((v) => (
               <div key={v.id} className="p-4 rounded-2xl bg-bg-card border border-border flex items-center gap-3">
                 <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand/20 border border-brand/40 shrink-0">
                   <span role="img" aria-label="vidéo" className="text-lg">▶️</span>
@@ -162,7 +206,11 @@ export default function ResourcesTeacherPage() {
         {/* ── Guides EPS ── */}
         {tab === 'Guides EPS' && (
           <div className="flex flex-col gap-3">
-            {GUIDE_RESOURCES.map((g) => (
+            {filteredGuides.length === 0 ? (
+              <div className="p-6 rounded-2xl text-center bg-bg-card border border-border text-sm text-text-muted">
+                Aucune ressource ne correspond à cette recherche.
+              </div>
+            ) : filteredGuides.map((g) => (
               <div key={g.id} className="p-4 rounded-2xl bg-bg-card border border-border flex items-center gap-3">
                 <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-success/10 border border-success/30 shrink-0">
                   <span role="img" aria-label="guide" className="text-lg">📗</span>
