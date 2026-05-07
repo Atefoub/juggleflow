@@ -126,9 +126,9 @@ export default function BadgesPage() {
         <div className="p-4 rounded-2xl bg-bg-card border border-border">
           <div className="flex items-end justify-between mb-3">
             <div>
-              <p className="text-xs text-text-muted mb-1">Progression moyenne</p>
+                <p className="text-xs text-text-muted mb-1">Points d'expérience</p>
                 <p className="font-display font-bold text-5xl text-text-primary leading-none">{xp} XP</p>
-              <p className="text-xs text-success mt-1">↑ +5% vs semaine dernière</p>
+                <p className="text-xs text-text-muted mt-1">Continue comme ça pour débloquer de nouveaux rangs.</p>
             </div>
             <div className="flex flex-col items-end gap-1">
               <span className="text-xs text-text-muted">Rang actuel</span>
