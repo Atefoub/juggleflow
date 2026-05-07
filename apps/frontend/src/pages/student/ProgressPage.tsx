@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
+import { getOnboardingLevel } from '../../utils/onboarding';
 import {
   studentApi,
   type StudentStats,
@@ -134,6 +135,13 @@ export default function ProgressPage() {
   const xp        = (stats?.totalTricksLearned ?? 0) * XP_PER_TRICK;
   const xpPercent = Math.min((xp / XP_MAX) * 100, 100);
 
+  const onboardingLevel = getOnboardingLevel(user?.id) ?? 'BEGINNER';
+  const LEVEL_LABEL: Record<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED', string> = {
+    BEGINNER: 'Débutant',
+    INTERMEDIATE: 'Intermédiaire',
+    ADVANCED: 'Avancé',
+  };
+
   const unlockedIds = new Set(badges.map((b) => b.id));
   const badgeGrid = [
     ...badges,
@@ -180,7 +188,9 @@ export default function ProgressPage() {
               <span role="img" aria-label="niveau" className="text-xl">⭐</span>
               <div>
                 <p className="text-xs text-text-muted">Niveau actuel</p>
-                <p className="font-display font-bold text-text-primary text-sm">Débutant</p>
+                <p className="font-display font-bold text-text-primary text-sm">
+                  {LEVEL_LABEL[onboardingLevel]}
+                </p>
               </div>
             </div>
             <div className="text-right">
