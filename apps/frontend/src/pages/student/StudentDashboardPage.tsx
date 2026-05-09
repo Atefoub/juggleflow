@@ -6,6 +6,7 @@ import ProgressBar from '../../components/ProgressBar';
 import { studentApi, type StudentStats, type BadgeData, type LearningPath } from '../../api/studentApi';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { flushProgressUpdates, getPendingProgressUpdatesCount } from '../../utils/offlineQueue';
+import OfflineBanner from '../../components/OfflineBanner';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -123,6 +124,7 @@ export default function StudentDashboardPage() {
 
       {/* ── Contenu scrollable ── */}
       <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
+        <OfflineBanner />
 
         {/* Erreur */}
         {error && (

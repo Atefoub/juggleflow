@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import BottomNav from '../../components/BottomNav';
+import OfflineBanner from '../../components/OfflineBanner';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -69,6 +70,7 @@ export default function ResourcesStudentPage() {
       </header>
 
       <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
+        <OfflineBanner />
 
         {/* ── Vidéos ── */}
         {tab === 'Vidéos' && (
