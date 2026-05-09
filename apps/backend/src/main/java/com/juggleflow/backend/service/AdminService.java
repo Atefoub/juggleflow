@@ -2,6 +2,8 @@ package com.juggleflow.backend.service;
 
 import com.juggleflow.backend.dto.AdminUserResponse;
 import com.juggleflow.backend.dto.SchoolClassResponse;
+import com.juggleflow.backend.exception.ResourceNotFoundException;
+import com.juggleflow.backend.model.Administrator;
 import com.juggleflow.backend.model.GdprConsent;
 import com.juggleflow.backend.model.Student;
 import com.juggleflow.backend.model.User;
@@ -11,8 +13,10 @@ import com.juggleflow.backend.repository.StudentRepository;
 import com.juggleflow.backend.repository.UserProgressRepository;
 import com.juggleflow.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.Comparator;
@@ -45,6 +49,40 @@ public class AdminService {
             .stream()
             .map(this::toAdminUserResponse)
             .toList();
+    }
+
+    /**
+     * Active ou désactive un compte utilisateur (administration).
+     * Interdit : se désactiver soi-même, désactiver le dernier administrateur actif.
+     */
+    @Transactional
+    public void setUserEnabled(long targetUserId, boolean enabled, String actingAdminEmail) {
+        User actor = userRepository.findByEmail(actingAdminEmail)
+            .orElseThrow(() -> new ResourceNotFoundException("Administrateur introuvable pour cette session."));
+
+        User target = userRepository.findById(targetUserId)
+            .orElseThrow(() -> new ResourceNotFoundException("Utilisateur", targetUserId));
+
+        if (!enabled) {
+            if (target.getId().equals(actor.getId())) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Impossible de désactiver votre propre compte depuis l'administration.");
+            }
+            if (target instanceof Administrator) {
+                long activeAdmins = userRepository.findAll().stream()
+                    .filter(u -> u instanceof Administrator && u.isEnabled())
+                    .count();
+                if (activeAdmins <= 1) {
+                    throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Impossible de désactiver le dernier administrateur actif.");
+                }
+            }
+        }
+
+        target.setEnabled(enabled);
+        userRepository.save(target);
     }
 
     /**
