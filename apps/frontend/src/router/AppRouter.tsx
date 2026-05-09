@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Role } from '../types/auth';
+import { isOnboardingCompleted } from '../utils/onboarding';
 
 // Lazy pages (code-splitting)
 const LoginPage            = lazy(() => import('../pages/LoginPage'));
@@ -27,8 +28,6 @@ const AdminDashboardPage = lazy(() => import('../pages/admin/AdminDashboardPage'
 const AdminUsersPage     = lazy(() => import('../pages/admin/AdminUsersPage'));
 const AdminClassesPage   = lazy(() => import('../pages/admin/AdminClassesPage'));
 const AdminRgpdPage      = lazy(() => import('../pages/admin/AdminRgpdPage'));
-
-import { isOnboardingCompleted } from '../utils/onboarding';
 
 function AppFallback() {
   return (
