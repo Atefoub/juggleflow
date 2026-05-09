@@ -38,6 +38,15 @@ public class CookieUtils {
   private long refreshExpirationMs;
 
   /**
+   * Par défaut, on met Secure=true (prod) mais on permet de le désactiver en dev
+   * pour que les cookies fonctionnent sur http://localhost.
+   *
+   * À activer en prod: COOKIE_SECURE=true (recommandé).
+   */
+  @Value("${cookie.secure:true}")
+  private boolean cookieSecure;
+
+  /**
    * Écrit le refresh token dans un cookie httpOnly sur la réponse HTTP.
    * Appelé après login et après rotation du refresh token.
    */
@@ -76,7 +85,7 @@ public class CookieUtils {
   private Cookie buildCookie(String value, int maxAgeSeconds) {
     Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE, value);
     cookie.setHttpOnly(true);   // inaccessible à JavaScript
-    cookie.setSecure(true);     // HTTPS uniquement
+    cookie.setSecure(cookieSecure);
     cookie.setPath(COOKIE_PATH);
     cookie.setMaxAge(maxAgeSeconds);
     cookie.setAttribute("SameSite", "Strict");
