@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
+import { useAuth } from '../../context/AuthContext';
 import { adminApi, type AdminSchoolClass } from '../../api/adminApi';
 import { adminGdprApi, type ConsentStatusRow } from '../../api/adminGdprApi';
 
@@ -9,8 +10,6 @@ const navItems = [
   { label: 'Classes',      icon: '🏫', path: '/admin/classes' },
   { label: 'RGPD',         icon: '🔒', path: '/admin/rgpd' },
 ];
-
-const DELETE_DATE   = '30/06/2026';
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
@@ -55,7 +54,9 @@ function downloadText(filename: string, content: string, mime: string) {
 }
 
 export default function AdminRgpdPage() {
-  const [deleteMode, setDeleteMode] = useState(false);
+  const { user } = useAuth();
+  const [policyVersion, setPolicyVersion] = useState('2026-1');
+  const [busyUserId, setBusyUserId] = useState<number | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [search, setSearch] = useState('');
   const [classes, setClasses] = useState<AdminSchoolClass[]>([]);
@@ -141,13 +142,58 @@ export default function AdminRgpdPage() {
     return years;
   }, [classes]);
 
+  async function refreshConsentRows() {
+    if (selectedClassId == null) return;
+    const [status, pending] = await Promise.all([
+      adminGdprApi.getClassConsentStatus(selectedClassId),
+      adminGdprApi.getPendingCount(selectedClassId),
+    ]);
+    setRows(status);
+    setPendingCount(pending);
+  }
+
+  async function recordParentalConsentRow(userId: number) {
+    if (!user?.id || selectedClassId == null) return;
+    setBusyUserId(userId);
+    setError(null);
+    try {
+      await adminGdprApi.recordConsent({
+        userId,
+        consentGiven: true,
+        policyVersion: policyVersion.trim() || '2026-1',
+        legalGuardianId: user.id,
+      });
+      await adminApi.setUserEnabled(userId, true);
+      await refreshConsentRows();
+    } catch {
+      setError('Impossible d’enregistrer le consentement.');
+    } finally {
+      setBusyUserId(null);
+    }
+  }
+
+  async function revokeParentalForUser(userId: number) {
+    if (selectedClassId == null) return;
+    if (!window.confirm('Révoquer le consentement parental ? Le compte élève sera désactivé.')) return;
+    setBusyUserId(userId);
+    setError(null);
+    try {
+      await adminGdprApi.revokeParentalConsent(userId);
+      await refreshConsentRows();
+    } catch {
+      setError('Impossible de révoquer le consentement.');
+    } finally {
+      setBusyUserId(null);
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
 
       {/* Header */}
       <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
         <h1 className="font-display font-bold text-text-primary text-2xl mb-1">RGPD &amp; Export</h1>
-        <p className="text-xs text-text-muted">Conformité des données · École Jules Ferry</p>
+        <p className="text-xs text-text-muted">Conformité des données · établissement</p>
       </header>
 
       <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
@@ -207,13 +253,30 @@ export default function AdminRgpdPage() {
             )}
           </p>
 
+          <div className="mt-3 p-3 rounded-xl bg-bg-primary border border-border">
+            <label htmlFor="rgpd-policy-version" className="text-xs text-text-muted block mb-1">
+              Version de la politique enregistrée sur le consentement
+            </label>
+            <input
+              id="rgpd-policy-version"
+              type="text"
+              value={policyVersion}
+              onChange={(e) => setPolicyVersion(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-bg-card border border-border text-sm text-text-primary outline-none"
+            />
+            <p className="text-[0.65rem] text-text-muted mt-2 leading-relaxed">
+              Le représentant légal enregistré en base est ton propre compte administrateur (traçabilité établissement).
+            </p>
+          </div>
+
           <div className="flex gap-2 mt-3">
             <button
+              type="button"
+              onClick={() => setShowDetails(true)}
+              disabled={isLoading || rows.length === 0}
               className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-cta min-h-10 hover:opacity-90 transition-opacity disabled:opacity-50"
-              disabled={isLoading || missingRows.length === 0}
-              title="À implémenter : relance (email/ENT) via backend"
             >
-              Relancer ({missingRows.length})
+              Gérer ({missingRows.length} sans consentement)
             </button>
             <button
               type="button"
@@ -242,9 +305,9 @@ export default function AdminRgpdPage() {
                 {filteredRows.map((r) => (
                   <div
                     key={r.userId}
-                    className="flex items-center justify-between p-3 rounded-xl bg-bg-primary border border-border"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-bg-primary border border-border"
                   >
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm text-text-primary font-semibold truncate">
                         {r.firstName} {r.lastName}
                       </p>
@@ -252,14 +315,36 @@ export default function AdminRgpdPage() {
                         Dernière mise à jour : {formatDate(r.consentDate)}
                       </p>
                     </div>
-                    <span className={[
-                      'text-xs font-semibold px-2 py-0.5 rounded-full border shrink-0',
-                      r.hasParentalConsent
-                        ? 'text-success bg-success/10 border-success/30'
-                        : 'text-alert bg-alert/10 border-alert/30',
-                    ].join(' ')}>
-                      {r.hasParentalConsent ? 'Consentement ✓' : 'Consentement ✗'}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <span className={[
+                        'text-xs font-semibold px-2 py-0.5 rounded-full border',
+                        r.hasParentalConsent
+                          ? 'text-success bg-success/10 border-success/30'
+                          : 'text-alert bg-alert/10 border-alert/30',
+                      ].join(' ')}>
+                        {r.hasParentalConsent ? 'Consentement ✓' : 'Consentement ✗'}
+                      </span>
+                      {!r.hasParentalConsent && (
+                        <button
+                          type="button"
+                          disabled={busyUserId === r.userId || !user?.id}
+                          onClick={() => recordParentalConsentRow(r.userId)}
+                          className="text-xs px-2 py-1 rounded-lg font-semibold text-white bg-brand border border-brand min-h-8 disabled:opacity-40"
+                        >
+                          {busyUserId === r.userId ? '…' : 'Enregistrer'}
+                        </button>
+                      )}
+                      {r.hasParentalConsent && (
+                        <button
+                          type="button"
+                          disabled={busyUserId === r.userId}
+                          onClick={() => revokeParentalForUser(r.userId)}
+                          className="text-xs px-2 py-1 rounded-lg font-semibold text-alert border border-alert/40 bg-alert/10 min-h-8 disabled:opacity-40"
+                        >
+                          {busyUserId === r.userId ? '…' : 'Révoquer'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
                 {filteredRows.length === 0 && (
@@ -277,49 +362,19 @@ export default function AdminRgpdPage() {
           )}
         </section>
 
-        {/* Right to be forgotten */}
+        {/* Droit à l'oubli — information */}
         <section>
           <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
-            Droit à l'oubli
+            Droit à l&apos;oubli
           </h2>
           <div className="p-4 rounded-2xl bg-bg-card border border-border">
-            <p className="text-sm text-text-secondary mb-3">
-              Suppression automatique des données élèves à la fin de l'année scolaire ({DELETE_DATE}).
+            <p className="text-sm text-text-secondary mb-2">
+              Une tâche planifiée côté serveur anonymise les comptes élèves en fin d&apos;année scolaire. La révocation du
+              consentement parental ci-dessus désactive immédiatement le compte concerné.
             </p>
-            <div className="flex items-center gap-2 mb-3 p-2 rounded-xl bg-alert/10 border border-alert/30">
-              <span role="img" aria-label="calendrier" className="text-lg">📅</span>
-              <div>
-                <p className="text-xs font-semibold text-alert">Suppression planifiée</p>
-                <p className="text-xs text-text-muted">{DELETE_DATE}</p>
-              </div>
-            </div>
-
-            {!deleteMode ? (
-              <button
-                onClick={() => setDeleteMode(true)}
-                className="w-full py-2.5 rounded-xl text-sm font-semibold text-alert border border-alert/40 bg-alert/10 min-h-10"
-              >
-                Supprimer un élève manuellement
-              </button>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <p className="text-xs text-alert font-semibold">Sélectionner un élève à supprimer</p>
-                {['Lucas Martin', 'Sara Fontaine', 'Alex Bernard'].map((name) => (
-                  <div key={name} className="flex items-center justify-between p-3 rounded-xl bg-bg-primary border border-border">
-                    <span className="text-sm text-text-primary">{name}</span>
-                    <button className="text-xs px-2 py-1 rounded-lg text-alert border border-alert/40 bg-alert/10">
-                      Supprimer
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={() => setDeleteMode(false)}
-                  className="text-xs text-text-muted mt-1 self-center"
-                >
-                  Annuler
-                </button>
-              </div>
-            )}
+            <p className="text-xs text-text-muted">
+              La suppression définitive personnalisée (hors anonymisation de masse) pourra être ajoutée via un endpoint dédié si ton DPO l&apos;exige.
+            </p>
           </div>
         </section>
 

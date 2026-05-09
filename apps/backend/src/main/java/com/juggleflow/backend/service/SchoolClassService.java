@@ -1,6 +1,8 @@
 // filename: backend/src/main/java/com/juggleflow/backend/service/SchoolClassService.java
 package com.juggleflow.backend.service;
 
+import com.juggleflow.backend.dto.AdminCreateSchoolClassRequest;
+import com.juggleflow.backend.dto.AdminUpdateSchoolClassRequest;
 import com.juggleflow.backend.dto.SchoolClassRequest;
 import com.juggleflow.backend.dto.SchoolClassResponse;
 import com.juggleflow.backend.dto.StudentSummaryResponse;
@@ -17,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -80,7 +83,10 @@ public class SchoolClassService {
      */
     public List<StudentSummaryResponse> getClassStudents(Long classId, String teacherEmail) {
         assertClassOwnership(classId, teacherEmail);
+        return buildStudentSummariesForClass(classId);
+    }
 
+    private List<StudentSummaryResponse> buildStudentSummariesForClass(Long classId) {
         List<Student> students = studentRepository.findBySchoolClass_Id(classId);
 
         return students.stream().map(student -> {
@@ -94,7 +100,6 @@ public class SchoolClassService {
 
             int percent = total == 0 ? 0 : (int) ((mastered * 100L) / total);
 
-            // Dernière activité = dernière mise à jour de progression
             var lastActivity = progressList.stream()
                     .map(UserProgress::getLastPractice)
                     .filter(java.util.Objects::nonNull)
@@ -188,6 +193,75 @@ public class SchoolClassService {
 
         schoolClassRepository.deleteById(classId);
         log.info("Classe {} supprimée par {}", classId, teacherEmail);
+    }
+
+    // ── Administration (ROLE_ADMINISTRATEUR) ─────────────────────
+
+    /**
+     * Crée une classe en choisissant explicitement le titulaire (enseignant).
+     */
+    @Transactional
+    public SchoolClassResponse createClassAsAdmin(AdminCreateSchoolClassRequest request) {
+        Teacher teacher = teacherRepository.findById(request.getHomeroomTeacherId())
+            .orElseThrow(() -> new ResourceNotFoundException("Enseignant", request.getHomeroomTeacherId()));
+
+        SchoolClass schoolClass = SchoolClass.builder()
+            .name(request.getName())
+            .schoolLevel(request.getSchoolLevel())
+            .schoolYear(request.getSchoolYear())
+            .studentCount(0)
+            .homeroomTeacher(teacher)
+            .build();
+
+        SchoolClass saved = schoolClassRepository.save(schoolClass);
+        log.info("Classe '{}' créée par admin (titulaire id={})", saved.getName(), teacher.getId());
+        return SchoolClassResponse.from(saved);
+    }
+
+    /**
+     * Met à jour une classe (champs fournis uniquement).
+     */
+    @Transactional
+    public SchoolClassResponse updateClassAsAdmin(Long classId, AdminUpdateSchoolClassRequest request) {
+        SchoolClass sc = findClassById(classId);
+
+        if (StringUtils.hasText(request.getName())) {
+            sc.setName(request.getName().trim());
+        }
+        if (StringUtils.hasText(request.getSchoolLevel())) {
+            sc.setSchoolLevel(request.getSchoolLevel());
+        }
+        if (request.getSchoolYear() != null) {
+            sc.setSchoolYear(request.getSchoolYear());
+        }
+        if (request.getHomeroomTeacherId() != null) {
+            Teacher teacher = teacherRepository.findById(request.getHomeroomTeacherId())
+                .orElseThrow(() -> new ResourceNotFoundException("Enseignant", request.getHomeroomTeacherId()));
+            sc.setHomeroomTeacher(teacher);
+        }
+
+        return SchoolClassResponse.from(schoolClassRepository.save(sc));
+    }
+
+    /**
+     * Liste les élèves d'une classe (admin, sans vérification titulaire).
+     */
+    public List<StudentSummaryResponse> getClassStudentsAsAdmin(Long classId) {
+        findClassById(classId);
+        return buildStudentSummariesForClass(classId);
+    }
+
+    @Transactional
+    public void deleteClassAsAdmin(Long classId) {
+        findClassById(classId);
+        int studentCount = studentRepository.countBySchoolClass_Id(classId);
+        if (studentCount > 0) {
+            throw new IllegalArgumentException(
+                "Impossible de supprimer une classe contenant des élèves. "
+                + "Retirez d'abord les " + studentCount + " élève(s) de la classe.");
+        }
+        schoolClassRepository.deleteById(classId);
+        log.info("Classe {} supprimée par admin", classId);
     }
 
     // ── Helpers privés ───────────────────────────────────────────
