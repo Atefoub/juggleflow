@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 
 import App from './app';
@@ -22,13 +22,18 @@ vi.mock('../api/authApi', () => {
 });
 
 describe('App', () => {
-  it('should render successfully', () => {
-    const { baseElement } = render(<App />);
+  it('should render successfully', async () => {
+    let baseElement: HTMLElement | null = null;
+    await act(async () => {
+      ({ baseElement } = render(<App />));
+    });
     expect(baseElement).toBeTruthy();
   });
 
   it('should show the login screen by default', async () => {
-    render(<App />);
+    await act(async () => {
+      render(<App />);
+    });
     expect(await screen.findByAltText('JuggleFlow')).toBeTruthy();
   });
 });
