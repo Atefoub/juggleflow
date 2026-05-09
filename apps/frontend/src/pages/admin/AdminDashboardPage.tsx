@@ -244,21 +244,21 @@ export default function AdminDashboardPage() {
             <button
               type="button"
               onClick={() => navigate('/admin/classes')}
-              className="h-9 px-4 bg-[#111] text-white rounded-lg text-sm font-semibold hover:bg-[#333] transition-colors"
+              className="jf-btn-primary min-h-9 px-4 rounded-lg text-sm"
             >
               + Créer une classe
             </button>
             <button
               type="button"
               onClick={() => navigate('/admin/users')}
-              className="h-9 px-4 bg-white border border-[#DDD] rounded-lg text-sm font-medium text-[#444] hover:bg-[#F9F9F9] transition-colors"
+              className="jf-btn-surface"
             >
               Gérer les comptes
             </button>
             <button
               type="button"
               onClick={() => navigate('/admin/audit')}
-              className="h-9 px-4 bg-white border border-[#DDD] rounded-lg text-sm font-medium text-[#444] hover:bg-[#F9F9F9] transition-colors"
+              className="jf-btn-surface"
             >
               <span role="img" aria-label="Journaux d'activité">📋</span>
               {' '}Journal d&apos;audit
@@ -274,7 +274,7 @@ export default function AdminDashboardPage() {
               onClick={() => setActiveTab('classes')}
               className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors ${
                 activeTab === 'classes'
-                  ? 'border-[#111] text-[#111]'
+                  ? 'border-brand text-brand'
                   : 'border-transparent text-[#999] hover:text-[#555]'
               }`}
             >
@@ -285,13 +285,13 @@ export default function AdminDashboardPage() {
               onClick={() => setActiveTab('rgpd')}
               className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
                 activeTab === 'rgpd'
-                  ? 'border-[#111] text-[#111]'
+                  ? 'border-brand text-brand'
                   : 'border-transparent text-[#999] hover:text-[#555]'
               }`}
             >
               RGPD &amp; Données
               {alertesRgpd > 0 && (
-                <span className="inline-flex items-center justify-center w-5 h-5 bg-[#111] text-white text-xs font-bold rounded-full">
+                <span className="inline-flex items-center justify-center w-5 h-5 jf-nav-pill-active text-white text-xs font-bold rounded-full">
                   {alertesRgpd}
                 </span>
               )}
@@ -417,14 +417,14 @@ export default function AdminDashboardPage() {
                   <button
                     type="button"
                     onClick={() => navigate('/admin/rgpd')}
-                    className="h-9 px-4 bg-[#111] text-white rounded-lg text-sm font-semibold hover:bg-[#333] transition-colors"
+                    className="jf-btn-primary min-h-9 px-4 rounded-lg text-sm"
                   >
                     Gérer les consentements ({alertesRgpd} en attente)
                   </button>
                   <button
                     type="button"
                     onClick={() => navigate('/admin/rgpd')}
-                    className="h-9 px-4 border border-[#DDD] rounded-lg text-sm font-medium text-[#444] hover:bg-[#F9F9F9] transition-colors"
+                    className="jf-btn-surface"
                   >
                     Page RGPD complète
                   </button>
@@ -482,7 +482,7 @@ export default function AdminDashboardPage() {
                           setIsExporting(false);
                         }
                       }}
-                      className="h-9 px-4 bg-[#111] text-white rounded-lg text-sm font-semibold hover:bg-[#333] disabled:opacity-50"
+                      className="jf-btn-primary min-h-9 px-4 rounded-lg text-sm disabled:opacity-50"
                     >
                       {isExporting ? '…' : 'Télécharger CSV'}
                     </button>
@@ -507,7 +507,7 @@ export default function AdminDashboardPage() {
                           setIsExporting(false);
                         }
                       }}
-                      className="h-9 px-4 bg-[#111] text-white rounded-lg text-sm font-semibold hover:bg-[#333] disabled:opacity-50"
+                      className="jf-btn-primary min-h-9 px-4 rounded-lg text-sm disabled:opacity-50"
                     >
                       {isExporting ? '…' : 'Télécharger CSV'}
                     </button>

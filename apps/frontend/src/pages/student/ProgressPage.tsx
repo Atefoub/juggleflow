@@ -41,7 +41,7 @@ const STATUS_BADGE: Record<ProgressStatus, { label: string; cls: string; icon: s
   IN_PROGRESS: {
     icon: '🔄',
     label: 'En cours',
-    cls: 'bg-cta/10 text-cta border border-cta/30',
+    cls: 'bg-brand/10 text-brand-end border border-brand/30',
   },
   NOT_STARTED: {
     icon: '🔒',
@@ -314,7 +314,7 @@ export default function ProgressPage() {
                 </h2>
                 <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-bg-card border border-border">
                   <span role="img" aria-label="feu" className="text-sm">🔥</span>
-                  <span className="text-xs font-bold text-cta">{streakDays} jours</span>
+                  <span className="text-xs font-bold text-brand-end">{streakDays} jours</span>
                 </div>
               </div>
 
@@ -327,7 +327,7 @@ export default function ProgressPage() {
                         className={[
                           'flex items-center justify-center w-14 h-14 rounded-xl text-2xl',
                           isUnlocked
-                            ? 'bg-[#1A1020] border border-cta'
+                            ? 'border border-brand bg-[#1A1028]'
                             : 'bg-border opacity-40',
                         ].join(' ')}
                       >
@@ -338,7 +338,7 @@ export default function ProgressPage() {
                       <span
                         className={[
                           'text-[0.6rem] text-center leading-tight',
-                          isUnlocked ? 'text-cta' : 'text-text-muted',
+                          isUnlocked ? 'text-brand-end' : 'text-text-muted',
                         ].join(' ')}
                       >
                         {badge.name}
@@ -357,7 +357,7 @@ export default function ProgressPage() {
                 </div>
                 <ProgressBar
                   value={Math.min((streakDays / STREAK_BADGES[STREAK_BADGES.length - 1].requirement) * 100, 100)}
-                  color="#FF7A00"
+                  color="linear-gradient(90deg, #8B2BE2, #C724B1)"
                   height="6px"
                 />
               </div>
