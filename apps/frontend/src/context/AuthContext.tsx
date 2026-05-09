@@ -23,6 +23,9 @@ import { api, authApi, setAccessToken, clearAccessToken, getAccessToken } from '
 import type { LoginResponse } from '../types/auth';
 import { resetOnboarding } from '../utils/onboarding';
 import { resetPreferences } from '../utils/preferences';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { flushProgressUpdates, getPendingProgressUpdatesCount } from '../utils/offlineQueue';
+import { studentApi } from '../api/studentApi';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -37,6 +40,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]           = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const isOnline = useOnlineStatus();
 
   useEffect(() => {
     let cancelled = false;
@@ -65,6 +69,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     tryRestoreSession();
     return () => { cancelled = true; };
   }, []);
+
+  // Sync des actions offline quand on redevient online.
+  useEffect(() => {
+    if (!isOnline) return;
+    if (!user?.id) return;
+    const pending = getPendingProgressUpdatesCount(user.id);
+    if (pending === 0) return;
+    flushProgressUpdates(user.id, async (u) => {
+      await studentApi.updateProgress(u.trickId, {
+        status: u.status,
+        masteryScore: u.masteryScore,
+      });
+    }).catch(() => {
+      // ignore — on réessaiera au prochain retour online
+    });
+  }, [isOnline, user?.id]);
 
   const login = async (token: string, profile?: UserProfile): Promise<UserProfile> => {
     setAccessToken(token);
