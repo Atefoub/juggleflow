@@ -8,6 +8,7 @@ const navItems = [
   { label: 'Utilisateurs', icon: '👥', path: '/admin/users' },
   { label: 'Classes',      icon: '🏫', path: '/admin/classes' },
   { label: 'RGPD',         icon: '🔒', path: '/admin/rgpd' },
+  { label: 'Journal',      icon: '📋', path: '/admin/audit' },
 ];
 
 type Role = 'Tous' | 'Enseignants' | 'Élèves';

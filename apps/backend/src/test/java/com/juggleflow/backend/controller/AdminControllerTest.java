@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.juggleflow.backend.dto.RegisterRequest;
 import com.juggleflow.backend.dto.SchoolClassRequest;
 import com.juggleflow.backend.model.Administrator;
+import com.juggleflow.backend.repository.AdminAuditEventRepository;
 import com.juggleflow.backend.repository.GdprConsentRepository;
 import com.juggleflow.backend.repository.SchoolClassRepository;
 import com.juggleflow.backend.repository.StudentRepository;
@@ -41,6 +42,7 @@ class AdminControllerTest {
     @Autowired private SchoolClassRepository schoolClassRepository;
     @Autowired private UserProgressRepository userProgressRepository;
     @Autowired private GdprConsentRepository gdprConsentRepository;
+    @Autowired private AdminAuditEventRepository adminAuditEventRepository;
     @Autowired private PasswordEncoder passwordEncoder;
 
     private MockMvc mockMvc;
@@ -52,6 +54,7 @@ class AdminControllerTest {
             .apply(SecurityMockMvcConfigurers.springSecurity())
             .build();
 
+        adminAuditEventRepository.deleteAll();
         gdprConsentRepository.deleteAll();
         userProgressRepository.deleteAll();
         studentRepository.deleteAll();
