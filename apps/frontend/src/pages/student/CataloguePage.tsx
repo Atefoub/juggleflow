@@ -37,7 +37,7 @@ const PAGE_SIZE = 10;
 
 const LEVEL_CHIP_CLASS: Record<string, string> = {
   Beginner:     'text-[#22C55E] bg-[rgba(34,197,94,0.12)]',
-  Intermediate: 'text-cta bg-[rgba(255,122,0,0.12)]',
+  Intermediate: 'text-[#C724B1] bg-[rgba(139,43,226,0.14)]',
   Advanced:     'text-[#8B2BE2] bg-[rgba(139,43,226,0.12)]',
   Expert:       'text-[#FF4D4D] bg-[rgba(255,77,77,0.12)]',
 };
@@ -45,7 +45,7 @@ const LEVEL_CHIP_CLASS: Record<string, string> = {
 const FILTER_ACTIVE_CLASS: Record<FilterLevel, string> = {
   Tous:         'bg-linear-to-br from-[#8B2BE2] to-[#C724B1] text-white border-[#8B2BE2]',
   Beginner:     'bg-[rgba(34,197,94,0.12)] text-[#22C55E] border-[#22C55E]',
-  Intermediate: 'bg-[rgba(255,122,0,0.12)] text-cta border-[#FF7A00]',
+  Intermediate: 'bg-[rgba(139,43,226,0.14)] text-[#C724B1] border-[#8B2BE2]',
   Advanced:     'bg-[rgba(139,43,226,0.12)] text-[#8B2BE2] border-[#8B2BE2]',
   Expert:       'bg-[rgba(255,77,77,0.12)] text-[#FF4D4D] border-[#FF4D4D]',
 };
@@ -57,7 +57,7 @@ function StarRating({ score }: { score: number }) {
   return (
     <span className="flex gap-0.5" aria-label={`Difficulté : ${score} sur 10`}>
       {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={i < stars ? 'text-cta text-[0.6rem]' : 'text-border text-[0.6rem]'}>
+        <span key={i} className={i < stars ? 'text-brand-end text-[0.6rem]' : 'text-border text-[0.6rem]'}>
           ★
         </span>
       ))}
@@ -118,7 +118,7 @@ function ProgressChip({ status }: { status: ProgressStatus }) {
   if (status === 'NOT_STARTED') return null;
   const cfg = status === 'MASTERED'
     ? { icon: '✅', label: 'Maîtrisée', cls: 'bg-success/10 text-success border border-success/30' }
-    : { icon: '🔄', label: 'En cours',  cls: 'bg-cta/10 text-cta border border-cta/30' };
+    : { icon: '🔄', label: 'En cours',  cls: 'bg-brand/10 text-brand-end border border-brand/30' };
 
   return (
     <span className={`text-[0.55rem] font-bold px-2 py-0.5 rounded-full ${cfg.cls}`}>
@@ -145,7 +145,7 @@ function TrickCard({
           <div className="flex items-center gap-2 shrink-0">
             <ProgressChip status={status} />
             {trick.popular && (
-              <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full bg-[#1A1208] text-cta border border-[#FF7A0033]">
+              <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full bg-[#1A1028] text-brand-end border border-brand/35">
                 <span role="img" aria-label="Populaire">🔥</span>{' '}Populaire
               </span>
             )}

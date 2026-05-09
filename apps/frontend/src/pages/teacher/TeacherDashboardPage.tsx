@@ -107,7 +107,7 @@ export default function TeacherDashboardPage() {
       {/* Header */}
       <div className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl font-bold text-white shrink-0 text-xs bg-teacher">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-brand to-brand-end text-xs font-bold text-white">
             Prof
           </div>
           <div className="flex-1">
@@ -121,8 +121,9 @@ export default function TeacherDashboardPage() {
             )}
           </div>
           <button
+            type="button"
             onClick={logout}
-            className="text-xs px-3 py-1 rounded-lg bg-border text-text-secondary"
+            className="jf-btn-secondary jf-btn-secondary-sm"
           >
             Quitter
           </button>
@@ -136,10 +137,10 @@ export default function TeacherDashboardPage() {
                 key={cls.id}
                 onClick={() => setSelectedClass(cls)}
                 className={[
-                  'shrink-0 px-3 py-1 rounded-lg text-xs font-semibold border border-border',
+                  'shrink-0 rounded-lg border px-3 py-1 text-xs font-semibold',
                   selectedClass?.id === cls.id
-                    ? 'bg-teacher text-white'
-                    : 'bg-border text-text-secondary',
+                    ? 'jf-chip-active border-transparent text-white'
+                    : 'border-border bg-border text-text-secondary',
                 ].join(' ')}
               >
                 {cls.name}
@@ -232,7 +233,7 @@ export default function TeacherDashboardPage() {
 
             {/* Alerte élèves bloqués */}
             {blockedStudents.length > 0 && (
-              <div className="p-4 rounded-2xl flex items-start gap-3 bg-[#1A1020] border border-[#2A1A10] border-l-[3px] border-l-cta">
+              <div className="flex items-start gap-3 rounded-2xl border border-[#2A1A10] border-l-[3px] border-l-brand-end bg-[#1A1020] p-4">
                 <span role="img" aria-label="attention" className="text-lg shrink-0">⚠️</span>
                 <div className="flex-1">
                   <p className="text-sm font-bold text-white mb-1">
@@ -250,7 +251,7 @@ export default function TeacherDashboardPage() {
                   <button
                     type="button"
                     onClick={() => navigate(`/teacher/eleves?classId=${selectedClass.id}&group=ROUGE`)}
-                    className="shrink-0 text-xs font-semibold text-cta underline underline-offset-2"
+                    className="shrink-0 text-xs font-semibold text-brand-end underline underline-offset-2"
                   >
                     Voir le détail →
                   </button>
@@ -268,7 +269,7 @@ export default function TeacherDashboardPage() {
                   <button
                     type="button"
                     onClick={() => navigate(`/teacher/parcours/assigner?classId=${selectedClass.id}`)}
-                    className="text-xs px-3 py-1.5 rounded-xl bg-teacher text-white font-semibold"
+                    className="jf-btn-primary jf-btn-primary-sm rounded-xl"
                   >
                     + Assigner
                   </button>
@@ -310,7 +311,7 @@ export default function TeacherDashboardPage() {
                           <button
                             type="button"
                             onClick={() => navigate(`/teacher/classe/${selectedClass.id}/parcours/${p.id}`)}
-                            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-border border border-border text-text-secondary"
+                            className="jf-btn-secondary jf-btn-secondary-sm rounded-xl"
                           >
                             Voir
                           </button>
@@ -348,7 +349,7 @@ export default function TeacherDashboardPage() {
                     if (selectedClass) navigate(`/teacher/parcours/assigner?classId=${selectedClass.id}`);
                     else navigate('/teacher/parcours/assigner');
                   }}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold min-h-11 bg-bg-card border-[1.5px] border-border text-text-secondary"
+                  className="jf-btn-secondary jf-btn-secondary-sm min-h-11 rounded-xl px-4 py-2 text-xs"
                 >
                   + Assigner un parcours
                 </button>
@@ -369,7 +370,7 @@ export default function TeacherDashboardPage() {
                     setPathsError(null);
                     setReportPickerOpen(true);
                   }}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold min-h-11 bg-bg-card border-[1.5px] border-border text-text-secondary"
+                  className="jf-btn-secondary jf-btn-secondary-sm min-h-11 rounded-xl px-4 py-2 text-xs"
                 >
                   ↓ Générer rapport
                 </button>
@@ -377,7 +378,7 @@ export default function TeacherDashboardPage() {
                 <button
                   type="button"
                   onClick={() => navigate('/teacher/eleves')}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold min-h-11 bg-bg-card border-[1.5px] border-border text-text-secondary"
+                  className="jf-btn-secondary jf-btn-secondary-sm min-h-11 rounded-xl px-4 py-2 text-xs"
                 >
                   + Ajouter un élève
                 </button>
@@ -420,7 +421,7 @@ export default function TeacherDashboardPage() {
                             {p.targetLevel ? ` · ${p.targetLevel}` : ''}
                           </p>
                         </div>
-                        <span className="text-xs font-semibold text-teacher shrink-0">CSV →</span>
+                        <span className="shrink-0 text-xs font-semibold text-brand-end">CSV →</span>
                       </div>
                     </button>
                   ))}

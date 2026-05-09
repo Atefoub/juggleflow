@@ -127,7 +127,7 @@ export default function StudentListPage() {
           <button
             type="button"
             onClick={() => navigate('/teacher/parcours/assigner')}
-            className="shrink-0 px-3 py-2 rounded-xl text-xs font-semibold bg-bg-card border border-border text-text-secondary hover:opacity-85 transition-opacity min-h-11"
+            className="jf-btn-secondary jf-btn-secondary-sm min-h-11 shrink-0 rounded-xl px-3 py-2 text-xs"
           >
             + Assigner
           </button>
@@ -146,7 +146,7 @@ export default function StudentListPage() {
             type="button"
             disabled={addingStudent || !selectedClass}
             onClick={handleAddStudent}
-            className="px-4 py-3 rounded-xl font-bold text-white text-sm min-h-12 bg-teacher disabled:opacity-50"
+            className="jf-btn-primary min-h-12 shrink-0 rounded-xl px-4 py-3 text-sm disabled:opacity-50"
           >
             {addingStudent ? 'Ajout…' : '+ Ajouter'}
           </button>
@@ -164,10 +164,10 @@ export default function StudentListPage() {
                 key={cls.id}
                 onClick={() => setSelectedClass(cls)}
                 className={[
-                  'shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors',
+                  'shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
                   selectedClass?.id === cls.id
-                    ? 'bg-teacher border-teacher text-white'
-                    : 'bg-bg-card border-border text-text-muted',
+                    ? 'jf-chip-active border-transparent text-white'
+                    : 'border-border bg-bg-card text-text-muted',
                 ].join(' ')}
               >
                 {cls.name}
@@ -183,10 +183,10 @@ export default function StudentListPage() {
               key={value}
               onClick={() => setGroupFilter(value)}
               className={[
-                'shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors',
+                'shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
                 groupFilter === value
-                  ? 'bg-teacher border-teacher text-white'
-                  : 'bg-bg-card border-border text-text-muted',
+                  ? 'jf-chip-active border-transparent text-white'
+                  : 'border-border bg-bg-card text-text-muted',
               ].join(' ')}
             >
               {label}
@@ -246,7 +246,7 @@ export default function StudentListPage() {
             {(search || groupFilter !== 'Tous') && (
               <button
                 onClick={() => { setSearch(''); setGroupFilter('Tous'); }}
-                className="text-xs text-teacher underline underline-offset-2"
+                className="text-xs text-brand-end underline underline-offset-2"
               >
                 Réinitialiser les filtres
               </button>
@@ -267,7 +267,7 @@ export default function StudentListPage() {
                     const qs = classId ? `?classId=${classId}` : '';
                     navigate(`/teacher/eleve/${student.id}${qs}`);
                   }}
-                  className="w-full p-4 rounded-2xl bg-bg-card border border-border text-left hover:border-teacher/60 transition-colors"
+                  className="w-full rounded-2xl border border-border bg-bg-card p-4 text-left transition-colors hover:border-brand/45"
                 >
                   <div className="flex items-center gap-3 mb-3">
                     {/* Avatar with dynamic group color — inline style intentional (runtime value) */}

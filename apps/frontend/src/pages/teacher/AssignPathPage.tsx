@@ -16,11 +16,11 @@ const navItems = [
 
 const LEVEL_CHIP: Record<string, string> = {
   Beginner:     'text-success  bg-success/10  border border-success/30',
-  Intermediate: 'text-cta      bg-cta/10      border border-cta/30',
+  Intermediate: 'text-brand-end bg-brand/12  border border-brand/35',
   Advanced:     'text-brand    bg-brand/10    border border-brand/30',
   Expert:       'text-alert    bg-alert/10    border border-alert/30',
   Débutant:     'text-success  bg-success/10  border border-success/30',
-  Intermédiaire:'text-cta      bg-cta/10      border border-cta/30',
+  Intermédiaire:'text-brand-end bg-brand/12  border border-brand/35',
   Avancé:       'text-brand    bg-brand/10    border border-brand/30',
 };
 
@@ -137,7 +137,7 @@ export default function AssignPathPage() {
                     className={[
                       'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
                       done    ? 'bg-success text-white'   :
-                      current ? 'bg-brand text-white'     :
+                      current ? 'bg-linear-to-br from-brand to-brand-end text-white' :
                                 'bg-border text-text-muted',
                     ].join(' ')}
                   >
@@ -209,10 +209,10 @@ export default function AssignPathPage() {
                   key={level}
                   onClick={() => setLevelFilter(level)}
                   className={[
-                    'shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors',
+                    'shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
                     levelFilter === level
-                      ? 'bg-brand border-brand text-white'
-                      : 'bg-bg-card border-border text-text-muted',
+                      ? 'jf-chip-active border-transparent text-white'
+                      : 'border-border bg-bg-card text-text-muted',
                   ].join(' ')}
                 >
                   {level}
@@ -291,7 +291,7 @@ export default function AssignPathPage() {
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-[#1A1020] border border-cta/30 text-xs text-cta">
+            <div className="rounded-xl border border-brand/30 bg-[#1A1028] p-3 text-xs text-brand-end">
               ⚡ Le parcours sera assigné à toute la classe.
             </div>
           </>
@@ -303,7 +303,7 @@ export default function AssignPathPage() {
         {step > 1 && (
           <button
             onClick={() => setStep((s) => (s - 1) as Step)}
-            className="flex-1 py-3 rounded-2xl text-sm font-semibold border border-border text-text-secondary bg-bg-card min-h-11"
+            className="jf-btn-secondary flex-1 min-h-11 rounded-2xl py-3 text-sm"
           >
             ← Retour
           </button>
@@ -312,7 +312,7 @@ export default function AssignPathPage() {
           <button
             onClick={() => setStep((s) => (s + 1) as Step)}
             disabled={step === 1 ? !selectedPath || !selectedClass : false}
-            className="flex-1 py-3 rounded-2xl text-sm font-semibold text-white bg-teacher min-h-11 disabled:opacity-40"
+            className="jf-btn-primary flex-1 min-h-11 rounded-2xl py-3 text-sm disabled:opacity-40"
           >
             Continuer →
           </button>

@@ -43,8 +43,8 @@ export default function BottomNav({ items }: BottomNavProps) {
           >
             <div
               className={[
-                'flex items-center justify-center w-8 h-8 rounded-lg text-lg',
-                isActive ? 'bg-brand' : 'bg-transparent',
+                'flex items-center justify-center w-8 h-8 rounded-lg text-lg text-white',
+                isActive ? 'jf-nav-pill-active' : 'bg-transparent',
               ].join(' ')}
             >
               {item.icon}
