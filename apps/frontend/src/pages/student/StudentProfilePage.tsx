@@ -7,6 +7,7 @@ import { getOnboardingLevel, setOnboardingLevel, type OnboardingLevel } from '..
 import { getOfflineMode, setOfflineMode } from '../../utils/preferences';
 import { catalogueApi } from '../../api/catalogueApi';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import OfflineBanner from '../../components/OfflineBanner';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -360,13 +361,7 @@ export default function StudentProfilePage() {
             </div>
           )}
 
-          {!isOnline && (
-            <div className="mt-3 p-3 rounded-xl bg-[#1A1208] border border-cta/30">
-              <p className="text-xs text-cta">
-                Hors connexion. Certaines pages peuvent être limitées si elles n'ont pas été consultées auparavant.
-              </p>
-            </div>
-          )}
+          <OfflineBanner className="mt-3" />
         </section>
 
         {/* Logout */}

@@ -27,8 +27,8 @@ describe('App', () => {
     expect(baseElement).toBeTruthy();
   });
 
-  it('should show the login screen by default', () => {
+  it('should show the login screen by default', async () => {
     render(<App />);
-    expect(screen.getByAltText('JuggleFlow')).toBeTruthy();
+    expect(await screen.findByAltText('JuggleFlow')).toBeTruthy();
   });
 });

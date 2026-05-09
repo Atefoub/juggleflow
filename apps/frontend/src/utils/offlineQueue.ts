@@ -52,13 +52,14 @@ export async function flushProgressUpdates(
 
   // On applique en FIFO. Si une requête échoue, on stoppe et garde le reste.
   const remaining: PendingProgressUpdate[] = [];
-  for (const u of list) {
+  for (let i = 0; i < list.length; i += 1) {
+    const u = list[i];
     try {
       await apply(u);
       applied += 1;
     } catch {
       failed += 1;
-      remaining.push(u, ...list.slice(list.indexOf(u) + 1));
+      remaining.push(...list.slice(i));
       break;
     }
   }
