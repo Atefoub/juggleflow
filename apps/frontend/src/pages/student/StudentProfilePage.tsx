@@ -3,9 +3,10 @@ import { useAuth } from '../../context/AuthContext';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import { studentApi, type StudentStats, type LearningPath } from '../../api/studentApi';
-import { getOnboardingLevel } from '../../utils/onboarding';
+import { getOnboardingLevel, setOnboardingLevel, type OnboardingLevel } from '../../utils/onboarding';
 import { getOfflineMode, setOfflineMode } from '../../utils/preferences';
 import { catalogueApi } from '../../api/catalogueApi';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -19,6 +20,7 @@ const XP_MAX = 500;
 
 export default function StudentProfilePage() {
   const { user, logout } = useAuth();
+  const isOnline = useOnlineStatus();
 
   const [stats, setStats]       = useState<StudentStats | null>(null);
   const [paths, setPaths]       = useState<LearningPath[]>([]);
@@ -52,21 +54,20 @@ export default function StudentProfilePage() {
     setOfflineHint(null);
     setOfflinePrefetching(true);
     try {
-      // Précharge quelques endpoints clés.
-      // Les réponses GET /api/* sont déjà prises en charge par le cache PWA (NetworkFirst).
+      // Précharge des endpoints non sensibles (catalogue) pour l'usage hors-ligne.
+      // La logique Workbox met en cache uniquement certains GET du catalogue.
       await Promise.all([
-        studentApi.getStatistics().catch(() => null),
-        studentApi.getMyLearningPaths().catch(() => null),
-        studentApi.getMyProgress().catch(() => null),
         catalogueApi.getPopular().catch(() => null),
         catalogueApi.getTricks({ page: 0, size: 10 }).catch(() => null),
+        catalogueApi.getTricks({ page: 1, size: 10 }).catch(() => null),
+        catalogueApi.getTricks({ page: 2, size: 10 }).catch(() => null),
       ]);
 
       // Attend le SW si dispo (meilleur UX, pas obligatoire).
       if ('serviceWorker' in navigator) {
         await navigator.serviceWorker.ready.catch(() => null);
       }
-      setOfflineHint('Contenus préchargés. Tu peux consulter certaines pages même sans connexion.');
+      setOfflineHint("Catalogue préchargé. Tu peux consulter des figures même sans connexion (si déjà visité).");
     } finally {
       setOfflinePrefetching(false);
     }
@@ -77,7 +78,7 @@ export default function StudentProfilePage() {
     : '??';
 
   const onboardingLevel = getOnboardingLevel(user?.id) ?? 'BEGINNER';
-  const LEVEL_LABEL: Record<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED', string> = {
+  const LEVEL_LABEL: Record<OnboardingLevel, string> = {
     BEGINNER: 'Débutant',
     INTERMEDIATE: 'Intermédiaire',
     ADVANCED: 'Avancé',
@@ -232,6 +233,37 @@ export default function StudentProfilePage() {
           </h2>
           <div className="rounded-2xl overflow-hidden border border-border divide-y divide-border">
 
+            {/* Niveau (wireframes: modifiable) */}
+            <div className="p-4 bg-bg-card">
+              <div className="flex items-center gap-3 mb-3">
+                <span role="img" aria-label="niveau" className="text-lg">⭐</span>
+                <div>
+                  <p className="text-sm font-semibold text-text-primary">Niveau</p>
+                  <p className="text-xs text-text-muted">Ajuste ton parcours et les recommandations</p>
+                </div>
+              </div>
+              <div role="group" aria-label="Choisir mon niveau" className="flex gap-2">
+                {(['BEGINNER', 'INTERMEDIATE', 'ADVANCED'] as OnboardingLevel[]).map((lvl) => {
+                  const active = onboardingLevel === lvl;
+                  return (
+                    <button
+                      key={lvl}
+                      type="button"
+                      onClick={() => user?.id && setOnboardingLevel(lvl, user.id)}
+                      className={[
+                        'px-3 py-2 rounded-xl text-xs font-semibold border min-h-10',
+                        active
+                          ? 'bg-linear-to-br from-brand to-brand-end border-brand text-white'
+                          : 'bg-bg-primary border-border text-text-muted',
+                      ].join(' ')}
+                    >
+                      {LEVEL_LABEL[lvl]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Notifications */}
             <div className="flex items-center justify-between p-4 bg-bg-card">
               <div className="flex items-center gap-3">
@@ -291,7 +323,7 @@ export default function StudentProfilePage() {
                 <div>
                   <p className="text-sm font-semibold text-text-primary">Mode hors-ligne</p>
                   <p className="text-xs text-text-muted">
-                    Accès sans connexion (si déjà consulté)
+                    Catalogue accessible sans connexion (si déjà consulté)
                   </p>
                 </div>
               </div>
@@ -324,6 +356,14 @@ export default function StudentProfilePage() {
             <div className="mt-3 p-3 rounded-xl bg-bg-card border border-border">
               <p className="text-xs text-text-muted">
                 {offlinePrefetching ? 'Préchargement du contenu pour le hors-ligne…' : offlineHint}
+              </p>
+            </div>
+          )}
+
+          {!isOnline && (
+            <div className="mt-3 p-3 rounded-xl bg-[#1A1208] border border-cta/30">
+              <p className="text-xs text-cta">
+                Hors connexion. Certaines pages peuvent être limitées si elles n'ont pas été consultées auparavant.
               </p>
             </div>
           )}

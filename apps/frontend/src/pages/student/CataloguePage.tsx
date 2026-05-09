@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import {
   catalogueApi,
   LEVEL_LABELS,
@@ -178,6 +179,7 @@ function TrickCardSkeleton() {
 
 export default function CataloguePage() {
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
   const [search, setSearch]                   = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [activeFilter, setActiveFilter]       = useState<FilterLevel>('Tous');
@@ -260,6 +262,14 @@ export default function CataloguePage() {
       <header className="px-5 pt-12 pb-4 sticky top-0 z-30 bg-[#0D1235] border-b border-border">
         <h1 className="font-display text-xl font-bold text-white mb-4">Catalogue</h1>
 
+        {!isOnline && (
+          <div className="mb-3 px-3 py-2 rounded-xl bg-[#1A1208] border border-cta/30">
+            <p className="text-xs text-cta">
+              Hors connexion — le catalogue peut être partiellement disponible si déjà consulté.
+            </p>
+          </div>
+        )}
+
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl mb-4 bg-bg-input border border-border">
           <span role="img" aria-label="Recherche" className="text-text-muted text-base">🔍</span>
           <input
@@ -320,7 +330,7 @@ export default function CataloguePage() {
 
         {error && !loading && (
           <div className="p-4 rounded-2xl text-sm text-center bg-[#2A1020] border border-alert text-alert">
-            {error}
+            {!isOnline ? 'Hors connexion. Connecte-toi une première fois pour charger ces données.' : error}
           </div>
         )}
 
