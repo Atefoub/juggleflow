@@ -19,7 +19,8 @@ import {
   type ReactNode,
 } from 'react';
 import type { UserProfile, Role } from '../types/auth';
-import { authApi, setAccessToken, clearAccessToken, getAccessToken } from '../api/authApi';
+import { api, authApi, setAccessToken, clearAccessToken, getAccessToken } from '../api/authApi';
+import type { LoginResponse } from '../types/auth';
 import { resetOnboarding } from '../utils/onboarding';
 import { resetPreferences } from '../utils/preferences';
 
@@ -45,14 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Tente d'obtenir un access token via le cookie httpOnly refresh_token.
         // Le body est vide : le backend lit le refresh token depuis le cookie.
         // withCredentials: true est configuré globalement sur l'instance axios (api).
-        const { api } = await import('../api/authApi');
-        const refreshResponse = await api.post<import('../types/auth').LoginResponse>(
-          '/auth/refresh', {}
-        );
+        const refreshResponse = await api.post<LoginResponse>('/auth/refresh', {});
 
         setAccessToken(refreshResponse.data.accessToken);
 
-        const { authApi } = await import('../api/authApi');
         const profile = await authApi.me();
         if (!cancelled) {
           setUser(profile);
