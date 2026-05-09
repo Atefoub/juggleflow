@@ -4,6 +4,7 @@ import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import { catalogueApi, LEVEL_LABELS, scoreToStars, type TrickResponse } from '../../api/catalogueApi';
 import { studentApi, type TrickProgress } from '../../api/studentApi';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -43,6 +44,7 @@ function StarRating({ score }: { score: number }) {
 export default function TrickDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
 
   const [trick, setTrick]             = useState<TrickResponse | null>(null);
   const [loading, setLoading]         = useState(true);
@@ -150,9 +152,17 @@ export default function TrickDetailPage() {
 
       <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
 
+        {!isOnline && (
+          <div className="p-3 rounded-xl bg-[#1A1208] border border-cta/30">
+            <p className="text-xs text-cta">
+              Hors connexion — cette fiche peut être incomplète si elle n'a pas été consultée auparavant.
+            </p>
+          </div>
+        )}
+
         {error && (
           <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
-            {error}
+            {!isOnline ? 'Hors connexion. Connecte-toi pour charger la fiche une première fois.' : error}
           </div>
         )}
 
