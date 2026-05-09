@@ -1,6 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { completeOnboarding, type OnboardingLevel } from '../../utils/onboarding';
+import {
+  completeOnboarding,
+  getOnboardingLevel,
+  type OnboardingLevel,
+} from '../../utils/onboarding';
 import { useAuth } from '../../context/AuthContext';
 
 const levels: {
@@ -30,9 +34,12 @@ const levels: {
 ];
 
 export default function OnboardingPage() {
-  const [selected, setSelected] = useState<OnboardingLevel>('BEGINNER');
   const navigate = useNavigate();
   const { user } = useAuth();
+  const initial = useMemo<OnboardingLevel>(() => {
+    return getOnboardingLevel(user?.id) ?? 'BEGINNER';
+  }, [user?.id]);
+  const [selected, setSelected] = useState<OnboardingLevel>(initial);
 
   return (
     <div className="min-h-screen flex flex-col px-6 py-10 bg-bg-primary font-body">
@@ -107,10 +114,12 @@ export default function OnboardingPage() {
       {/* CTA */}
       <button
         onClick={() => {
+          if (!user?.id) return;
           completeOnboarding(selected, user?.id);
           navigate('/student/dashboard', { replace: true });
         }}
-        className="w-full py-3 rounded-xl font-bold text-white text-sm mt-auto min-h-12 bg-cta"
+        disabled={!user?.id}
+        className="w-full py-3 rounded-xl font-bold text-white text-sm mt-auto min-h-12 bg-cta disabled:opacity-60"
       >
         C'est parti →
       </button>

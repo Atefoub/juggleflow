@@ -54,6 +54,21 @@ export function completeOnboarding(
 }
 
 /**
+ * Permet de modifier le niveau plus tard (ex: depuis le profil) sans
+ * réinitialiser l'état "onboarding completed".
+ */
+export function setOnboardingLevel(
+  level: OnboardingLevel,
+  userId?: number | string | null
+): void {
+  try {
+    localStorage.setItem(levelKey(userId), level);
+  } catch {
+    // Silently ignore
+  }
+}
+
+/**
  * [VULN-30] Nettoyage systématique au logout.
  * Appelé par AuthContext avant de perdre l'userId.
  */
