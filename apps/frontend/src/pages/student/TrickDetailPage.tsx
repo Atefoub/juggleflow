@@ -8,6 +8,7 @@ import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { useAuth } from '../../context/AuthContext';
 import { enqueueProgressUpdate } from '../../utils/offlineQueue';
 import OfflineBanner from '../../components/OfflineBanner';
+import { resolveTrickAnimation } from '../../utils/jugglingLab';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -183,23 +184,67 @@ export default function TrickDetailPage() {
 
         {!loading && !error && trick && (
           <>
-            {/* Animation Juggling Lab */}
+            {/* Animation : URL en base, sinon GIF Juggling Lab dérivé du siteswap (https://jugglinglab.org/) */}
             <section>
-              {trick.jugglingLabAnimationUrl ? (
-                <div className="rounded-2xl overflow-hidden bg-bg-card border border-border">
-                  <iframe
-                    src={trick.jugglingLabAnimationUrl}
-                    title={`Animation ${trick.name}`}
-                    className="w-full h-48 border-none"
-                    loading="lazy"
-                  />
-                </div>
-              ) : (
-                <div className="rounded-2xl bg-bg-card border border-border h-48 flex flex-col items-center justify-center gap-2">
-                  <span role="img" aria-label="jonglage" className="text-4xl">🤹</span>
-                  <p className="text-xs text-text-muted">Animation non disponible</p>
-                </div>
-              )}
+              {(() => {
+                const anim = resolveTrickAnimation(trick, {
+                  width: 400,
+                  height: 450,
+                  slowdown: 2,
+                });
+                if (!anim) {
+                  return (
+                    <div className="rounded-2xl bg-bg-card border border-border h-48 flex flex-col items-center justify-center gap-2">
+                      <span role="img" aria-label="jonglage" className="text-4xl">🤹</span>
+                      <p className="text-xs text-text-muted">Animation non disponible (pas de siteswap ni d’URL)</p>
+                    </div>
+                  );
+                }
+                return (
+                  <>
+                    <div className="rounded-2xl overflow-hidden bg-bg-card border border-border">
+                      {anim.kind === 'iframe' ? (
+                        <iframe
+                          src={anim.src}
+                          title={`Animation ${trick.name}`}
+                          className="w-full h-48 border-none"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <img
+                          src={anim.src}
+                          alt={anim.alt}
+                          className="w-full max-h-72 object-contain bg-black/30"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      )}
+                    </div>
+                    {anim.kind === 'img' && (
+                      <p className="text-[0.65rem] text-text-muted mt-2 leading-relaxed">
+                        Animation générée par{' '}
+                        <a
+                          href="https://jugglinglab.org/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline text-text-secondary hover:text-text-primary"
+                        >
+                          Juggling Lab
+                        </a>
+                        {' '}(logiciel libre).{' '}
+                        <a
+                          href="https://jugglinglab.org/html/ssnotation.html"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline text-text-secondary hover:text-text-primary"
+                        >
+                          Notation siteswap
+                        </a>.
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
             </section>
 
             {/* Status actuel */}

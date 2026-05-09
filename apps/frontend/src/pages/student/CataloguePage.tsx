@@ -10,6 +10,7 @@ import {
   type TrickResponse,
 } from '../../api/catalogueApi';
 import { studentApi, type TrickProgress } from '../../api/studentApi';
+import { resolveTrickAnimation } from '../../utils/jugglingLab';
 
 // ── Config ────────────────────────────────────────────────────
 
@@ -74,21 +75,37 @@ function DifficultyChip({ level }: { level: string | null }) {
   );
 }
 
-function AnimationPreview({ url, name }: { url: string | null; name: string }) {
-  if (!url) {
+function AnimationPreview({ trick }: { trick: TrickResponse }) {
+  const resolved = resolveTrickAnimation(trick, {
+    width: 200,
+    height: 225,
+    slowdown: 2,
+  });
+  if (!resolved) {
     return (
       <div className="flex items-center justify-center rounded-xl w-20 h-20 bg-bg-input shrink-0 text-3xl" aria-hidden="true">
         🤹
       </div>
     );
   }
+  if (resolved.kind === 'iframe') {
+    return (
+      <iframe
+        src={resolved.src}
+        title={`Animation de la figure ${trick.name}`}
+        className="rounded-xl shrink-0 w-20 h-20 bg-bg-input border-0"
+        loading="lazy"
+        scrolling="no"
+      />
+    );
+  }
   return (
-    <iframe
-      src={url}
-      title={`Animation de la figure ${name}`}
-      className="rounded-xl shrink-0 w-20 h-20 bg-bg-input border-0"
+    <img
+      src={resolved.src}
+      alt={resolved.alt}
+      className="rounded-xl shrink-0 w-20 h-20 object-cover bg-bg-input"
       loading="lazy"
-      scrolling="no"
+      decoding="async"
     />
   );
 }
@@ -121,7 +138,7 @@ function TrickCard({
 }) {
   return (
     <div className="flex items-center gap-4 p-4 rounded-2xl bg-bg-card border border-border">
-      <AnimationPreview url={trick.jugglingLabAnimationUrl} name={trick.name} />
+      <AnimationPreview trick={trick} />
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 mb-1">
           <p className="font-bold text-white text-sm leading-tight truncate">{trick.name}</p>
@@ -346,17 +363,34 @@ export default function CataloguePage() {
                   className="shrink-0 p-3 rounded-2xl text-left transition-opacity hover:opacity-80 w-35 bg-bg-card border border-border"
                   aria-label={`Voir la figure populaire : ${trick.name}`}
                 >
-                  <div className="flex items-center justify-center rounded-xl mb-2 w-full h-20 bg-bg-input" aria-hidden="true">
-                    {trick.jugglingLabAnimationUrl ? (
-                      <iframe
-                        src={trick.jugglingLabAnimationUrl}
-                        title={trick.name}
-                        className="w-full h-20 border-0 rounded-xl bg-bg-input pointer-events-none"
-                        scrolling="no"
-                      />
-                    ) : (
-                      <span className="text-3xl" aria-hidden="true">🤹</span>
-                    )}
+                  <div className="flex items-center justify-center rounded-xl mb-2 w-full h-20 bg-bg-input overflow-hidden" aria-hidden="true">
+                    {(() => {
+                      const r = resolveTrickAnimation(trick, {
+                        width: 240,
+                        height: 270,
+                        slowdown: 2,
+                      });
+                      if (!r) return <span className="text-3xl">🤹</span>;
+                      if (r.kind === 'iframe') {
+                        return (
+                          <iframe
+                            src={r.src}
+                            title={trick.name}
+                            className="w-full h-20 border-0 rounded-xl bg-bg-input pointer-events-none"
+                            scrolling="no"
+                          />
+                        );
+                      }
+                      return (
+                        <img
+                          src={r.src}
+                          alt=""
+                          className="w-full h-20 object-cover rounded-xl bg-bg-input pointer-events-none"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      );
+                    })()}
                   </div>
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <p className="font-bold text-white text-xs truncate" title={trick.name}>{trick.name}</p>
