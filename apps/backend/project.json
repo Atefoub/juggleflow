@@ -6,14 +6,14 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": ".\\\\mvnw.cmd clean package -DskipTests",
+        "command": "node nx-mvn.mjs clean package -DskipTests",
         "cwd": "apps/backend"
       }
     },
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": ".\\\\mvnw.cmd test",
+        "command": "node nx-mvn.mjs test",
         "cwd": "apps/backend"
       }
     },
@@ -21,7 +21,7 @@
       "executor": "nx:run-commands",
       "continuous": true,
       "options": {
-        "command": ".\\\\mvnw.cmd spring-boot:run",
+        "command": "node nx-mvn.mjs spring-boot:run",
         "cwd": "apps/backend"
       }
     }
