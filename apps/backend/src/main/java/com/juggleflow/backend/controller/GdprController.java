@@ -3,6 +3,7 @@ package com.juggleflow.backend.controller;
 import com.juggleflow.backend.dto.ConsentRequest;
 import com.juggleflow.backend.dto.ConsentStatusResponse;
 import com.juggleflow.backend.model.GdprConsent.ConsentType;
+import com.juggleflow.backend.service.AdminAuditService;
 import com.juggleflow.backend.service.GdprService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -12,6 +13,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -54,6 +57,7 @@ import java.util.Map;
 public class GdprController {
 
   private final GdprService gdprService;
+  private final AdminAuditService adminAuditService;
 
   /**
    * [FIX-TRUSTEDPROXY] Injecté par Spring depuis application.properties.
@@ -89,11 +93,19 @@ public class GdprController {
   @Operation(summary = "Enregistrer un consentement RGPD")
   public ResponseEntity<ConsentStatusResponse> recordConsent(
     @Valid @RequestBody ConsentRequest request,
-    HttpServletRequest httpRequest) {
+    HttpServletRequest httpRequest,
+    @AuthenticationPrincipal UserDetails principal) {
 
     // [VULN-R1] + [FIX-TRUSTEDPROXY] IP extraite de façon sécurisée
     String ipAddress = extractClientIp(httpRequest);
-    return ResponseEntity.ok(gdprService.recordConsent(request, ipAddress));
+    ConsentStatusResponse saved = gdprService.recordConsent(request, ipAddress);
+    String actor = principal != null ? principal.getUsername()
+      : (httpRequest.getUserPrincipal() != null ? httpRequest.getUserPrincipal().getName() : "unknown");
+    adminAuditService.record(
+      actor,
+      "GDPR_CONSENT_RECORDED",
+      "userId=" + request.getUserId() + ", type=" + request.getConsentType() + ", given=" + request.getConsentGiven());
+    return ResponseEntity.ok(saved);
   }
 
   /**
@@ -105,12 +117,17 @@ public class GdprController {
   public ResponseEntity<Void> revokeConsent(
     @PathVariable Long userId,
     @PathVariable ConsentType consentType,
-    HttpServletRequest httpRequest) {
+    HttpServletRequest httpRequest,
+    @AuthenticationPrincipal UserDetails principal) {
 
-    String adminEmail = httpRequest.getUserPrincipal() != null
-      ? httpRequest.getUserPrincipal().getName() : "unknown";
+    String adminEmail = principal != null ? principal.getUsername()
+      : (httpRequest.getUserPrincipal() != null ? httpRequest.getUserPrincipal().getName() : "unknown");
 
     gdprService.revokeConsent(userId, consentType, adminEmail);
+    adminAuditService.record(
+      adminEmail,
+      "GDPR_CONSENT_REVOKED",
+      "userId=" + userId + ", type=" + consentType);
     return ResponseEntity.noContent().build();
   }
 

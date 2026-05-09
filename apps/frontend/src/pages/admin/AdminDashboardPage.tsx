@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { adminApi, type AdminSchoolClass } from '../../api/adminApi';
+import { adminApi, type AdminEstablishmentStats, type AdminSchoolClass } from '../../api/adminApi';
 import { adminGdprApi, type ConsentStatusRow } from '../../api/adminGdprApi';
 
 // ─── Sous-composants ──────────────────────────────────────────────────────────
@@ -77,6 +77,7 @@ export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<'classes' | 'rgpd'>('classes');
 
   const [classes, setClasses] = useState<AdminSchoolClass[]>([]);
+  const [stats, setStats] = useState<AdminEstablishmentStats | null>(null);
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [consentRows, setConsentRows] = useState<ConsentStatusRow[]>([]);
   const [pendingByClass, setPendingByClass] = useState<Record<number, number>>({});
@@ -94,15 +95,18 @@ export default function AdminDashboardPage() {
       try {
         setIsLoading(true);
         setError(null);
-        const data = await adminApi.getClasses();
+        const [data, statsData] = await Promise.all([
+          adminApi.getClasses(),
+          adminApi.getEstablishmentStats().catch(() => null),
+        ]);
         if (cancelled) return;
         setClasses(data);
+        setStats(statsData);
         if (data.length > 0) {
           setSelectedClassId(data[0].id);
           setProgressExportYear((y) => (y == null ? Math.max(...data.map((c) => c.schoolYear)) : y));
         }
 
-        // Alertes RGPD: pending consents par classe (N appels, acceptable pour un établissement)
         const pendingPairs = await Promise.all(
           data.map(async (c) => [c.id, await adminGdprApi.getPendingCount(c.id)] as const)
         );
@@ -201,22 +205,22 @@ export default function AdminDashboardPage() {
               icon="🏫"
               iconLabel="Établissement"
               label="Classes"
-              value={isLoading ? '—' : classes.length}
+              value={isLoading ? '—' : (stats != null ? stats.classCount : classes.length)}
               sublabel="dans l'établissement"
             />
             <KpiCard
               icon="👦"
               iconLabel="Élèves"
               label="Élèves inscrits"
-              value={isLoading ? '—' : totalEleves}
+              value={isLoading ? '—' : (stats != null ? stats.studentCount : totalEleves)}
               sublabel="toutes classes"
             />
             <KpiCard
               icon="👩‍🏫"
               iconLabel="Enseignants"
               label="Enseignants"
-              value={isLoading ? '—' : teacherCount}
-              sublabel="titulaires uniques"
+              value={isLoading ? '—' : (stats != null ? stats.teacherAccountCount : teacherCount)}
+              sublabel={stats != null ? 'comptes enseignant' : 'titulaires uniques'}
             />
             <KpiCard
               icon="🔒"
@@ -253,12 +257,11 @@ export default function AdminDashboardPage() {
             </button>
             <button
               type="button"
-              disabled
-              title="Journaux d’audit : non exposés pour l’instant"
-              className="h-9 px-4 bg-white border border-[#DDD] rounded-lg text-sm font-medium text-[#AAA] cursor-not-allowed"
+              onClick={() => navigate('/admin/audit')}
+              className="h-9 px-4 bg-white border border-[#DDD] rounded-lg text-sm font-medium text-[#444] hover:bg-[#F9F9F9] transition-colors"
             >
               <span role="img" aria-label="Journaux d'activité">📋</span>
-              {' '}Voir les journaux
+              {' '}Journal d&apos;audit
             </button>
           </div>
         </section>

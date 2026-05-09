@@ -1,11 +1,14 @@
 package com.juggleflow.backend.controller;
 
+import com.juggleflow.backend.dto.AdminAuditEventResponse;
 import com.juggleflow.backend.dto.AdminCreateSchoolClassRequest;
+import com.juggleflow.backend.dto.AdminEstablishmentStatsResponse;
 import com.juggleflow.backend.dto.AdminSetEnabledRequest;
 import com.juggleflow.backend.dto.AdminUpdateSchoolClassRequest;
 import com.juggleflow.backend.dto.AdminUserResponse;
 import com.juggleflow.backend.dto.SchoolClassResponse;
 import com.juggleflow.backend.dto.StudentSummaryResponse;
+import com.juggleflow.backend.service.AdminAuditService;
 import com.juggleflow.backend.service.AdminService;
 import com.juggleflow.backend.service.SchoolClassService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,6 +42,29 @@ public class AdminController {
 
     private final AdminService adminService;
     private final SchoolClassService schoolClassService;
+    private final AdminAuditService adminAuditService;
+
+    /**
+     * GET /api/admin/stats
+     * Agrégats établissement (effectifs, comptes actifs).
+     */
+    @GetMapping("/stats")
+    @Operation(summary = "Statistiques établissement (admin)")
+    public ResponseEntity<AdminEstablishmentStatsResponse> getEstablishmentStats() {
+        return ResponseEntity.ok(adminService.getEstablishmentStats());
+    }
+
+    /**
+     * GET /api/admin/audit-events
+     * Dernières entrées du journal d'audit administration.
+     */
+    @GetMapping("/audit-events")
+    @Operation(summary = "Journal d'audit administration")
+    public ResponseEntity<List<AdminAuditEventResponse>> listAuditEvents(
+        @RequestParam(defaultValue = "100") int limit) {
+
+        return ResponseEntity.ok(adminAuditService.listRecent(limit));
+    }
 
     /**
      * GET /api/admin/classes
@@ -57,9 +83,14 @@ public class AdminController {
     @PostMapping("/classes")
     @Operation(summary = "Créer une classe (admin)")
     public ResponseEntity<SchoolClassResponse> createClass(
-        @Valid @RequestBody AdminCreateSchoolClassRequest body) {
+        @Valid @RequestBody AdminCreateSchoolClassRequest body,
+        @AuthenticationPrincipal UserDetails principal) {
 
         SchoolClassResponse created = schoolClassService.createClassAsAdmin(body);
+        adminAuditService.record(
+            principal.getUsername(),
+            "CLASS_CREATED",
+            "classId=" + created.getId() + ", name=" + created.getName() + ", year=" + created.getSchoolYear());
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -71,9 +102,15 @@ public class AdminController {
     @Operation(summary = "Mettre à jour une classe (admin)")
     public ResponseEntity<SchoolClassResponse> updateClass(
         @PathVariable long id,
-        @Valid @RequestBody AdminUpdateSchoolClassRequest body) {
+        @Valid @RequestBody AdminUpdateSchoolClassRequest body,
+        @AuthenticationPrincipal UserDetails principal) {
 
-        return ResponseEntity.ok(schoolClassService.updateClassAsAdmin(id, body));
+        SchoolClassResponse updated = schoolClassService.updateClassAsAdmin(id, body);
+        adminAuditService.record(
+            principal.getUsername(),
+            "CLASS_UPDATED",
+            "classId=" + id + ", name=" + updated.getName() + ", year=" + updated.getSchoolYear());
+        return ResponseEntity.ok(updated);
     }
 
     /**
@@ -92,8 +129,12 @@ public class AdminController {
      */
     @DeleteMapping("/classes/{id}")
     @Operation(summary = "Supprimer une classe vide (admin)")
-    public ResponseEntity<Void> deleteClass(@PathVariable long id) {
+    public ResponseEntity<Void> deleteClass(
+        @PathVariable long id,
+        @AuthenticationPrincipal UserDetails principal) {
+
         schoolClassService.deleteClassAsAdmin(id);
+        adminAuditService.record(principal.getUsername(), "CLASS_DELETED", "classId=" + id);
         return ResponseEntity.noContent().build();
     }
 
@@ -119,6 +160,10 @@ public class AdminController {
         @AuthenticationPrincipal UserDetails principal) {
 
         adminService.setUserEnabled(id, body.getEnabled(), principal.getUsername());
+        adminAuditService.record(
+            principal.getUsername(),
+            body.getEnabled() ? "USER_ENABLED" : "USER_DISABLED",
+            "userId=" + id);
         return ResponseEntity.noContent().build();
     }
 

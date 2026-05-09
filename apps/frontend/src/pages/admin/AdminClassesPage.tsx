@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   adminApi,
   type AdminClassStudent,
+  type AdminEstablishmentStats,
   type AdminSchoolClass,
   type AdminUser,
 } from '../../api/adminApi';
@@ -11,6 +12,7 @@ const navItems = [
   { label: 'Utilisateurs', icon: '👥', path: '/admin/users' },
   { label: 'Classes',      icon: '🏫', path: '/admin/classes' },
   { label: 'RGPD',         icon: '🔒', path: '/admin/rgpd' },
+  { label: 'Journal',      icon: '📋', path: '/admin/audit' },
 ];
 
 const LEVELS = ['PS', 'MS', 'GS', 'CP', 'CE1', 'CE2', 'CM1', 'CM2'] as const;
@@ -30,6 +32,7 @@ function groupColorClass(c: AdminClassStudent['groupColor']): string {
 
 export default function AdminClassesPage() {
   const [classes, setClasses] = useState<AdminSchoolClass[]>([]);
+  const [stats, setStats] = useState<AdminEstablishmentStats | null>(null);
   const [teachers, setTeachers] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,11 +59,13 @@ export default function AdminClassesPage() {
   }, [classes]);
 
   const reloadAll = useCallback(async () => {
-    const [cls, users] = await Promise.all([
+    const [cls, users, st] = await Promise.all([
       adminApi.getClasses(),
       adminApi.getUsers(),
+      adminApi.getEstablishmentStats().catch(() => null),
     ]);
     setClasses(cls);
+    setStats(st);
     setTeachers(users.filter((u) => u.role === 'ROLE_ENSEIGNANT'));
   }, []);
 
@@ -240,17 +245,30 @@ export default function AdminClassesPage() {
             Synthèse
           </h2>
           <div className="p-4 rounded-2xl bg-bg-card border border-border">
-            <p className="text-sm text-text-secondary mb-3">
-              Effectifs déclarés en base. Création et modification de classes sont réservées aux administrateurs ; le
-              titulaire reste un compte enseignant.
+            <p className="text-sm text-text-secondary mb-2">
+              Effectifs déclarés en base. Création et modification de classes : administrateur ; titulaire = compte
+              enseignant.
             </p>
+            {stats && (
+              <p className="text-xs text-text-muted mb-3 leading-relaxed">
+                Comptes actifs (tous rôles) : {stats.activeUserCount} · Enseignants : {stats.teacherAccountCount} ·
+                Administrateurs : {stats.administratorAccountCount}
+                {stats.licenseSeatCap != null
+                  ? ` · Plafond licence : ${stats.licenseSeatCap}`
+                  : ' · Plafond licence : non configuré côté serveur'}
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 rounded-xl bg-bg-primary border border-border text-center">
-                <p className="font-display font-bold text-2xl text-text-primary">{classes.length}</p>
+                <p className="font-display font-bold text-2xl text-text-primary">
+                  {stats != null ? stats.classCount : classes.length}
+                </p>
                 <p className="text-[0.65rem] text-text-muted uppercase tracking-wide">Classes</p>
               </div>
               <div className="p-3 rounded-xl bg-bg-primary border border-border text-center">
-                <p className="font-display font-bold text-2xl text-text-primary">{totalStudents}</p>
+                <p className="font-display font-bold text-2xl text-text-primary">
+                  {stats != null ? stats.studentCount : totalStudents}
+                </p>
                 <p className="text-[0.65rem] text-text-muted uppercase tracking-wide">Élèves (total)</p>
               </div>
             </div>

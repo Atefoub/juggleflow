@@ -6,6 +6,7 @@ import com.juggleflow.backend.dto.RegisterRequest;
 import com.juggleflow.backend.dto.SchoolClassRequest;
 import com.juggleflow.backend.model.GdprConsent.ConsentType;
 import com.juggleflow.backend.model.Administrator;
+import com.juggleflow.backend.repository.AdminAuditEventRepository;
 import com.juggleflow.backend.repository.GdprConsentRepository;
 import com.juggleflow.backend.repository.SchoolClassRepository;
 import com.juggleflow.backend.repository.StudentRepository;
@@ -41,6 +42,7 @@ class GdprControllerTest {
     @Autowired private SchoolClassRepository schoolClassRepository;
     @Autowired private StudentRepository studentRepository;
     @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private AdminAuditEventRepository adminAuditEventRepository;
 
     private MockMvc mockMvc;
 
@@ -50,6 +52,7 @@ class GdprControllerTest {
                 .webAppContextSetup(context)
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
+        adminAuditEventRepository.deleteAll();
         gdprConsentRepository.deleteAll();
         studentRepository.deleteAll();
         schoolClassRepository.deleteAll();

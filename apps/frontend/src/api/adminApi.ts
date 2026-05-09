@@ -38,6 +38,23 @@ export interface AdminUpdateClassPayload {
 
 export type AdminClassStudentGroupColor = 'VERT' | 'ORANGE' | 'ROUGE';
 
+export interface AdminEstablishmentStats {
+  classCount: number;
+  studentCount: number;
+  teacherAccountCount: number;
+  administratorAccountCount: number;
+  activeUserCount: number;
+  licenseSeatCap: number | null;
+}
+
+export interface AdminAuditEvent {
+  id: number;
+  occurredAt: string;
+  actorEmail: string;
+  action: string;
+  details: string | null;
+}
+
 export interface AdminClassStudent {
   id: number;
   firstName: string;
@@ -88,6 +105,18 @@ export const adminApi = {
 
   deleteClass: async (classId: number): Promise<void> => {
     await api.delete(`/admin/classes/${classId}`);
+  },
+
+  getEstablishmentStats: async (): Promise<AdminEstablishmentStats> => {
+    const res = await api.get<AdminEstablishmentStats>('/admin/stats');
+    return res.data;
+  },
+
+  listAuditEvents: async (limit = 100): Promise<AdminAuditEvent[]> => {
+    const res = await api.get<AdminAuditEvent[]>('/admin/audit-events', {
+      params: { limit },
+    });
+    return res.data;
   },
 };
 
