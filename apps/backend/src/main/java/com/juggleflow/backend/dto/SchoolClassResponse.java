@@ -15,6 +15,8 @@ public class SchoolClassResponse {
     private int schoolYear;
     private int studentCount;
     private String homeroomTeacherName;
+    /** Identifiant utilisateur du titulaire (enseignant), si défini. */
+    private Long homeroomTeacherId;
 
     /**
      * Construit un SchoolClassResponse à partir de l'entité JPA.
@@ -28,6 +30,7 @@ public class SchoolClassResponse {
             teacherName = sc.getHomeroomTeacher().getFirstName()
                 + " " + sc.getHomeroomTeacher().getLastName();
         }
+        Long teacherId = sc.getHomeroomTeacher() != null ? sc.getHomeroomTeacher().getId() : null;
         return SchoolClassResponse.builder()
                 .id(sc.getId())
                 .name(sc.getName())
@@ -35,6 +38,7 @@ public class SchoolClassResponse {
                 .schoolYear(sc.getSchoolYear())
                 .studentCount(sc.getStudentCount())
                 .homeroomTeacherName(teacherName)
+                .homeroomTeacherId(teacherId)
                 .build();
     }
 }
