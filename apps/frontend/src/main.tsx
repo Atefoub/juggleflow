@@ -1,8 +1,7 @@
 import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
-import { AuthProvider } from './context/AuthContext';
-import AppRouter from './router/AppRouter';
+import App from './app/app';
 import './index.css';
 
 // Enregistrement du service worker PWA
@@ -21,8 +20,6 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <StrictMode>
-    <AuthProvider>
-      <AppRouter />
-    </AuthProvider>
+    <App />
   </StrictMode>
 );
