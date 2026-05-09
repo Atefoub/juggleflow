@@ -1,7 +1,12 @@
 import { act, render, screen } from '@testing-library/react';
-import { vi } from 'vitest';
+import { beforeAll, vi } from 'vitest';
 
 import App from './app';
+
+// Précharge la page login (lazy dans AppRouter) pour éviter que Suspense reste sur le fallback en test.
+beforeAll(async () => {
+  await import('../pages/LoginPage');
+});
 
 // AuthProvider tente un refresh silencieux au montage.
 // En test, on mock l'API pour éviter les appels réseau.
