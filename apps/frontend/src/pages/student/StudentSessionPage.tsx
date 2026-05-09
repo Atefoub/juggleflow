@@ -61,13 +61,19 @@ export default function StudentSessionPage() {
     ])
       .then(([t]) => {
         setTrick(t);
+
+        if (!isOnline && user?.id) {
+          // En offline, on met en file d'attente la mise à jour "en cours" pour sync plus tard.
+          enqueueProgressUpdate(user.id, { trickId, status: 'IN_PROGRESS' });
+        }
+
         window.dispatchEvent(new CustomEvent(PROGRESS_UPDATED_EVENT, {
           detail: { trickId, status: 'IN_PROGRESS' as ProgressStatus },
         }));
       })
       .catch(() => setError('Impossible de démarrer la session.'))
       .finally(() => setLoading(false));
-  }, [trickId, isOnline]);
+  }, [trickId, isOnline, user?.id]);
 
   useEffect(() => {
     if (!isRunning) return;
