@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { adminApi, type AdminSchoolClass } from '../../api/adminApi';
 import { adminGdprApi, type ConsentStatusRow } from '../../api/adminGdprApi';
@@ -28,18 +29,6 @@ function KpiCard({ label, value, sublabel, icon, iconLabel }: KpiCardProps) {
   );
 }
 
-function ProgressBar({ value }: { value: number }) {
-  const clamped = Math.min(Math.max(value, 0), 100);
-  return (
-    <div className="w-full bg-[#EBEBEB] rounded-full h-2 overflow-hidden">
-      <div
-        className="h-2 rounded-full bg-[#555] transition-all duration-500"
-        style={{ width: `${clamped}%` }}
-      />
-    </div>
-  );
-}
-
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -47,9 +36,43 @@ function formatDate(iso: string | null): string {
   return d.toLocaleDateString('fr-FR');
 }
 
+function toConsentCsv(rows: ConsentStatusRow[]): string {
+  const esc = (v: string) => `"${v.replaceAll('"', '""')}"`;
+  const header = [
+    'userId',
+    'firstName',
+    'lastName',
+    'hasParentalConsent',
+    'consentDate',
+    'policyVersion',
+  ].join(',');
+  const body = rows.map((r) => ([
+    String(r.userId),
+    esc(r.firstName ?? ''),
+    esc(r.lastName ?? ''),
+    String(r.hasParentalConsent),
+    esc(r.consentDate ?? ''),
+    esc(r.policyVersion ?? ''),
+  ].join(','))).join('\n');
+  return `${header}\n${body}\n`;
+}
+
+function downloadText(filename: string, content: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 // ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function AdminDashboardPage() {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<'classes' | 'rgpd'>('classes');
 
@@ -60,6 +83,9 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingRgpd, setIsLoadingRgpd] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progressExportYear, setProgressExportYear] = useState<number | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,7 +97,10 @@ export default function AdminDashboardPage() {
         const data = await adminApi.getClasses();
         if (cancelled) return;
         setClasses(data);
-        if (data.length > 0) setSelectedClassId(data[0].id);
+        if (data.length > 0) {
+          setSelectedClassId(data[0].id);
+          setProgressExportYear((y) => (y == null ? Math.max(...data.map((c) => c.schoolYear)) : y));
+        }
 
         // Alertes RGPD: pending consents par classe (N appels, acceptable pour un établissement)
         const pendingPairs = await Promise.all(
@@ -132,6 +161,11 @@ export default function AdminDashboardPage() {
     const manquants = consentRows.filter((r) => !r.hasParentalConsent).length;
     return { accordes, manquants };
   }, [consentRows]);
+
+  const progressYearOptions = useMemo(() => {
+    const years = [...new Set(classes.map((c) => c.schoolYear))].sort((a, b) => b - a);
+    return years.length > 0 ? years : [new Date().getFullYear()];
+  }, [classes]);
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] flex flex-col">
@@ -203,13 +237,26 @@ export default function AdminDashboardPage() {
             Actions rapides
           </h2>
           <div className="flex flex-wrap gap-2">
-            <button type="button" className="h-9 px-4 bg-[#111] text-white rounded-lg text-sm font-semibold hover:bg-[#333] transition-colors">
+            <button
+              type="button"
+              onClick={() => navigate('/admin/classes')}
+              className="h-9 px-4 bg-[#111] text-white rounded-lg text-sm font-semibold hover:bg-[#333] transition-colors"
+            >
               + Créer une classe
             </button>
-            <button type="button" className="h-9 px-4 bg-white border border-[#DDD] rounded-lg text-sm font-medium text-[#444] hover:bg-[#F9F9F9] transition-colors">
-              + Inviter un enseignant
+            <button
+              type="button"
+              onClick={() => navigate('/admin/users')}
+              className="h-9 px-4 bg-white border border-[#DDD] rounded-lg text-sm font-medium text-[#444] hover:bg-[#F9F9F9] transition-colors"
+            >
+              Gérer les comptes
             </button>
-            <button type="button" className="h-9 px-4 bg-white border border-[#DDD] rounded-lg text-sm font-medium text-[#444] hover:bg-[#F9F9F9] transition-colors">
+            <button
+              type="button"
+              disabled
+              title="Journaux d’audit : non exposés pour l’instant"
+              className="h-9 px-4 bg-white border border-[#DDD] rounded-lg text-sm font-medium text-[#AAA] cursor-not-allowed"
+            >
               <span role="img" aria-label="Journaux d'activité">📋</span>
               {' '}Voir les journaux
             </button>
@@ -273,9 +320,8 @@ export default function AdminDashboardPage() {
                     <div className="text-xs text-[#888]">
                       {(cls.homeroomTeacherName ?? '—')} · {cls.studentCount} élèves · {cls.schoolLevel}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <ProgressBar value={0} />
-                      <span className="text-xs font-bold text-[#111] w-10 text-right">—</span>
+                    <div className="text-xs text-[#888]">
+                      Détail sur la page Classes
                     </div>
                   </div>
 
@@ -285,10 +331,7 @@ export default function AdminDashboardPage() {
                     <span className="text-sm text-[#555]">{cls.schoolLevel}</span>
                     <span className="text-sm text-[#555]">{cls.homeroomTeacherName ?? '—'}</span>
                     <span className="text-sm text-[#555]">{cls.studentCount}</span>
-                    <div className="flex items-center gap-2">
-                      <ProgressBar value={0} />
-                      <span className="text-xs font-bold text-[#111] w-9 text-right">—</span>
-                    </div>
+                    <span className="text-xs text-[#888]">—</span>
                     <span className="text-xs font-semibold px-2 py-1 rounded-full w-fit bg-[#EBEBEB] text-[#333]">
                       Actif
                     </span>
@@ -368,62 +411,108 @@ export default function AdminDashboardPage() {
                 )}
 
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" className="h-9 px-4 bg-[#111] text-white rounded-lg text-sm font-semibold hover:bg-[#333] transition-colors">
-                    Relancer ({alertesRgpd})
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin/rgpd')}
+                    className="h-9 px-4 bg-[#111] text-white rounded-lg text-sm font-semibold hover:bg-[#333] transition-colors"
+                  >
+                    Gérer les consentements ({alertesRgpd} en attente)
                   </button>
-                  <button type="button" className="h-9 px-4 border border-[#DDD] rounded-lg text-sm font-medium text-[#444] hover:bg-[#F9F9F9] transition-colors">
-                    Voir le détail
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin/rgpd')}
+                    className="h-9 px-4 border border-[#DDD] rounded-lg text-sm font-medium text-[#444] hover:bg-[#F9F9F9] transition-colors"
+                  >
+                    Page RGPD complète
                   </button>
                 </div>
               </div>
 
               {/* Droit à l'oubli */}
               <div className="bg-white border border-[#E0E0E0] rounded-xl p-5">
-                <h3 className="text-sm font-bold text-[#111] mb-2">Droit à l'oubli</h3>
-                <p className="text-sm text-[#666] mb-4 leading-relaxed">
-                  Suppression automatique des données élèves planifiée au{' '}
-                  <strong className="text-[#333]">30 juin 2026</strong> (fin d'année scolaire).
-                  Un déclenchement manuel est possible à tout moment.
+                <h3 className="text-sm font-bold text-[#111] mb-2">Droit à l&apos;oubli</h3>
+                <p className="text-sm text-[#666] leading-relaxed">
+                  Anonymisation de fin d&apos;année gérée côté serveur. La révocation d&apos;un consentement parental
+                  désactive tout de suite le compte élève concerné — depuis la page RGPD.
                 </p>
-                <div className="flex items-center justify-between py-3 border-t border-[#F0F0F0]">
-                  <span className="text-sm text-[#888]">Supprimer un élève manuellement</span>
-                  <button type="button" className="h-8 px-3 border border-[#DDD] rounded-lg text-xs font-medium text-[#555] hover:bg-[#F9F9F9] transition-colors">
-                    Sélectionner
-                  </button>
-                </div>
               </div>
 
               {/* Export */}
               <div className="bg-white border border-[#E0E0E0] rounded-xl p-5">
                 <h3 className="text-sm font-bold text-[#111] mb-4">Export des données</h3>
-                <div className="space-y-3">
-                  {[
-                    { fmt: 'CSV', titre: 'Bilan de progression',       detail: 'Toutes les classes · Année en cours', ariaLabel: 'Télécharger le bilan CSV' },
-                    { fmt: 'PDF', titre: 'Registre des consentements', detail: 'Format PDF signé · RGPD conforme',    ariaLabel: 'Télécharger le registre PDF' },
-                  ].map(({ fmt, titre, detail, ariaLabel }) => (
-                    <div key={fmt} className="flex items-center gap-3 p-3 border border-[#E0E0E0] rounded-lg">
-                      <div className="w-9 h-9 bg-[#EBEBEB] border border-[#DDD] rounded-lg flex items-center justify-center text-xs font-bold text-[#666] shrink-0">
-                        {fmt}
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-semibold text-[#111]">{titre}</div>
-                        <div className="text-xs text-[#999]">{detail}</div>
-                      </div>
-                      <button
-                        type="button"
-                        aria-label={ariaLabel}
-                        className="w-8 h-8 bg-[#111] rounded-lg flex items-center justify-center text-white text-sm hover:bg-[#333] transition-colors shrink-0"
+                {exportMessage && (
+                  <p className="text-xs text-[#B00020] mb-3">{exportMessage}</p>
+                )}
+                <div className="space-y-4">
+                  <div className="p-3 border border-[#E0E0E0] rounded-lg">
+                    <div className="text-sm font-semibold text-[#111] mb-2">Bilan de progression (CSV)</div>
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <label htmlFor="dash-export-year" className="text-xs text-[#888]">Année</label>
+                      <select
+                        id="dash-export-year"
+                        className="h-9 px-2 border border-[#DDD] rounded-lg text-sm bg-white"
+                        value={progressExportYear ?? ''}
+                        onChange={(e) => setProgressExportYear(Number(e.target.value))}
+                        disabled={progressYearOptions.length === 0}
                       >
-                        ↓
-                      </button>
+                        {progressYearOptions.map((y) => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
                     </div>
-                  ))}
+                    <button
+                      type="button"
+                      disabled={isExporting || progressExportYear == null}
+                      onClick={async () => {
+                        setExportMessage(null);
+                        try {
+                          setIsExporting(true);
+                          const csv = await adminApi.exportProgressCsv(progressExportYear ?? undefined);
+                          downloadText(
+                            `progress_report_${progressExportYear ?? 'all'}.csv`,
+                            csv,
+                            'text/csv;charset=utf-8',
+                          );
+                        } catch {
+                          setExportMessage('Export progression impossible.');
+                        } finally {
+                          setIsExporting(false);
+                        }
+                      }}
+                      className="h-9 px-4 bg-[#111] text-white rounded-lg text-sm font-semibold hover:bg-[#333] disabled:opacity-50"
+                    >
+                      {isExporting ? '…' : 'Télécharger CSV'}
+                    </button>
+                  </div>
+                  <div className="p-3 border border-[#E0E0E0] rounded-lg">
+                    <div className="text-sm font-semibold text-[#111] mb-1">Registre des consentements (CSV)</div>
+                    <div className="text-xs text-[#999] mb-2">Classe sélectionnée ci-dessus</div>
+                    <button
+                      type="button"
+                      disabled={isExporting || selectedClassId == null}
+                      onClick={async () => {
+                        if (selectedClassId == null) return;
+                        setExportMessage(null);
+                        try {
+                          setIsExporting(true);
+                          const rows = await adminGdprApi.exportConsentRegister(selectedClassId);
+                          const csv = toConsentCsv(rows);
+                          downloadText(`consents_class_${selectedClassId}.csv`, csv, 'text/csv;charset=utf-8');
+                        } catch {
+                          setExportMessage('Export consentements impossible.');
+                        } finally {
+                          setIsExporting(false);
+                        }
+                      }}
+                      className="h-9 px-4 bg-[#111] text-white rounded-lg text-sm font-semibold hover:bg-[#333] disabled:opacity-50"
+                    >
+                      {isExporting ? '…' : 'Télécharger CSV'}
+                    </button>
+                  </div>
                 </div>
                 <div className="mt-4 p-3 bg-[#F9F9F9] border-l-2 border-[#CCC] rounded-r-lg">
                   <p className="text-xs text-[#888] leading-relaxed">
-                    Données hébergées en France. Conformité RGPD assurée.
-                    DPO contactable via{' '}
-                    <span className="text-[#555] font-medium">dpo@juggleflow.fr</span>
+                    Exports réels via l’API admin. Pour le PDF ou une suppression ciblée, voir la feuille de route produit / DPO.
                   </p>
                 </div>
               </div>
