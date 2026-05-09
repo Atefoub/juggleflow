@@ -137,7 +137,7 @@ export default function ResourcesStudentPage() {
                   </div>
                   <button
                     aria-label={`Commencer ${ex.title}`}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-brand min-h-8"
+                    className="jf-btn-primary jf-btn-primary-sm"
                   >
                     Lancer
                   </button>

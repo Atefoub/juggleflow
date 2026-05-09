@@ -208,9 +208,9 @@ export default function BadgesPage() {
               <div className="p-3 rounded-xl bg-bg-card border border-border">
                 <div className="flex justify-between mb-1">
                   <span className="text-xs text-text-secondary">Streak actuel</span>
-                  <span className="text-xs text-cta font-bold">{Math.min(streakDays, 30)} / 30 jours</span>
+                  <span className="text-xs font-bold text-brand-end">{Math.min(streakDays, 30)} / 30 jours</span>
                 </div>
-                <ProgressBar value={Math.min((streakDays / 30) * 100, 100)} color="#FF7A00" height="6px" />
+                <ProgressBar value={Math.min((streakDays / 30) * 100, 100)} color="linear-gradient(90deg, #8B2BE2, #C724B1)" height="6px" />
               </div>
             </section>
 

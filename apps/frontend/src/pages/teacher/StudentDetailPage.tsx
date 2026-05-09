@@ -20,7 +20,7 @@ const navItems = [
 
 const STATUS_CONFIG = {
   MASTERED:    { icon: '✅', label: 'Maîtrisé',   textClass: 'text-success',    bgClass: 'bg-success/10  border border-success/30'  },
-  IN_PROGRESS: { icon: '🔄', label: 'En cours',   textClass: 'text-cta',        bgClass: 'bg-cta/10      border border-cta/30'        },
+  IN_PROGRESS: { icon: '🔄', label: 'En cours',   textClass: 'text-brand-end',  bgClass: 'bg-brand/10    border border-brand/30'      },
   NOT_STARTED: { icon: '🔒', label: 'Non commencé', textClass: 'text-text-muted', bgClass: 'bg-border/50   border border-border'        },
 } as const;
 
@@ -295,10 +295,10 @@ export default function StudentDetailPage() {
                           }
                         }}
                         className={[
-                          'shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors',
+                          'shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
                           selectedPathId === p.id
-                            ? 'bg-teacher border-teacher text-white'
-                            : 'bg-bg-card border-border text-text-muted',
+                            ? 'jf-chip-active border-transparent text-white'
+                            : 'border-border bg-bg-card text-text-muted',
                         ].join(' ')}
                       >
                         {p.pathName}
@@ -321,7 +321,7 @@ export default function StudentDetailPage() {
                         <button
                           type="button"
                           onClick={() => navigate(`/teacher/classe/${effectiveClassId}/parcours/${selectedPathId}`)}
-                          className="shrink-0 text-xs px-3 py-1.5 rounded-xl bg-border border border-border text-text-secondary font-semibold"
+                          className="jf-btn-secondary jf-btn-secondary-sm shrink-0 rounded-xl"
                         >
                           Voir ce parcours →
                         </button>
@@ -375,14 +375,14 @@ export default function StudentDetailPage() {
                   if (selectedPathId) params.set('pathId', String(selectedPathId));
                   navigate(`/teacher/parcours/assigner?${params.toString()}`);
                 }}
-                className="w-full py-3 rounded-2xl text-sm font-semibold text-white bg-teacher min-h-11 hover:opacity-90 transition-opacity"
+                className="jf-btn-primary w-full min-h-11 rounded-2xl py-3 text-sm"
               >
                 Assigner un parcours à cet élève
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/teacher/eleves')}
-                className="w-full py-3 rounded-2xl text-sm font-semibold border border-border text-text-secondary bg-bg-card min-h-11 hover:opacity-80 transition-opacity"
+                className="jf-btn-secondary w-full min-h-11 rounded-2xl py-3 text-sm"
               >
                 Voir la liste des élèves
               </button>

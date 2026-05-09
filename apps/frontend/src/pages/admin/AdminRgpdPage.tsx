@@ -231,7 +231,7 @@ export default function AdminRgpdPage() {
             {[
               { value: consentStats.accordes,  label: 'Accordés',  color: 'text-success', bg: 'bg-success/10 border-success/30' },
               { value: consentStats.manquants, label: 'Manquants', color: 'text-alert',   bg: 'bg-alert/10   border-alert/30'   },
-              { value: consentStats.expires,   label: 'Expirés',   color: 'text-cta',     bg: 'bg-cta/10     border-cta/30'     },
+              { value: consentStats.expires,   label: 'Expirés',   color: 'text-brand-end', bg: 'bg-brand/10 border-brand/30' },
             ].map((stat) => (
               <div key={stat.label} className={`p-3 rounded-xl border flex flex-col items-center gap-1 ${stat.bg}`}>
                 <span className={`font-display text-3xl font-bold ${stat.color}`}>{stat.value}</span>
@@ -275,7 +275,7 @@ export default function AdminRgpdPage() {
               type="button"
               onClick={() => setShowDetails(true)}
               disabled={isLoading || rows.length === 0}
-              className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-cta min-h-10 hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="jf-btn-primary flex-1 min-h-10 py-2.5 rounded-xl text-sm"
             >
               Gérer ({missingRows.length} sans consentement)
             </button>
@@ -283,7 +283,7 @@ export default function AdminRgpdPage() {
               type="button"
               onClick={() => setShowDetails((v) => !v)}
               disabled={isLoading || rows.length === 0}
-              className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-border text-text-secondary bg-bg-card min-h-10 disabled:opacity-50"
+              className="jf-btn-secondary flex-1 min-h-10 py-2.5 rounded-xl text-sm"
             >
               {showDetails ? 'Masquer' : 'Voir détails'}
             </button>
@@ -330,7 +330,7 @@ export default function AdminRgpdPage() {
                           type="button"
                           disabled={busyUserId === r.userId || !user?.id}
                           onClick={() => recordParentalConsentRow(r.userId)}
-                          className="text-xs px-2 py-1 rounded-lg font-semibold text-white bg-brand border border-brand min-h-8 disabled:opacity-40"
+                          className="jf-btn-primary jf-btn-primary-sm disabled:opacity-40"
                         >
                           {busyUserId === r.userId ? '…' : 'Enregistrer'}
                         </button>
@@ -437,7 +437,7 @@ export default function AdminRgpdPage() {
                   </span>
                   <button
                     aria-label={`Télécharger ${item.title}`}
-                    className="text-xs px-2 py-1 rounded-lg bg-border text-text-secondary"
+                    className="jf-btn-primary jf-btn-primary-sm"
                     disabled={
                       (item.id === 'consents-csv' && (
                         selectedClassId == null

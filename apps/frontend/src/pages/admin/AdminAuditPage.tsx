@@ -54,7 +54,7 @@ export default function AdminAuditPage() {
             type="button"
             onClick={() => load()}
             disabled={isLoading}
-            className="text-xs px-3 py-2 rounded-xl border border-border bg-bg-card font-semibold text-text-secondary min-h-9 disabled:opacity-50"
+            className="jf-btn-secondary jf-btn-secondary-sm disabled:opacity-50"
           >
             Actualiser
           </button>
