@@ -7,6 +7,7 @@ import { studentApi } from '../../api/studentApi';
 import { useAuth } from '../../context/AuthContext';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { enqueueProgressUpdate } from '../../utils/offlineQueue';
+import OfflineBanner from '../../components/OfflineBanner';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -134,13 +135,7 @@ export default function StudentSessionPage() {
       </header>
 
       <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
-        {!isOnline && (
-          <div className="p-3 rounded-xl bg-[#1A1208] border border-cta/30">
-            <p className="text-xs text-cta">
-              Hors connexion — tu peux pratiquer, et tes actions seront synchronisées plus tard.
-            </p>
-          </div>
-        )}
+        <OfflineBanner message="Hors connexion — tu peux pratiquer, et tes actions seront synchronisées plus tard." />
 
         {error && (
           <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
