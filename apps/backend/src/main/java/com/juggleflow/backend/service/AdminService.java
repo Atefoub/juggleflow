@@ -1,5 +1,6 @@
 package com.juggleflow.backend.service;
 
+import com.juggleflow.backend.dto.AdminEstablishmentStatsResponse;
 import com.juggleflow.backend.dto.AdminUserResponse;
 import com.juggleflow.backend.dto.SchoolClassResponse;
 import com.juggleflow.backend.exception.ResourceNotFoundException;
@@ -7,9 +8,11 @@ import com.juggleflow.backend.model.Administrator;
 import com.juggleflow.backend.model.GdprConsent;
 import com.juggleflow.backend.model.Student;
 import com.juggleflow.backend.model.User;
+import com.juggleflow.backend.repository.AdministratorRepository;
 import com.juggleflow.backend.repository.GdprConsentRepository;
 import com.juggleflow.backend.repository.SchoolClassRepository;
 import com.juggleflow.backend.repository.StudentRepository;
+import com.juggleflow.backend.repository.TeacherRepository;
 import com.juggleflow.backend.repository.UserProgressRepository;
 import com.juggleflow.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +39,22 @@ public class AdminService {
     private final GdprConsentRepository gdprConsentRepository;
     private final StudentRepository studentRepository;
     private final UserProgressRepository userProgressRepository;
+    private final TeacherRepository teacherRepository;
+    private final AdministratorRepository administratorRepository;
+
+    /**
+     * Agrégats établissement pour le tableau de bord admin.
+     */
+    public AdminEstablishmentStatsResponse getEstablishmentStats() {
+        return AdminEstablishmentStatsResponse.builder()
+            .classCount(schoolClassRepository.count())
+            .studentCount(studentRepository.count())
+            .teacherAccountCount(teacherRepository.count())
+            .administratorAccountCount(administratorRepository.count())
+            .activeUserCount(userRepository.countByEnabledTrue())
+            .licenseSeatCap(null)
+            .build();
+    }
 
     public List<SchoolClassResponse> getAllClasses() {
         return schoolClassRepository.findAll()
