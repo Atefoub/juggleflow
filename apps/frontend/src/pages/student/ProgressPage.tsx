@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import { getOnboardingLevel } from '../../utils/onboarding';
+import OfflineBanner from '../../components/OfflineBanner';
 import {
   studentApi,
   type StudentStats,
@@ -207,6 +208,7 @@ export default function ProgressPage() {
 
       {/* Content */}
       <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
+        <OfflineBanner />
 
         {error && (
           <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
