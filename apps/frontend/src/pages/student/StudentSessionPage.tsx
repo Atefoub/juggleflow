@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { enqueueProgressUpdate } from '../../utils/offlineQueue';
 import OfflineBanner from '../../components/OfflineBanner';
+import { resolveTrickAnimation } from '../../utils/jugglingLab';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -157,6 +158,38 @@ export default function StudentSessionPage() {
 
         {!loading && !error && trick && (
           <>
+            {(() => {
+              const anim = resolveTrickAnimation(trick, {
+                width: 320,
+                height: 360,
+                slowdown: 2,
+              });
+              if (!anim) return null;
+              return (
+                <section className="rounded-2xl overflow-hidden bg-bg-card border border-border">
+                  <p className="text-[0.65rem] text-text-muted px-3 pt-3 uppercase tracking-wider">
+                    Aperçu
+                  </p>
+                  {anim.kind === 'iframe' ? (
+                    <iframe
+                      src={anim.src}
+                      title={`Animation ${trick.name}`}
+                      className="w-full h-40 border-none"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <img
+                      src={anim.src}
+                      alt={anim.alt}
+                      className="w-full max-h-44 object-contain bg-black/30"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  )}
+                </section>
+              );
+            })()}
+
             <section className="p-4 rounded-2xl bg-bg-card border border-border">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-text-muted">Objectif (suggestion)</span>
