@@ -136,14 +136,14 @@ export default function TeacherPathDetailPage() {
               type="button"
               onClick={handleDownloadCsv}
               disabled={isDownloading}
-              className="text-xs px-3 py-1.5 rounded-xl bg-border border border-border text-text-secondary font-semibold disabled:opacity-60"
+              className="jf-btn-secondary jf-btn-secondary-sm rounded-xl disabled:opacity-60"
             >
               {isDownloading ? '…' : 'CSV'}
             </button>
             <button
               type="button"
               onClick={() => navigate(`/teacher/parcours/assigner?classId=${classId}&pathId=${pathId}`)}
-              className="text-xs px-3 py-1.5 rounded-xl bg-border border border-border text-text-secondary font-semibold"
+              className="jf-btn-secondary jf-btn-secondary-sm rounded-xl"
             >
               Modifier
             </button>
@@ -177,7 +177,7 @@ export default function TeacherPathDetailPage() {
             </div>
           </div>
           <div className="mt-3">
-            <ProgressBar value={classAvg} color="#4068D8" height="8px" />
+            <ProgressBar value={classAvg} color="linear-gradient(90deg, #8B2BE2, #C724B1)" height="8px" />
           </div>
         </div>
       </header>

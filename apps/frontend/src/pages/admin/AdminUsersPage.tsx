@@ -142,7 +142,7 @@ export default function AdminUsersPage() {
             <button
               type="button"
               onClick={logout}
-              className="text-xs px-3 py-1.5 rounded-lg bg-border text-text-secondary min-h-9"
+              className="jf-btn-secondary jf-btn-secondary-sm"
             >
               Quitter
             </button>
@@ -162,7 +162,7 @@ export default function AdminUsersPage() {
               className={[
                 'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors',
                 roleFilter === r
-                  ? 'bg-admin border-admin text-white'
+                  ? 'jf-chip-active text-white border'
                   : 'bg-bg-card border-border text-text-muted',
               ].join(' ')}
             >
@@ -194,7 +194,7 @@ export default function AdminUsersPage() {
 
         {/* Missing consent alert */}
         {missingConsent.length > 0 && (
-          <div className="flex items-start gap-3 p-4 rounded-2xl bg-[#1A1020] border border-cta/40">
+          <div className="flex items-start gap-3 p-4 rounded-2xl bg-[#1A1020] border border-brand/35">
             <span role="img" aria-label="attention" className="text-lg shrink-0">⚠️</span>
             <div className="flex-1">
               <p className="text-sm font-bold text-text-primary mb-0.5">
@@ -205,7 +205,7 @@ export default function AdminUsersPage() {
             <button
               type="button"
               onClick={() => navigate('/admin/rgpd')}
-              className="text-xs px-2 py-1.5 rounded-lg bg-cta/20 border border-cta/40 text-cta font-semibold shrink-0"
+              className="jf-btn-primary jf-btn-primary-sm shrink-0"
             >
               Ouvrir RGPD
             </button>
@@ -274,7 +274,7 @@ export default function AdminUsersPage() {
                     <button
                       type="button"
                       onClick={() => navigate('/admin/rgpd')}
-                      className="flex-1 min-w-[8rem] py-1.5 rounded-lg text-xs font-semibold text-cta border border-cta/40 bg-cta/10 min-h-8"
+                      className="jf-btn-primary jf-btn-primary-sm flex-1 min-w-[8rem]"
                     >
                       RGPD — consentement
                     </button>

@@ -83,7 +83,7 @@ export default function OnboardingPage() {
               <div
                 className={[
                   'flex items-center justify-center w-11 h-11 rounded-xl shrink-0 text-xl',
-                  isSelected ? 'bg-brand' : 'bg-border',
+                  isSelected ? 'jf-nav-pill-active' : 'bg-border',
                 ].join(' ')}
               >
                 <span role="img" aria-label={level.label}>{level.icon}</span>
@@ -97,7 +97,7 @@ export default function OnboardingPage() {
               <div
                 className={[
                   'w-5 h-5 rounded-full shrink-0 border-2',
-                  isSelected ? 'border-brand bg-brand' : 'border-text-muted bg-transparent',
+                  isSelected ? 'border-transparent jf-nav-pill-active' : 'border-text-muted bg-transparent',
                 ].join(' ')}
               />
             </button>
@@ -119,7 +119,7 @@ export default function OnboardingPage() {
           navigate('/student/dashboard', { replace: true });
         }}
         disabled={!user?.id}
-        className="w-full py-3 rounded-xl font-bold text-white text-sm mt-auto min-h-12 bg-cta disabled:opacity-60"
+        className="jf-btn-primary w-full rounded-xl text-sm mt-auto min-h-12 disabled:opacity-60"
       >
         C'est parti →
       </button>

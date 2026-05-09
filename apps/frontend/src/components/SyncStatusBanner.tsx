@@ -17,7 +17,7 @@ export default function SyncStatusBanner() {
   const tone =
     offlineSync.lastError ? 'border-alert text-alert bg-[#2A1020]' :
     offlineSync.isSyncing ? 'border-border text-text-secondary bg-bg-card' :
-    !isOnline ? 'border-cta/30 text-cta bg-[#1A1208]' :
+    !isOnline ? 'border-brand/35 bg-[#1A1028] text-brand-end' :
     'border-success/30 text-success bg-success/10';
 
   const message =

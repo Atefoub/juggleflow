@@ -80,8 +80,9 @@ export default function StudentDashboardPage() {
           </div>
 
           <button
+            type="button"
             onClick={logout}
-            className="text-xs px-3 py-1 rounded-lg bg-border text-text-secondary hover:opacity-80 transition-opacity"
+            className="jf-btn-secondary jf-btn-secondary-sm"
           >
             Quitter
           </button>
@@ -132,7 +133,7 @@ export default function StudentDashboardPage() {
                 <button
                   type="button"
                   onClick={() => navigate('/student/catalogue')}
-                  className="shrink-0 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-linear-to-br from-brand to-brand-end min-h-11 hover:opacity-90 transition-opacity"
+                  className="jf-btn-primary jf-btn-primary-sm shrink-0 min-h-11 rounded-xl px-4 py-2 text-xs"
                 >
                   Commencer
                 </button>
@@ -256,7 +257,7 @@ export default function StudentDashboardPage() {
                 <button
                   type="button"
                   onClick={() => navigate('/student/resources')}
-                  className="shrink-0 px-4 py-2 rounded-xl text-xs font-semibold text-text-secondary bg-bg-card border border-border hover:opacity-80 transition-opacity min-h-11"
+                  className="jf-btn-secondary jf-btn-secondary-sm shrink-0 min-h-11 rounded-xl px-4 py-2 text-xs"
                 >
                   Voir →
                 </button>

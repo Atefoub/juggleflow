@@ -134,8 +134,7 @@ export default function LoginPage() {
             type="submit"
             disabled={isLoading}
             className={[
-              'w-full py-3 rounded-xl font-bold text-white text-sm transition-opacity min-h-12',
-              'bg-cta',
+              'jf-btn-primary w-full min-h-12 py-3 rounded-xl text-sm',
               isLoading ? 'opacity-70' : 'opacity-100',
             ].join(' ')}
           >
@@ -152,7 +151,7 @@ export default function LoginPage() {
           {/* ENT */}
           <button
             type="button"
-            className="w-full py-3 rounded-xl font-semibold text-sm min-h-12 bg-transparent border-[1.5px] border-border text-text-secondary"
+            className="jf-btn-outline w-full min-h-12 py-3 rounded-xl"
           >
             Connexion via ENT de l'établissement
           </button>

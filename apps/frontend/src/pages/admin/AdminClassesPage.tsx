@@ -284,7 +284,7 @@ export default function AdminClassesPage() {
               type="button"
               onClick={openCreate}
               disabled={isLoading}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand border border-brand text-xs font-semibold text-white min-h-8 hover:opacity-90 disabled:opacity-50"
+              className="jf-btn-primary jf-btn-primary-sm"
             >
               + Classe
             </button>
@@ -404,7 +404,7 @@ export default function AdminClassesPage() {
                 type="button"
                 disabled={busy}
                 onClick={closeModal}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-border text-text-secondary min-h-10"
+                className="jf-btn-secondary flex-1 min-h-10 py-2.5 rounded-xl text-sm"
               >
                 Annuler
               </button>
@@ -412,7 +412,7 @@ export default function AdminClassesPage() {
                 type="button"
                 disabled={busy || teachers.length === 0}
                 onClick={submitCreate}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-brand min-h-10 disabled:opacity-50"
+                className="jf-btn-primary flex-1 min-h-10 py-2.5 rounded-xl text-sm disabled:opacity-50"
               >
                 {busy ? '…' : 'Créer'}
               </button>
@@ -517,7 +517,7 @@ export default function AdminClassesPage() {
                   type="button"
                   disabled={busy}
                   onClick={closeModal}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-border text-text-secondary min-h-10"
+                  className="jf-btn-secondary flex-1 min-h-10 py-2.5 rounded-xl text-sm"
                 >
                   Fermer
                 </button>
@@ -525,7 +525,7 @@ export default function AdminClassesPage() {
                   type="button"
                   disabled={busy}
                   onClick={submitManage}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-brand min-h-10 disabled:opacity-50"
+                  className="jf-btn-primary flex-1 min-h-10 py-2.5 rounded-xl text-sm disabled:opacity-50"
                 >
                   {busy ? '…' : 'Enregistrer'}
                 </button>

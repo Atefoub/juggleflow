@@ -279,7 +279,7 @@ export default function StudentProfilePage() {
                 aria-label={notificationsOn ? 'Désactiver les notifications' : 'Activer les notifications'}
                 className={[
                   'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0',
-                  notificationsOn ? 'bg-brand' : 'bg-border',
+                  notificationsOn ? 'bg-linear-to-br from-brand to-brand-end' : 'bg-border',
                 ].join(' ')}
               >
                 <span
@@ -305,7 +305,7 @@ export default function StudentProfilePage() {
                 aria-label={darkMode ? 'Désactiver le mode foncé' : 'Activer le mode foncé'}
                 className={[
                   'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0',
-                  darkMode ? 'bg-brand' : 'bg-border',
+                  darkMode ? 'bg-linear-to-br from-brand to-brand-end' : 'bg-border',
                 ].join(' ')}
               >
                 <span
@@ -340,7 +340,7 @@ export default function StudentProfilePage() {
                 aria-label={offlineMode ? 'Désactiver le mode hors-ligne' : 'Activer le mode hors-ligne'}
                 className={[
                   'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 disabled:opacity-60',
-                  offlineMode ? 'bg-brand' : 'bg-border',
+                  offlineMode ? 'bg-linear-to-br from-brand to-brand-end' : 'bg-border',
                 ].join(' ')}
               >
                 <span

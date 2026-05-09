@@ -19,7 +19,7 @@ const navItems = [
 
 const LEVEL_CHIP: Record<string, string> = {
   Beginner:     'text-success  bg-success/10  border border-success/30',
-  Intermediate: 'text-cta      bg-cta/10      border border-cta/30',
+  Intermediate: 'text-brand-end bg-brand/12  border border-brand/35',
   Advanced:     'text-brand    bg-brand/10    border border-brand/30',
   Expert:       'text-alert    bg-alert/10    border border-alert/30',
 };
@@ -39,7 +39,7 @@ function StarRating({ score }: { score: number }) {
   return (
     <span className="flex gap-0.5" aria-label={`Difficulté : ${score} sur 10`}>
       {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={i < stars ? 'text-cta text-sm' : 'text-border text-sm'}>★</span>
+        <span key={i} className={i < stars ? 'text-brand-end text-sm' : 'text-border text-sm'}>★</span>
       ))}
     </span>
   );
@@ -252,7 +252,7 @@ export default function TrickDetailPage() {
               <div className={[
                 'flex items-center gap-2 p-3 rounded-xl text-sm font-semibold',
                 status === 'MASTERED'    ? 'bg-success/10 border border-success/30 text-success' :
-                status === 'IN_PROGRESS' ? 'bg-cta/10     border border-cta/30     text-cta'     : '',
+                status === 'IN_PROGRESS' ? 'bg-brand/10 border border-brand/30 text-brand-end' : '',
               ].join(' ')}>
                 <span>{status === 'MASTERED' ? '✅' : '🔄'}</span>
                 <span>{status === 'MASTERED' ? 'Figure maîtrisée !' : 'Apprentissage en cours'}</span>
@@ -263,7 +263,7 @@ export default function TrickDetailPage() {
             <button
               onClick={() => navigate(`/student/session/${trick.id}`)}
               disabled={status === 'MASTERED' || savingStatus}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold text-white bg-linear-to-br from-brand to-brand-end min-h-11 hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="jf-btn-primary w-full min-h-11 rounded-2xl py-3 text-sm disabled:opacity-50"
             >
               <span aria-hidden="true">↗</span>
               <span role="img" aria-label="chronomètre">⏱️</span>
@@ -278,7 +278,7 @@ export default function TrickDetailPage() {
                   <p className="font-display font-bold text-3xl text-text-primary">{xpDisplay} XP</p>
                   <p className="text-xs text-text-muted mt-0.5">Rang : Bronze</p>
                 </div>
-                <div className="flex items-center justify-center w-14 h-14 rounded-full border-4 border-cta shrink-0">
+                <div className="flex items-center justify-center w-14 h-14 rounded-full border-4 border-brand shrink-0">
                   <span role="img" aria-label="médaille bronze" className="text-2xl">🥉</span>
                 </div>
               </div>
@@ -286,7 +286,7 @@ export default function TrickDetailPage() {
                 <span>Bronze · {xpDisplay} XP</span>
                 <span>Argent · {XP_NEXT} XP</span>
               </div>
-              <ProgressBar value={xpPercent} color="linear-gradient(90deg, #FF7A00, #FFB347)" height="6px" />
+              <ProgressBar value={xpPercent} color="linear-gradient(90deg, #8B2BE2, #C724B1)" height="6px" />
               <p className="text-xs text-text-muted mt-1">{Math.max(0, XP_NEXT - xpDisplay)} XP pour atteindre le rang Argent</p>
             </section>
 
@@ -300,7 +300,7 @@ export default function TrickDetailPage() {
                     className={[
                       'flex-1 py-2.5 text-xs font-semibold capitalize transition-colors',
                       tab === t
-                        ? 'bg-brand text-white'
+                        ? 'bg-linear-to-br from-brand to-brand-end text-white'
                         : 'text-text-muted hover:text-text-secondary',
                     ].join(' ')}
                   >
@@ -374,10 +374,10 @@ export default function TrickDetailPage() {
                 onClick={() => handleSetStatus('MASTERED')}
                 disabled={status === 'MASTERED' || savingStatus}
                 className={[
-                  'w-full py-3 rounded-2xl text-sm font-semibold min-h-11 transition-opacity',
+                  'w-full min-h-11 rounded-2xl py-3 text-sm transition-opacity',
                   status === 'MASTERED'
-                    ? 'bg-success/20 text-success border border-success/40 cursor-default'
-                    : 'bg-linear-to-br from-brand to-brand-end text-white hover:opacity-90',
+                    ? 'cursor-default border border-success/40 bg-success/20 font-semibold text-success'
+                    : 'jf-btn-primary',
                 ].join(' ')}
               >
                 {savingStatus ? 'Sauvegarde…' : status === 'MASTERED' ? '✅ Figure maîtrisée !' : 'Marquer comme maîtrisée'}
@@ -386,7 +386,7 @@ export default function TrickDetailPage() {
                 <button
                   onClick={() => handleSetStatus('IN_PROGRESS')}
                   disabled={savingStatus}
-                  className="w-full py-3 rounded-2xl text-sm font-semibold border border-border text-text-secondary bg-bg-card min-h-11 hover:opacity-80 transition-opacity disabled:opacity-50"
+                  className="jf-btn-secondary w-full min-h-11 rounded-2xl py-3 text-sm disabled:opacity-50"
                 >
                   Marquer en cours
                 </button>

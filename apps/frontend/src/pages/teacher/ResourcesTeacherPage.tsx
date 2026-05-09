@@ -89,10 +89,10 @@ export default function ResourcesTeacherPage() {
               key={t}
               onClick={() => setTab(t)}
               className={[
-                'shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors',
+                'shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
                 tab === t
-                  ? 'bg-teacher border-teacher text-white'
-                  : 'bg-bg-card border-border text-text-muted',
+                  ? 'jf-chip-active border-transparent text-white'
+                  : 'border-border bg-bg-card text-text-muted',
               ].join(' ')}
             >
               {t}
@@ -159,7 +159,7 @@ export default function ResourcesTeacherPage() {
                     <a
                       href={res.url}
                       aria-label={`Télécharger ${res.title}`}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-teacher/20 border border-teacher/40 text-xs font-semibold text-teacher"
+                      className="jf-btn-secondary jf-btn-secondary-sm inline-flex gap-1"
                     >
                       <span role="img" aria-label="télécharger">↓</span>
                       PDF

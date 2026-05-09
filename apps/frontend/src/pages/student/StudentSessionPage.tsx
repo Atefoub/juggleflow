@@ -211,14 +211,14 @@ export default function StudentSessionPage() {
                 <button
                   type="button"
                   onClick={() => setIsRunning((v) => !v)}
-                  className="flex-1 py-3 rounded-2xl text-sm font-semibold border border-border text-text-secondary bg-bg-card min-h-11 hover:opacity-80 transition-opacity"
+                  className="jf-btn-secondary flex-1 min-h-11 rounded-2xl py-3 text-sm"
                 >
                   {isRunning ? '⏸️ Pause' : '▶️ Reprendre'}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setElapsed(0); setIsRunning(true); }}
-                  className="flex-1 py-3 rounded-2xl text-sm font-semibold border border-border text-text-secondary bg-bg-card min-h-11 hover:opacity-80 transition-opacity"
+                  className="jf-btn-secondary flex-1 min-h-11 rounded-2xl py-3 text-sm"
                 >
                   ↺ Réinitialiser
                 </button>
@@ -242,7 +242,7 @@ export default function StudentSessionPage() {
               <button
                 type="button"
                 onClick={() => navigate(`/student/trick/${trick.id}`)}
-                className="w-full py-3 rounded-2xl text-sm font-semibold border border-border text-text-secondary bg-bg-card min-h-11 hover:opacity-80 transition-opacity"
+                className="jf-btn-secondary w-full min-h-11 rounded-2xl py-3 text-sm"
               >
                 Retour à la fiche de la figure
               </button>
