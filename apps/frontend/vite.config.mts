@@ -60,16 +60,34 @@ export default defineConfig(({ mode }) => {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
-            urlPattern: /^https?:\/\/.*\/api\/.*/i,
+            // Sécurité: ne jamais mettre en cache les endpoints d'auth.
+            // (cookies + tokens + risque d'effets de bord)
+            urlPattern: ({ url }) => url.pathname.startsWith('/api/auth'),
+            handler: 'NetworkOnly',
+          },
+          {
+            // Données "catalogue" (non sensibles): tolère offline/latence.
+            // Ajuster au besoin si certains endpoints exposent des données perso.
+            urlPattern: ({ url, request }) =>
+              request.method === 'GET' &&
+              (url.pathname.startsWith('/api/tricks') ||
+                url.pathname.startsWith('/api/badges') ||
+                url.pathname.startsWith('/api/learning-paths')),
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'api-cache',
+              cacheName: 'api-public-cache',
               expiration: {
                 maxEntries: 50,
                 maxAgeSeconds: 60 * 60 * 24, // 24h
               },
               networkTimeoutSeconds: 10,
             },
+          },
+          {
+            // Données utilisateur: ne pas servir depuis le cache.
+            // (progression, classes, exports RGPD/CSV…)
+            urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+            handler: 'NetworkOnly',
           },
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

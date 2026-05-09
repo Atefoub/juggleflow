@@ -34,6 +34,7 @@ export default function BottomNav({ items }: BottomNavProps) {
           <button
             key={item.path}
             onClick={() => navigate(item.path)}
+            aria-label={item.label}
             className={[
               'flex flex-col items-center gap-1 min-w-11 min-h-11 justify-center',
               'bg-transparent border-none cursor-pointer font-body text-[0.6rem]',
