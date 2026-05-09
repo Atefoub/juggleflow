@@ -5,6 +5,8 @@ import ProgressBar from '../../components/ProgressBar';
 import { catalogueApi, LEVEL_LABELS, scoreToStars, type TrickResponse } from '../../api/catalogueApi';
 import { studentApi, type TrickProgress } from '../../api/studentApi';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { useAuth } from '../../context/AuthContext';
+import { enqueueProgressUpdate } from '../../utils/offlineQueue';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -45,6 +47,7 @@ export default function TrickDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isOnline = useOnlineStatus();
+  const { user } = useAuth();
 
   const [trick, setTrick]             = useState<TrickResponse | null>(null);
   const [loading, setLoading]         = useState(true);
@@ -97,10 +100,19 @@ export default function TrickDetailPage() {
     setSavingStatus(true);
     setStatusError(null);
     try {
-      await studentApi.updateProgress(trick.id, {
-        status: newStatus,
-        masteryScore: newStatus === 'MASTERED' ? 10 : undefined,
-      });
+      if (!user?.id) return;
+      if (!isOnline) {
+        enqueueProgressUpdate(user.id, {
+          trickId: trick.id,
+          status: newStatus,
+          masteryScore: newStatus === 'MASTERED' ? 10 : undefined,
+        });
+      } else {
+        await studentApi.updateProgress(trick.id, {
+          status: newStatus,
+          masteryScore: newStatus === 'MASTERED' ? 10 : undefined,
+        });
+      }
       setStatus(newStatus);
 
       window.dispatchEvent(new CustomEvent(PROGRESS_UPDATED_EVENT, {

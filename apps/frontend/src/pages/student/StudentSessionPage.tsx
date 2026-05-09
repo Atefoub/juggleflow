@@ -4,6 +4,9 @@ import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import { catalogueApi, LEVEL_LABELS, type TrickResponse } from '../../api/catalogueApi';
 import { studentApi } from '../../api/studentApi';
+import { useAuth } from '../../context/AuthContext';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { enqueueProgressUpdate } from '../../utils/offlineQueue';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -26,6 +29,8 @@ function formatDuration(seconds: number): string {
 export default function StudentSessionPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isOnline = useOnlineStatus();
 
   const trickId = useMemo(() => (id ? Number(id) : NaN), [id]);
 
@@ -37,6 +42,7 @@ export default function StudentSessionPage() {
   const [elapsed, setElapsed]         = useState(0);
   const [saving, setSaving]           = useState(false);
   const [status, setStatus]           = useState<ProgressStatus>('IN_PROGRESS');
+  const [offlineHint, setOfflineHint] = useState<string | null>(null);
 
   useEffect(() => {
     if (Number.isNaN(trickId)) {
@@ -48,7 +54,9 @@ export default function StudentSessionPage() {
     Promise.all([
       catalogueApi.getTrickById(trickId),
       // Dès l'entrée en session, on marque "en cours" (idempotent).
-      studentApi.updateProgress(trickId, { status: 'IN_PROGRESS' }).catch(() => { /* empty */ }),
+      isOnline
+        ? studentApi.updateProgress(trickId, { status: 'IN_PROGRESS' }).catch(() => { /* empty */ })
+        : Promise.resolve(),
     ])
       .then(([t]) => {
         setTrick(t);
@@ -58,7 +66,7 @@ export default function StudentSessionPage() {
       })
       .catch(() => setError('Impossible de démarrer la session.'))
       .finally(() => setLoading(false));
-  }, [trickId]);
+  }, [trickId, isOnline]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -68,9 +76,15 @@ export default function StudentSessionPage() {
 
   async function markMastered() {
     if (!trick) return;
+    if (!user?.id) return;
     setSaving(true);
     try {
-      await studentApi.updateProgress(trick.id, { status: 'MASTERED', masteryScore: 10 });
+      if (!isOnline) {
+        enqueueProgressUpdate(user.id, { trickId: trick.id, status: 'MASTERED', masteryScore: 10 });
+        setOfflineHint('Sauvegardé en attente. La progression sera synchronisée dès le retour de la connexion.');
+      } else {
+        await studentApi.updateProgress(trick.id, { status: 'MASTERED', masteryScore: 10 });
+      }
       setStatus('MASTERED');
       window.dispatchEvent(new CustomEvent(PROGRESS_UPDATED_EVENT, {
         detail: { trickId: trick.id, status: 'MASTERED' as ProgressStatus },
@@ -120,9 +134,23 @@ export default function StudentSessionPage() {
       </header>
 
       <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
+        {!isOnline && (
+          <div className="p-3 rounded-xl bg-[#1A1208] border border-cta/30">
+            <p className="text-xs text-cta">
+              Hors connexion — tu peux pratiquer, et tes actions seront synchronisées plus tard.
+            </p>
+          </div>
+        )}
+
         {error && (
           <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
             {error}
+          </div>
+        )}
+
+        {offlineHint && (
+          <div className="p-3 rounded-2xl text-xs text-text-secondary bg-bg-card border border-border">
+            {offlineHint}
           </div>
         )}
 
@@ -167,7 +195,7 @@ export default function StudentSessionPage() {
               <button
                 type="button"
                 onClick={markMastered}
-                disabled={saving || status === 'MASTERED'}
+                disabled={saving || status === 'MASTERED' || !user?.id}
                 className={[
                   'w-full py-3 rounded-2xl text-sm font-semibold min-h-11 transition-opacity',
                   status === 'MASTERED'
