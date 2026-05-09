@@ -27,12 +27,20 @@ import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { flushProgressUpdates, getPendingProgressUpdatesCount } from '../utils/offlineQueue';
 import { studentApi } from '../api/studentApi';
 
+export type OfflineSyncState = {
+  pendingCount: number;
+  isSyncing: boolean;
+  lastSyncAt: string | null;
+  lastError: string | null;
+};
+
 interface AuthContextType {
   user: UserProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (token: string, profile?: UserProfile) => Promise<UserProfile>;
   logout: () => Promise<void>;
+  offlineSync: OfflineSyncState;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -41,6 +49,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]           = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const isOnline = useOnlineStatus();
+  const [offlineSync, setOfflineSync] = useState<OfflineSyncState>({
+    pendingCount: 0,
+    isSyncing: false,
+    lastSyncAt: null,
+    lastError: null,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -70,26 +84,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, []);
 
-  // Sync des actions offline quand on redevient online.
+  // Maintient le compteur pending à jour (ex: actions offline depuis d'autres pages).
+  useEffect(() => {
+    if (!user?.id) {
+      setOfflineSync((s) => ({ ...s, pendingCount: 0, isSyncing: false, lastError: null }));
+      return;
+    }
+
+    const refresh = () => {
+      const pending = getPendingProgressUpdatesCount(user.id);
+      setOfflineSync((s) => ({ ...s, pendingCount: pending }));
+    };
+
+    refresh();
+    const id = window.setInterval(refresh, 1500);
+    return () => window.clearInterval(id);
+  }, [user?.id]);
+
+  // Sync des actions offline quand on redevient online (et périodiquement si nécessaire).
   useEffect(() => {
     if (!isOnline) return;
     if (!user?.id) return;
-    const pending = getPendingProgressUpdatesCount(user.id);
-    if (pending === 0) return;
+    if (offlineSync.isSyncing) return;
+    if (offlineSync.pendingCount === 0) return;
+
+    let cancelled = false;
+    setOfflineSync((s) => ({ ...s, isSyncing: true, lastError: null }));
+
     flushProgressUpdates(user.id, async (u) => {
       await studentApi.updateProgress(u.trickId, {
         status: u.status,
         masteryScore: u.masteryScore,
       });
-    }).catch(() => {
-      // ignore — on réessaiera au prochain retour online
-    });
-  }, [isOnline, user?.id]);
+    })
+      .then((r) => {
+        if (cancelled) return;
+        const nextPending = getPendingProgressUpdatesCount(user.id);
+        setOfflineSync((s) => ({
+          ...s,
+          pendingCount: nextPending,
+          isSyncing: false,
+          lastSyncAt: r.applied > 0 ? new Date().toISOString() : s.lastSyncAt,
+          lastError: r.failed > 0 ? 'Certaines mises à jour n’ont pas pu être synchronisées.' : null,
+        }));
+      })
+      .catch((err: any) => {
+        if (cancelled) return;
+        const status = err?.response?.status;
+        const msg =
+          status === 401 ? 'Synchronisation impossible: session expirée.' :
+          status === 403 ? 'Synchronisation impossible: accès refusé.' :
+          'Synchronisation impossible: réessaiera automatiquement.';
+        setOfflineSync((s) => ({ ...s, isSyncing: false, lastError: msg }));
+      });
+
+    return () => { cancelled = true; };
+  }, [isOnline, user?.id, offlineSync.isSyncing, offlineSync.pendingCount]);
 
   const login = async (token: string, profile?: UserProfile): Promise<UserProfile> => {
     setAccessToken(token);
     const resolvedProfile = profile ?? await authApi.me();
     setUser(resolvedProfile);
+    // met à jour le compteur dès le login
+    if (resolvedProfile.id != null) {
+      setOfflineSync((s) => ({
+        ...s,
+        pendingCount: getPendingProgressUpdatesCount(resolvedProfile.id),
+      }));
+    }
     return resolvedProfile;
   };
 
@@ -108,6 +170,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     clearAccessToken();
     setUser(null);
+    setOfflineSync({
+      pendingCount: 0,
+      isSyncing: false,
+      lastSyncAt: null,
+      lastError: null,
+    });
   };
 
   return (
@@ -118,6 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!getAccessToken() && !!user,
         login,
         logout,
+        offlineSync,
       }}
     >
       {children}

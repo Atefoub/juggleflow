@@ -4,8 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import { studentApi, type StudentStats, type BadgeData, type LearningPath } from '../../api/studentApi';
-import { useOnlineStatus } from '../../hooks/useOnlineStatus';
-import { flushProgressUpdates, getPendingProgressUpdatesCount } from '../../utils/offlineQueue';
 import OfflineBanner from '../../components/OfflineBanner';
 
 const navItems = [
@@ -21,7 +19,6 @@ const XP_MAX = 500;
 export default function StudentDashboardPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const isOnline = useOnlineStatus();
 
   const [stats, setStats]         = useState<StudentStats | null>(null);
   const [badges, setBadges]       = useState<BadgeData[]>([]);
@@ -29,7 +26,6 @@ export default function StudentDashboardPage() {
   const [paths, setPaths]         = useState<LearningPath[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
-  const [syncHint, setSyncHint]   = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -47,29 +43,6 @@ export default function StudentDashboardPage() {
       .catch(() => setError('Impossible de charger les données. Veuillez réessayer.'))
       .finally(() => setLoading(false));
   }, []);
-
-  // Synchronisation des actions offline (progression) quand on repasse en ligne.
-  useEffect(() => {
-    if (!isOnline) return;
-    if (!user?.id) return;
-
-    const pending = getPendingProgressUpdatesCount(user.id);
-    if (pending === 0) return;
-
-    setSyncHint(`Synchronisation en cours (${pending})…`);
-    flushProgressUpdates(user.id, async (u) => {
-      await studentApi.updateProgress(u.trickId, {
-        status: u.status,
-        masteryScore: u.masteryScore,
-      });
-    })
-      .then((r) => {
-        if (r.applied > 0) setSyncHint(`Synchronisé: ${r.applied} mise(s) à jour.`);
-        else setSyncHint(null);
-        setTimeout(() => setSyncHint(null), 3500);
-      })
-      .catch(() => setSyncHint(null));
-  }, [isOnline, user?.id]);
 
   const initials = user
     ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
@@ -130,12 +103,6 @@ export default function StudentDashboardPage() {
         {error && (
           <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
             {error}
-          </div>
-        )}
-
-        {syncHint && (
-          <div className="p-3 rounded-2xl text-xs text-text-secondary bg-bg-card border border-border">
-            {syncHint}
           </div>
         )}
 
