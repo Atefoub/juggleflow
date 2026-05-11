@@ -12,6 +12,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -156,6 +158,39 @@ public class GdprController {
   public ResponseEntity<Map<String, Long>> getPendingCount(@PathVariable Long classId) {
     long count = gdprService.getPendingConsentsCount(classId);
     return ResponseEntity.ok(Map.of("pendingCount", count));
+  }
+
+  /**
+   * GET /api/admin/gdpr/classes/{classId}/consents/export.pdf
+   * Export PDF du registre des consentements (a archiver / a presenter au DPO).
+   *
+   * Content-Type : application/pdf ; Content-Disposition : attachment pour
+   * forcer le telechargement par le navigateur. Un evenement d'audit est
+   * enregistre (tracabilite RGPD : qui a telecharge le registre, quand,
+   * pour quelle classe).
+   */
+  @GetMapping(value = "/classes/{classId}/consents/export.pdf",
+              produces = MediaType.APPLICATION_PDF_VALUE)
+  @Operation(summary = "Exporter le registre des consentements (PDF)")
+  public ResponseEntity<byte[]> exportConsentRegisterPdf(
+      @PathVariable Long classId,
+      @AuthenticationPrincipal UserDetails principal,
+      HttpServletRequest httpRequest) {
+
+    byte[] pdf = gdprService.exportConsentRegisterPdf(classId);
+    String actor = principal != null ? principal.getUsername()
+      : (httpRequest.getUserPrincipal() != null ? httpRequest.getUserPrincipal().getName() : "unknown");
+    adminAuditService.record(
+      actor,
+      "GDPR_CONSENT_REGISTER_EXPORTED_PDF",
+      "classId=" + classId + ", bytes=" + pdf.length);
+
+    String filename = "consents_class_" + classId + ".pdf";
+    return ResponseEntity.ok()
+      .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE)
+      .header(HttpHeaders.CONTENT_DISPOSITION,
+        "attachment; filename=\"" + filename + "\"")
+      .body(pdf);
   }
 
   // ── Helper : extraction IP ──────────────────────────────────────────────────

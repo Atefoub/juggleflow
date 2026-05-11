@@ -2,6 +2,8 @@ package com.juggleflow.backend.controller;
 
 import com.juggleflow.backend.dto.AdminAuditEventResponse;
 import com.juggleflow.backend.dto.AdminCreateSchoolClassRequest;
+import com.juggleflow.backend.dto.AdminCreateUserRequest;
+import com.juggleflow.backend.dto.AdminCreateUserResponse;
 import com.juggleflow.backend.dto.AdminEstablishmentStatsResponse;
 import com.juggleflow.backend.dto.AdminSetEnabledRequest;
 import com.juggleflow.backend.dto.AdminUpdateSchoolClassRequest;
@@ -146,6 +148,31 @@ public class AdminController {
     @Operation(summary = "Lister tous les utilisateurs (admin)")
     public ResponseEntity<List<AdminUserResponse>> getAllUsers() {
         return ResponseEntity.ok(adminService.getAllUsers());
+    }
+
+    /**
+     * POST /api/admin/users
+     * Cree un utilisateur (eleve / enseignant / administrateur).
+     * Le mot de passe est genere par le serveur s'il n'est pas fourni
+     * et renvoye UNE SEULE FOIS dans la reponse pour transmission a
+     * l'utilisateur final.
+     */
+    @PostMapping("/users")
+    @Operation(summary = "Creer un utilisateur (admin)")
+    public ResponseEntity<AdminCreateUserResponse> createUser(
+        @Valid @RequestBody AdminCreateUserRequest body,
+        @AuthenticationPrincipal UserDetails principal) {
+
+        AdminCreateUserResponse created = adminService.createUser(body);
+        adminAuditService.record(
+            principal.getUsername(),
+            "USER_CREATED",
+            "userId=" + created.getId()
+                + ", role=" + created.getRole()
+                + ", email=" + created.getEmail()
+                + (created.getClassId() != null ? ", classId=" + created.getClassId() : "")
+                + (created.getGeneratedPassword() != null ? ", password=generated" : ", password=provided"));
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     /**

@@ -19,7 +19,42 @@ export interface AdminUser {
   enabled: boolean;
   classId: number | null;
   className: string | null;
-  parentalConsentStatus: 'ok' | 'missing' | 'none';
+  /**
+   * - 'ok'      : consentement parental accordé et à jour
+   * - 'expired' : consentement enregistré mais expiré (date ou policy version)
+   * - 'missing' : consentement absent ou révoqué
+   * - 'none'    : non applicable (enseignant / admin)
+   */
+  parentalConsentStatus: 'ok' | 'expired' | 'missing' | 'none';
+}
+
+export interface AdminCreateUserPayload {
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: 'ROLE_ELEVE' | 'ROLE_ENSEIGNANT' | 'ROLE_ADMINISTRATEUR';
+  /** Optionnel : si omis, le serveur génère un mot de passe et le renvoie. */
+  password?: string;
+  classId?: number;
+  schoolLevel?: string;
+  /** ISO-8601 (YYYY-MM-DD), élève uniquement. */
+  birthDate?: string;
+}
+
+export interface AdminCreateUserResponse {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  enabled: boolean;
+  classId: number | null;
+  className: string | null;
+  /**
+   * Présent UNE SEULE FOIS quand le serveur a généré le mot de passe.
+   * À afficher à l'admin pour transmission, jamais persisté côté client.
+   */
+  generatedPassword: string | null;
 }
 
 export interface AdminCreateClassPayload {
@@ -116,6 +151,17 @@ export const adminApi = {
     const res = await api.get<AdminAuditEvent[]>('/admin/audit-events', {
       params: { limit },
     });
+    return res.data;
+  },
+
+  /**
+   * POST /api/admin/users
+   * Crée un compte utilisateur (élève / enseignant / administrateur).
+   * Si le mot de passe n'est pas fourni, le serveur en génère un et le
+   * renvoie dans la réponse (à afficher une seule fois à l'admin).
+   */
+  createUser: async (payload: AdminCreateUserPayload): Promise<AdminCreateUserResponse> => {
+    const res = await api.post<AdminCreateUserResponse>('/admin/users', payload);
     return res.data;
   },
 };

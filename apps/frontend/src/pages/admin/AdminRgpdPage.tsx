@@ -108,16 +108,20 @@ export default function AdminRgpdPage() {
   }, [selectedClassId]);
 
   const consentStats = useMemo(() => {
-    const accordes = rows.filter((r) => r.hasParentalConsent).length;
-    const manquants = rows.filter((r) => !r.hasParentalConsent).length;
-    return { accordes, manquants, expires: 0 };
+    const accordes = rows.filter((r) => r.status === 'VALID').length;
+    const expires  = rows.filter((r) => r.status === 'EXPIRED').length;
+    const manquants = rows.filter(
+      (r) => r.status === 'MISSING' || r.status === 'REVOKED'
+    ).length;
+    return { accordes, manquants, expires };
   }, [rows]);
 
   const total = consentStats.accordes + consentStats.manquants + consentStats.expires;
   const progressValue = total === 0 ? 0 : Math.round((consentStats.accordes / total) * 100);
 
+  // Les consentements expirés sont aussi à relancer côté DPO : on les groupe avec les manquants.
   const missingRows = useMemo(
-    () => rows.filter((r) => !r.hasParentalConsent),
+    () => rows.filter((r) => r.status !== 'VALID'),
     [rows]
   );
 
@@ -230,11 +234,11 @@ export default function AdminRgpdPage() {
             </span>
             <span className="text-xs text-[var(--color-admin-danger)] font-semibold">Manquants</span>
           </div>
-          <div className="p-3 rounded-lg border bg-[var(--color-admin-bg)] border-[var(--color-admin-border)] flex flex-col items-center gap-1">
-            <span className="font-display text-3xl font-bold text-[var(--color-admin-text-muted)]">
+          <div className="p-3 rounded-lg border bg-[var(--color-admin-warning-bg)] border-[color-mix(in_srgb,var(--color-admin-warning)_25%,transparent)] flex flex-col items-center gap-1">
+            <span className="font-display text-3xl font-bold text-[var(--color-admin-warning)]">
               {consentStats.expires}
             </span>
-            <span className="text-xs text-[var(--color-admin-text-muted)] font-semibold">Expirés</span>
+            <span className="text-xs text-[var(--color-admin-warning)] font-semibold">Expirés</span>
           </div>
         </div>
 
@@ -252,6 +256,11 @@ export default function AdminRgpdPage() {
         </div>
         <p className="text-xs text-[var(--color-admin-text-muted)] mt-1">
           {consentStats.accordes} / {total} consentements accordés
+          {consentStats.expires > 0 && (
+            <> · <span className="text-[var(--color-admin-warning)] font-semibold">
+              {consentStats.expires} à renouveler
+            </span></>
+          )}
           {selectedClassId != null && (
             <> · {pendingCount} en attente</>
           )}
@@ -284,7 +293,7 @@ export default function AdminRgpdPage() {
             disabled={isLoading || rows.length === 0}
             className="jf-admin-btn-primary"
           >
-            Gérer ({missingRows.length} sans consentement)
+            Gérer ({missingRows.length} à traiter)
           </button>
           <button
             type="button"
@@ -326,26 +335,44 @@ export default function AdminRgpdPage() {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <span
-                      className={
-                        r.hasParentalConsent
-                          ? 'jf-admin-chip jf-admin-chip-success'
-                          : 'jf-admin-chip jf-admin-chip-danger'
-                      }
-                    >
-                      {r.hasParentalConsent ? 'Consentement ✓' : 'Consentement ✗'}
-                    </span>
-                    {!r.hasParentalConsent && (
+                    {r.status === 'VALID' && (
+                      <span className="jf-admin-chip jf-admin-chip-success">Consentement ✓</span>
+                    )}
+                    {r.status === 'EXPIRED' && (
+                      <span
+                        className="jf-admin-chip"
+                        style={{
+                          color: 'var(--color-admin-warning)',
+                          backgroundColor: 'var(--color-admin-warning-bg)',
+                          border: '1px solid color-mix(in srgb, var(--color-admin-warning) 30%, transparent)',
+                        }}
+                        title={
+                          r.expiresAt
+                            ? `Expiré depuis le ${formatDate(r.expiresAt)} — politique à renouveler`
+                            : 'Politique de confidentialité obsolète — consentement à renouveler'
+                        }
+                      >
+                        Expiré ⚠
+                      </span>
+                    )}
+                    {(r.status === 'MISSING' || r.status === 'REVOKED') && (
+                      <span className="jf-admin-chip jf-admin-chip-danger">
+                        {r.status === 'REVOKED' ? 'Révoqué ✗' : 'Consentement ✗'}
+                      </span>
+                    )}
+                    {r.status !== 'VALID' && (
                       <button
                         type="button"
                         disabled={busyUserId === r.userId || !user?.id}
                         onClick={() => recordParentalConsentRow(r.userId)}
                         className="jf-admin-btn-primary"
                       >
-                        {busyUserId === r.userId ? '…' : 'Enregistrer'}
+                        {busyUserId === r.userId
+                          ? '…'
+                          : r.status === 'EXPIRED' ? 'Renouveler' : 'Enregistrer'}
                       </button>
                     )}
-                    {r.hasParentalConsent && (
+                    {r.status === 'VALID' && (
                       <button
                         type="button"
                         disabled={busyUserId === r.userId}
@@ -453,39 +480,67 @@ export default function AdminRgpdPage() {
 
           <div className="jf-admin-card p-4 flex items-start gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-admin-bg)] border border-[var(--color-admin-border)] shrink-0">
-              <span role="img" aria-label="CSV" className="text-lg">📋</span>
+              <span role="img" aria-label="Registre" className="text-lg">📋</span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-[var(--color-admin-text)] text-sm">
                 Registre des consentements
               </p>
               <p className="text-xs text-[var(--color-admin-text-muted)] mb-3">
-                Export CSV (classe sélectionnée)
+                Classe sélectionnée — CSV (traitement) ou PDF (DPO / archivage)
               </p>
-              <button
-                type="button"
-                className="jf-admin-btn-primary"
-                disabled={selectedClassId == null || isLoading || isExporting || rows.length === 0}
-                onClick={async () => {
-                  if (selectedClassId == null) return;
-                  try {
-                    setIsExporting(true);
-                    const exportRows = await adminGdprApi.exportConsentRegister(selectedClassId);
-                    const csv = toConsentCsv(exportRows);
-                    downloadText(
-                      `consents_class_${selectedClassId}.csv`,
-                      csv,
-                      'text/csv;charset=utf-8'
-                    );
-                  } catch {
-                    setError('Impossible d\u2019exporter le registre des consentements.');
-                  } finally {
-                    setIsExporting(false);
-                  }
-                }}
-              >
-                Télécharger
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="jf-admin-btn-secondary"
+                  disabled={selectedClassId == null || isLoading || isExporting || rows.length === 0}
+                  onClick={async () => {
+                    if (selectedClassId == null) return;
+                    try {
+                      setIsExporting(true);
+                      const exportRows = await adminGdprApi.exportConsentRegister(selectedClassId);
+                      const csv = toConsentCsv(exportRows);
+                      downloadText(
+                        `consents_class_${selectedClassId}.csv`,
+                        csv,
+                        'text/csv;charset=utf-8'
+                      );
+                    } catch {
+                      setError('Impossible d\u2019exporter le registre (CSV).');
+                    } finally {
+                      setIsExporting(false);
+                    }
+                  }}
+                >
+                  CSV
+                </button>
+                <button
+                  type="button"
+                  className="jf-admin-btn-primary"
+                  disabled={selectedClassId == null || isLoading || isExporting || rows.length === 0}
+                  onClick={async () => {
+                    if (selectedClassId == null) return;
+                    try {
+                      setIsExporting(true);
+                      const blob = await adminGdprApi.exportConsentRegisterPdf(selectedClassId);
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `consents_class_${selectedClassId}.pdf`;
+                      document.body.appendChild(a);
+                      a.click();
+                      a.remove();
+                      URL.revokeObjectURL(url);
+                    } catch {
+                      setError('Impossible d\u2019exporter le registre (PDF).');
+                    } finally {
+                      setIsExporting(false);
+                    }
+                  }}
+                >
+                  PDF
+                </button>
+              </div>
             </div>
           </div>
         </div>

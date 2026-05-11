@@ -13,6 +13,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.Map;
@@ -187,6 +188,38 @@ public class GlobalExceptionHandler {
       .build();
 
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+  }
+
+  /**
+   * ResponseStatusException : levee par les services pour signaler une regle
+   * metier qui se traduit naturellement en code HTTP (409 conflit, 400 invalide,
+   * etc.). Sans handler dedie, notre fallback {@code @ExceptionHandler(Exception.class)}
+   * la capturait avant le {@code DefaultHandlerExceptionResolver} de Spring et
+   * la transformait en 500.
+   *
+   * Le {@code reason} d'une ResponseStatusException est toujours emis par notre
+   * propre code (jamais une cause externe), donc on peut le remonter au client
+   * tel quel, en s'assurant qu'il reste court.
+   */
+  @ExceptionHandler(ResponseStatusException.class)
+  public ResponseEntity<ErrorResponse> handleResponseStatus(
+    ResponseStatusException ex,
+    HttpServletRequest request) {
+
+    HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+    String reason = ex.getReason();
+    if (reason == null || reason.length() > 200) {
+      reason = status.getReasonPhrase();
+    }
+
+    ErrorResponse body = ErrorResponse.builder()
+      .status(status.value())
+      .error(status.getReasonPhrase())
+      .message(reason)
+      .path(request.getRequestURI())
+      .build();
+
+    return ResponseEntity.status(status).body(body);
   }
 
   // ── Fallback ───────────────────────────────────────────────────
