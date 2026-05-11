@@ -1,15 +1,18 @@
 package com.juggleflow.backend.service;
 
+import com.juggleflow.backend.dto.AdminCreateUserRequest;
+import com.juggleflow.backend.dto.AdminCreateUserResponse;
 import com.juggleflow.backend.dto.AdminEstablishmentStatsResponse;
 import com.juggleflow.backend.dto.AdminUserResponse;
 import com.juggleflow.backend.dto.SchoolClassResponse;
 import com.juggleflow.backend.exception.ResourceNotFoundException;
 import com.juggleflow.backend.model.Administrator;
-import com.juggleflow.backend.model.GdprConsent;
+import com.juggleflow.backend.model.GdprConsent.ConsentStatus;
+import com.juggleflow.backend.model.SchoolClass;
 import com.juggleflow.backend.model.Student;
+import com.juggleflow.backend.model.Teacher;
 import com.juggleflow.backend.model.User;
 import com.juggleflow.backend.repository.AdministratorRepository;
-import com.juggleflow.backend.repository.GdprConsentRepository;
 import com.juggleflow.backend.repository.SchoolClassRepository;
 import com.juggleflow.backend.repository.StudentRepository;
 import com.juggleflow.backend.repository.TeacherRepository;
@@ -17,16 +20,17 @@ import com.juggleflow.backend.repository.UserProgressRepository;
 import com.juggleflow.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,13 +38,31 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class AdminService {
 
+    /**
+     * Alphabet pour la generation de mot de passe temporaire :
+     * - 23 lettres minuscules / 23 majuscules (ambigus 'I' 'l' 'O' '0' retires)
+     * - 10 chiffres
+     * - 8 symboles "URL-safe" (pas de quote, espace, backslash)
+     * Entropie effective : ~6.07 bits/char x 12 chars = ~73 bits, suffisant pour
+     * un mot de passe a usage temporaire qui sera change a la 1re connexion.
+     */
+    private static final String PWD_ALPHABET =
+        "abcdefghjkmnpqrstuvwxyz" +
+        "ABCDEFGHJKMNPQRSTUVWXYZ" +
+        "23456789" +
+        "!@#$%&*+=?";
+
+    private static final int GENERATED_PASSWORD_LENGTH = 14;
+
     private final UserRepository userRepository;
     private final SchoolClassRepository schoolClassRepository;
-    private final GdprConsentRepository gdprConsentRepository;
     private final StudentRepository studentRepository;
     private final UserProgressRepository userProgressRepository;
     private final TeacherRepository teacherRepository;
     private final AdministratorRepository administratorRepository;
+    private final GdprService gdprService;
+    private final PasswordEncoder passwordEncoder;
+    private final SecureRandom secureRandom = new SecureRandom();
 
     /**
      * Agrégats établissement pour le tableau de bord admin.
@@ -68,6 +90,110 @@ public class AdminService {
             .stream()
             .map(this::toAdminUserResponse)
             .toList();
+    }
+
+    /**
+     * Cree un compte utilisateur (eleve, enseignant ou administrateur).
+     *
+     * Securite :
+     *   - email unique (409 si deja pris).
+     *   - role rabattu via la regex du DTO (pas d'injection possible).
+     *   - mot de passe encode via {@code PasswordEncoder} (BCrypt 12 rounds).
+     *   - mot de passe en clair renvoye UNE SEULE FOIS quand il a ete genere
+     *     par le serveur ; jamais persiste ailleurs, jamais loggue.
+     *
+     * Convention metier :
+     *   - {@code classId} / {@code schoolLevel} / {@code birthDate} ne sont
+     *     appliques que pour les eleves. Pour un teacher/admin ils sont ignores.
+     */
+    @Transactional
+    public AdminCreateUserResponse createUser(AdminCreateUserRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "Un utilisateur avec cet email existe deja.");
+        }
+
+        boolean generated = request.getPassword() == null || request.getPassword().isBlank();
+        String rawPassword = generated ? generateTemporaryPassword() : request.getPassword();
+        String encodedPassword = passwordEncoder.encode(rawPassword);
+
+        User saved = switch (request.getRole()) {
+            case "ROLE_ELEVE" -> userRepository.save(buildStudent(request, encodedPassword));
+            case "ROLE_ENSEIGNANT" -> userRepository.save(buildTeacher(request, encodedPassword));
+            case "ROLE_ADMINISTRATEUR" -> userRepository.save(buildAdmin(request, encodedPassword));
+            // Cas defensif : la validation @Pattern aurait deja rejete.
+            default -> throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST, "Role invalide.");
+        };
+
+        Long classId = null;
+        String className = null;
+        if (saved instanceof Student student && student.getSchoolClass() != null) {
+            classId = student.getSchoolClass().getId();
+            className = student.getSchoolClass().getName();
+        }
+
+        return AdminCreateUserResponse.builder()
+            .id(saved.getId())
+            .email(saved.getEmail())
+            .firstName(saved.getFirstName())
+            .lastName(saved.getLastName())
+            .role(saved.getRole())
+            .enabled(saved.isEnabled())
+            .classId(classId)
+            .className(className)
+            .generatedPassword(generated ? rawPassword : null)
+            .build();
+    }
+
+    private Student buildStudent(AdminCreateUserRequest req, String encodedPassword) {
+        SchoolClass schoolClass = null;
+        if (req.getClassId() != null) {
+            schoolClass = schoolClassRepository.findById(req.getClassId())
+                .orElseThrow(() -> new ResourceNotFoundException("Classe", req.getClassId()));
+        }
+        return Student.builder()
+            .email(req.getEmail())
+            .password(encodedPassword)
+            .firstName(req.getFirstName())
+            .lastName(req.getLastName())
+            .enabled(true)
+            .schoolClass(schoolClass)
+            .schoolLevel(req.getSchoolLevel())
+            .birthDate(req.getBirthDate())
+            .enrollmentDate(LocalDate.now())
+            .build();
+    }
+
+    private Teacher buildTeacher(AdminCreateUserRequest req, String encodedPassword) {
+        return Teacher.builder()
+            .email(req.getEmail())
+            .password(encodedPassword)
+            .firstName(req.getFirstName())
+            .lastName(req.getLastName())
+            .enabled(true)
+            .certified(false)
+            .build();
+    }
+
+    private Administrator buildAdmin(AdminCreateUserRequest req, String encodedPassword) {
+        return Administrator.builder()
+            .email(req.getEmail())
+            .password(encodedPassword)
+            .firstName(req.getFirstName())
+            .lastName(req.getLastName())
+            .enabled(true)
+            .adminRole("school_admin")
+            .build();
+    }
+
+    private String generateTemporaryPassword() {
+        StringBuilder sb = new StringBuilder(GENERATED_PASSWORD_LENGTH);
+        for (int i = 0; i < GENERATED_PASSWORD_LENGTH; i++) {
+            sb.append(PWD_ALPHABET.charAt(secureRandom.nextInt(PWD_ALPHABET.length())));
+        }
+        return sb.toString();
     }
 
     /**
@@ -210,14 +336,15 @@ public class AdminService {
             Long classId = student.getSchoolClass() != null ? student.getSchoolClass().getId() : null;
             String className = student.getSchoolClass() != null ? student.getSchoolClass().getName() : null;
 
-            Optional<GdprConsent> consent = gdprConsentRepository.findByUser_IdAndConsentType(
-                student.getId(), GdprConsent.ConsentType.PARENTAL_MINOR);
-            boolean ok = consent.map(GdprConsent::isConsentGiven).orElse(false);
-
+            ConsentStatus status = gdprService.getParentalConsentStatus(student.getId());
             builder
                 .classId(classId)
                 .className(className)
-                .parentalConsentStatus(ok ? "ok" : "missing");
+                .parentalConsentStatus(switch (status) {
+                    case VALID   -> "ok";
+                    case EXPIRED -> "expired";
+                    case REVOKED, MISSING -> "missing";
+                });
         }
 
         return builder.build();

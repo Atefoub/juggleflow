@@ -25,9 +25,14 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -149,6 +154,159 @@ class GdprControllerTest {
         Long classId = createClass(teacherToken);
 
         mockMvc.perform(get("/api/admin/gdpr/classes/" + classId + "/consents")
+                        .header("Authorization", "Bearer " + teacherToken))
+                .andExpect(status().isForbidden());
+    }
+
+    // ── Statut EXPIRED / VALID (P2.11) ───────────────────────────
+
+    @Test
+    @DisplayName("status=VALID quand le consentement utilise la policy_version courante")
+    void status_shouldBeValid_whenPolicyVersionMatchesCurrent() throws Exception {
+        String teacherToken = registerAndGetToken("teacher.valid@gdpr.fr", "teacher");
+        String adminToken   = createAdminAndLogin("admin.valid@gdpr.fr");
+        String studentToken = registerAndGetToken("eleve.valid@gdpr.fr", "student");
+        String guardianToken = createAdminAndLogin("guardian.valid@gdpr.fr");
+
+        Long classId    = createClass(teacherToken);
+        Long studentId  = getUserId(studentToken);
+        Long guardianId = getUserId(guardianToken);
+
+        // L'eleve doit appartenir a la classe pour apparaitre dans le registre
+        mockMvc.perform(post("/api/enseignant/classes/" + classId
+                        + "/students/" + studentId)
+                        .header("Authorization", "Bearer " + teacherToken))
+                .andExpect(status().isCreated());
+
+        // policy_version aligne sur la valeur par defaut (gdpr.current-policy-version=2026-1)
+        ConsentRequest req = new ConsentRequest();
+        req.setUserId(studentId);
+        req.setConsentType(ConsentType.PARENTAL_MINOR);
+        req.setConsentGiven(true);
+        req.setPolicyVersion("2026-1");
+        req.setLegalGuardianId(guardianId);
+
+        mockMvc.perform(post("/api/admin/gdpr/consents")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("VALID"))
+                .andExpect(jsonPath("$.hasParentalConsent").value(true));
+    }
+
+    @Test
+    @DisplayName("status=EXPIRED quand expiresAt est dans le passé")
+    void status_shouldBeExpired_whenExpiresAtInPast() throws Exception {
+        String teacherToken  = registerAndGetToken("teacher.exp@gdpr.fr", "teacher");
+        String adminToken    = createAdminAndLogin("admin.exp@gdpr.fr");
+        String studentToken  = registerAndGetToken("eleve.exp@gdpr.fr", "student");
+        String guardianToken = createAdminAndLogin("guardian.exp@gdpr.fr");
+
+        Long classId    = createClass(teacherToken);
+        Long studentId  = getUserId(studentToken);
+        Long guardianId = getUserId(guardianToken);
+
+        mockMvc.perform(post("/api/enseignant/classes/" + classId
+                        + "/students/" + studentId)
+                        .header("Authorization", "Bearer " + teacherToken))
+                .andExpect(status().isCreated());
+
+        ConsentRequest req = new ConsentRequest();
+        req.setUserId(studentId);
+        req.setConsentType(ConsentType.PARENTAL_MINOR);
+        req.setConsentGiven(true);
+        req.setPolicyVersion("2026-1");
+        req.setLegalGuardianId(guardianId);
+        req.setExpiresAt(Instant.now().minus(1, ChronoUnit.DAYS));
+
+        mockMvc.perform(post("/api/admin/gdpr/consents")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("EXPIRED"))
+                .andExpect(jsonPath("$.hasParentalConsent").value(false));
+
+        mockMvc.perform(get("/api/admin/gdpr/classes/" + classId + "/consents")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].status").value("EXPIRED"));
+    }
+
+    @Test
+    @DisplayName("status=EXPIRED quand policy_version est obsolète (différente de la courante)")
+    void status_shouldBeExpired_whenPolicyVersionStale() throws Exception {
+        String teacherToken  = registerAndGetToken("teacher.stale@gdpr.fr", "teacher");
+        String adminToken    = createAdminAndLogin("admin.stale@gdpr.fr");
+        String studentToken  = registerAndGetToken("eleve.stale@gdpr.fr", "student");
+        String guardianToken = createAdminAndLogin("guardian.stale@gdpr.fr");
+
+        Long classId    = createClass(teacherToken);
+        Long studentId  = getUserId(studentToken);
+        Long guardianId = getUserId(guardianToken);
+
+        mockMvc.perform(post("/api/enseignant/classes/" + classId
+                        + "/students/" + studentId)
+                        .header("Authorization", "Bearer " + teacherToken))
+                .andExpect(status().isCreated());
+
+        ConsentRequest req = new ConsentRequest();
+        req.setUserId(studentId);
+        req.setConsentType(ConsentType.PARENTAL_MINOR);
+        req.setConsentGiven(true);
+        // Version intentionnellement obsolete par rapport au gdpr.current-policy-version=2026-1
+        req.setPolicyVersion("2024-old");
+        req.setLegalGuardianId(guardianId);
+
+        mockMvc.perform(post("/api/admin/gdpr/consents")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("EXPIRED"));
+    }
+
+    // ── Export PDF du registre (P2.10) ───────────────────────────
+
+    @Test
+    @DisplayName("exportRegisterPdf → 200, content-type application/pdf et body commençant par %PDF-")
+    void exportPdf_shouldReturn200_andApplicationPdf_whenAdmin() throws Exception {
+        String teacherToken = registerAndGetToken("teacher.pdf@gdpr.fr", "teacher");
+        String adminToken   = createAdminAndLogin("admin.pdf@gdpr.fr");
+        String studentToken = registerAndGetToken("eleve.pdf@gdpr.fr", "student");
+
+        Long classId   = createClass(teacherToken);
+        Long studentId = getUserId(studentToken);
+
+        mockMvc.perform(post("/api/enseignant/classes/" + classId
+                        + "/students/" + studentId)
+                        .header("Authorization", "Bearer " + teacherToken))
+                .andExpect(status().isCreated());
+
+        MvcResult res = mockMvc.perform(
+                        get("/api/admin/gdpr/classes/" + classId + "/consents/export.pdf")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type",
+                    org.hamcrest.Matchers.containsString("application/pdf")))
+                .andExpect(header().string("Content-Disposition",
+                    org.hamcrest.Matchers.containsString("attachment")))
+                .andReturn();
+
+        byte[] body = res.getResponse().getContentAsByteArray();
+        assertThat(body).isNotEmpty();
+        // Tous les PDF, quelle que soit la version, commencent par les 5 octets "%PDF-".
+        assertThat(new String(body, 0, 5)).isEqualTo("%PDF-");
+    }
+
+    @Test
+    @DisplayName("exportRegisterPdf → 403 si l'utilisateur n'est pas admin")
+    void exportPdf_shouldReturn403_whenNotAdmin() throws Exception {
+        String teacherToken = registerAndGetToken("teacher.pdf2@gdpr.fr", "teacher");
+        Long classId = createClass(teacherToken);
+
+        mockMvc.perform(get("/api/admin/gdpr/classes/" + classId + "/consents/export.pdf")
                         .header("Authorization", "Bearer " + teacherToken))
                 .andExpect(status().isForbidden());
     }
