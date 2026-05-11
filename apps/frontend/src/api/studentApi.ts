@@ -4,6 +4,21 @@ export interface StudentStats {
   totalTricksLearned: number;
   tricksInProgress: number;
   badgesEarned: number;
+  currentStreakDays: number;
+  longestStreakDays: number;
+  totalPracticeMinutes: number;
+}
+
+export interface DailyChallenge {
+  id: number;
+  rotationSlot: number;
+  title: string;
+  description: string;
+  trickId: number | null;
+  trickName: string | null;
+  targetValue: number | null;
+  targetUnit: string | null;
+  date: string;
 }
 
 export interface BadgeData {
@@ -96,5 +111,17 @@ export const studentApi = {
 
     const res = await api.put<ProgressResponseDto>(`/progress/${trickId}`, payload);
     return toTrickProgress(res.data);
+  },
+
+  /**
+   * Défi du jour pour l'élève connecté.
+   * Retourne null si aucun défi n'est configuré côté serveur (204 No Content).
+   */
+  getDailyChallenge: async (): Promise<DailyChallenge | null> => {
+    const res = await api.get<DailyChallenge | ''>('/eleve/daily-challenge', {
+      validateStatus: (s) => s === 200 || s === 204,
+    });
+    if (res.status === 204 || res.data === '' || res.data === null) return null;
+    return res.data as DailyChallenge;
   },
 };
