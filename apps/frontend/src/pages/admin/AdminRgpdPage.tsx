@@ -1,16 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import BottomNav from '../../components/BottomNav';
-import ProgressBar from '../../components/ProgressBar';
 import { useAuth } from '../../context/AuthContext';
 import { adminApi, type AdminSchoolClass } from '../../api/adminApi';
 import { adminGdprApi, type ConsentStatusRow } from '../../api/adminGdprApi';
-
-const navItems = [
-  { label: 'Utilisateurs', icon: '👥', path: '/admin/users' },
-  { label: 'Classes',      icon: '🏫', path: '/admin/classes' },
-  { label: 'RGPD',         icon: '🔒', path: '/admin/rgpd' },
-  { label: 'Journal',      icon: '📋', path: '/admin/audit' },
-];
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
@@ -167,7 +159,7 @@ export default function AdminRgpdPage() {
       await adminApi.setUserEnabled(userId, true);
       await refreshConsentRows();
     } catch {
-      setError('Impossible d’enregistrer le consentement.');
+      setError('Impossible d\u2019enregistrer le consentement.');
     } finally {
       setBusyUserId(null);
     }
@@ -189,324 +181,326 @@ export default function AdminRgpdPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+    <>
+      <AdminPageHeader
+        title="RGPD &amp; Export"
+        description="Suivi des consentements parentaux, exports CSV (progression, registre)."
+      />
 
-      {/* Header */}
-      <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
-        <h1 className="font-display font-bold text-text-primary text-2xl mb-1">RGPD &amp; Export</h1>
-        <p className="text-xs text-text-muted">Conformité des données · établissement</p>
-      </header>
-
-      <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
-
-        {/* Class selector */}
-        <section className="p-4 rounded-2xl bg-bg-card border border-border">
-          <p className="text-xs text-text-muted mb-2">Classe</p>
-          <select
-            className="w-full px-3 py-2.5 rounded-xl bg-bg-primary border border-border text-sm text-text-primary outline-none"
-            value={selectedClassId ?? ''}
-            onChange={(e) => setSelectedClassId(Number(e.target.value))}
-            disabled={classes.length === 0}
-          >
-            {classes.length === 0 && (
-              <option value="">Aucune classe</option>
-            )}
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} ({c.schoolYear})
-              </option>
-            ))}
-          </select>
-          {error && (
-            <p className="text-xs text-alert mt-2">{error}</p>
+      {/* Sélecteur de classe */}
+      <section className="jf-admin-card p-4 mb-4">
+        <label className="block text-xs text-[var(--color-admin-text-muted)] mb-1" htmlFor="rgpd-class">
+          Classe
+        </label>
+        <select
+          id="rgpd-class"
+          className="jf-admin-input"
+          value={selectedClassId ?? ''}
+          onChange={(e) => setSelectedClassId(Number(e.target.value))}
+          disabled={classes.length === 0}
+        >
+          {classes.length === 0 && (
+            <option value="">Aucune classe</option>
           )}
-        </section>
+          {classes.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name} ({c.schoolYear})
+            </option>
+          ))}
+        </select>
+        {error && (
+          <p className="text-xs text-[var(--color-admin-danger)] mt-2">{error}</p>
+        )}
+      </section>
 
-        {/* Consent stats */}
-        <section>
-          <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
-            Consentements parentaux
-          </h2>
-          <div className="grid grid-cols-3 gap-3 mb-3">
-            {[
-              { value: consentStats.accordes,  label: 'Accordés',  color: 'text-success', bg: 'bg-success/10 border-success/30' },
-              { value: consentStats.manquants, label: 'Manquants', color: 'text-alert',   bg: 'bg-alert/10   border-alert/30'   },
-              { value: consentStats.expires,   label: 'Expirés',   color: 'text-brand-end', bg: 'bg-brand/10 border-brand/30' },
-            ].map((stat) => (
-              <div key={stat.label} className={`p-3 rounded-xl border flex flex-col items-center gap-1 ${stat.bg}`}>
-                <span className={`font-display text-3xl font-bold ${stat.color}`}>{stat.value}</span>
-                <span className="text-xs text-text-muted">{stat.label}</span>
-              </div>
-            ))}
+      {/* Consentements */}
+      <section className="mb-6">
+        <h2 className="jf-admin-section-title mb-3">Consentements parentaux</h2>
+
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="p-3 rounded-lg border bg-[var(--color-admin-success-bg)] border-[color-mix(in_srgb,var(--color-admin-success)_25%,transparent)] flex flex-col items-center gap-1">
+            <span className="font-display text-3xl font-bold text-[var(--color-admin-success)]">
+              {consentStats.accordes}
+            </span>
+            <span className="text-xs text-[var(--color-admin-success)] font-semibold">Accordés</span>
           </div>
+          <div className="p-3 rounded-lg border bg-[var(--color-admin-danger-bg)] border-[color-mix(in_srgb,var(--color-admin-danger)_25%,transparent)] flex flex-col items-center gap-1">
+            <span className="font-display text-3xl font-bold text-[var(--color-admin-danger)]">
+              {consentStats.manquants}
+            </span>
+            <span className="text-xs text-[var(--color-admin-danger)] font-semibold">Manquants</span>
+          </div>
+          <div className="p-3 rounded-lg border bg-[var(--color-admin-bg)] border-[var(--color-admin-border)] flex flex-col items-center gap-1">
+            <span className="font-display text-3xl font-bold text-[var(--color-admin-text-muted)]">
+              {consentStats.expires}
+            </span>
+            <span className="text-xs text-[var(--color-admin-text-muted)] font-semibold">Expirés</span>
+          </div>
+        </div>
 
-          <ProgressBar
-            value={progressValue}
-            color="#22C55E"
-            height="6px"
+        <div
+          className="w-full h-2 rounded-full bg-[var(--color-admin-border)] overflow-hidden"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progressValue}
+        >
+          <div
+            className="h-full bg-[var(--color-admin-success)] transition-[width] duration-200"
+            style={{ width: `${progressValue}%` }}
           />
-          <p className="text-xs text-text-muted mt-1">
-            {consentStats.accordes} / {total} consentements accordés
-            {selectedClassId != null && (
-              <>
-                {' '}· {pendingCount} en attente
-              </>
-            )}
-          </p>
-
-          <div className="mt-3 p-3 rounded-xl bg-bg-primary border border-border">
-            <label htmlFor="rgpd-policy-version" className="text-xs text-text-muted block mb-1">
-              Version de la politique enregistrée sur le consentement
-            </label>
-            <input
-              id="rgpd-policy-version"
-              type="text"
-              value={policyVersion}
-              onChange={(e) => setPolicyVersion(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-bg-card border border-border text-sm text-text-primary outline-none"
-            />
-            <p className="text-[0.65rem] text-text-muted mt-2 leading-relaxed">
-              Le représentant légal enregistré en base est ton propre compte administrateur (traçabilité établissement).
-            </p>
-          </div>
-
-          <div className="flex gap-2 mt-3">
-            <button
-              type="button"
-              onClick={() => setShowDetails(true)}
-              disabled={isLoading || rows.length === 0}
-              className="jf-btn-primary flex-1 min-h-10 py-2.5 rounded-xl text-sm"
-            >
-              Gérer ({missingRows.length} sans consentement)
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowDetails((v) => !v)}
-              disabled={isLoading || rows.length === 0}
-              className="jf-btn-secondary flex-1 min-h-10 py-2.5 rounded-xl text-sm"
-            >
-              {showDetails ? 'Masquer' : 'Voir détails'}
-            </button>
-          </div>
-
-          {showDetails && !isLoading && !error && rows.length > 0 && (
-            <div className="mt-4 p-4 rounded-2xl bg-bg-card border border-border">
-              <p className="text-xs text-text-muted mb-3">Détail (classe sélectionnée)</p>
-              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-bg-primary border border-border mb-3">
-                <span role="img" aria-label="recherche" className="text-sm">🔍</span>
-                <input
-                  type="search"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Rechercher un élève…"
-                  className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                {filteredRows.map((r) => (
-                  <div
-                    key={r.userId}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-bg-primary border border-border"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-text-primary font-semibold truncate">
-                        {r.firstName} {r.lastName}
-                      </p>
-                      <p className="text-xs text-text-muted">
-                        Dernière mise à jour : {formatDate(r.consentDate)}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      <span className={[
-                        'text-xs font-semibold px-2 py-0.5 rounded-full border',
-                        r.hasParentalConsent
-                          ? 'text-success bg-success/10 border-success/30'
-                          : 'text-alert bg-alert/10 border-alert/30',
-                      ].join(' ')}>
-                        {r.hasParentalConsent ? 'Consentement ✓' : 'Consentement ✗'}
-                      </span>
-                      {!r.hasParentalConsent && (
-                        <button
-                          type="button"
-                          disabled={busyUserId === r.userId || !user?.id}
-                          onClick={() => recordParentalConsentRow(r.userId)}
-                          className="jf-btn-primary jf-btn-primary-sm disabled:opacity-40"
-                        >
-                          {busyUserId === r.userId ? '…' : 'Enregistrer'}
-                        </button>
-                      )}
-                      {r.hasParentalConsent && (
-                        <button
-                          type="button"
-                          disabled={busyUserId === r.userId}
-                          onClick={() => revokeParentalForUser(r.userId)}
-                          className="text-xs px-2 py-1 rounded-lg font-semibold text-alert border border-alert/40 bg-alert/10 min-h-8 disabled:opacity-40"
-                        >
-                          {busyUserId === r.userId ? '…' : 'Révoquer'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {filteredRows.length === 0 && (
-                  <p className="text-xs text-text-muted text-center py-4">
-                    Aucun élève trouvé.
-                  </p>
-                )}
-                {filteredRows.length > 0 && (
-                  <p className="text-xs text-text-muted text-center pt-2">
-                    {filteredRows.length} élève(s)
-                  </p>
-                )}
-              </div>
-            </div>
+        </div>
+        <p className="text-xs text-[var(--color-admin-text-muted)] mt-1">
+          {consentStats.accordes} / {total} consentements accordés
+          {selectedClassId != null && (
+            <> · {pendingCount} en attente</>
           )}
-        </section>
+        </p>
 
-        {/* Droit à l'oubli — information */}
-        <section>
-          <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
-            Droit à l&apos;oubli
-          </h2>
-          <div className="p-4 rounded-2xl bg-bg-card border border-border">
-            <p className="text-sm text-text-secondary mb-2">
-              Une tâche planifiée côté serveur anonymise les comptes élèves en fin d&apos;année scolaire. La révocation du
-              consentement parental ci-dessus désactive immédiatement le compte concerné.
-            </p>
-            <p className="text-xs text-text-muted">
-              La suppression définitive personnalisée (hors anonymisation de masse) pourra être ajoutée via un endpoint dédié si ton DPO l&apos;exige.
-            </p>
-          </div>
-        </section>
-
-        {/* Data export */}
-        <section>
-          <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
-            Export des données
-          </h2>
-
-          <div className="p-4 rounded-2xl bg-bg-card border border-border mb-3">
-            <p className="text-xs text-text-muted mb-2">Année scolaire (pour le bilan de progression)</p>
-            <select
-              className="w-full px-3 py-2.5 rounded-xl bg-bg-primary border border-border text-sm text-text-primary outline-none"
-              value={selectedSchoolYear ?? ''}
-              onChange={(e) => setSelectedSchoolYear(Number(e.target.value))}
-              disabled={availableSchoolYears.length === 0}
-            >
-              {availableSchoolYears.length === 0 && (
-                <option value="">Aucune année</option>
-              )}
-              {availableSchoolYears.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            {[
-              {
-                id: 'progress-csv',
-                icon: '📊',
-                iconLabel: 'CSV',
-                title: 'Bilan de progression',
-                subtitle: 'Export CSV (toutes classes)',
-                badge: 'CSV',
-                badgeClass: 'text-info bg-info/10 border-info/30',
-              },
-              {
-                id: 'consents-csv',
-                icon: '📋',
-                iconLabel: 'CSV',
-                title: 'Registre des consentements',
-                subtitle: 'Export CSV (RGPD)',
-                badge: 'CSV',
-                badgeClass: 'text-info bg-info/10 border-info/30',
-              },
-            ].map((item) => (
-              <div key={item.id} className="flex items-center gap-3 p-4 rounded-2xl bg-bg-card border border-border">
-                <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-bg-primary border border-border shrink-0">
-                  <span role="img" aria-label={item.iconLabel} className="text-xl">{item.icon}</span>
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-text-primary text-sm">{item.title}</p>
-                  <p className="text-xs text-text-muted">{item.subtitle}</p>
-                </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold ${item.badgeClass}`}>
-                    {item.badge}
-                  </span>
-                  <button
-                    aria-label={`Télécharger ${item.title}`}
-                    className="jf-btn-primary jf-btn-primary-sm"
-                    disabled={
-                      (item.id === 'consents-csv' && (
-                        selectedClassId == null
-                        || isLoading
-                        || isExporting
-                        || rows.length === 0
-                      ))
-                      || (item.id === 'progress-csv' && (
-                        isLoading
-                        || isExporting
-                      ))
-                    }
-                    onClick={async () => {
-                      if (item.id === 'progress-csv') {
-                        try {
-                          setIsExporting(true);
-                          const csv = await adminApi.exportProgressCsv(selectedSchoolYear ?? undefined);
-                          downloadText(
-                            selectedSchoolYear != null
-                              ? `progress_report_${selectedSchoolYear}.csv`
-                              : 'progress_report.csv',
-                            csv,
-                            'text/csv;charset=utf-8'
-                          );
-                        } catch {
-                          setError('Impossible d’exporter le bilan de progression.');
-                        } finally {
-                          setIsExporting(false);
-                        }
-                        return;
-                      }
-
-                      if (item.id !== 'consents-csv') return;
-                      if (selectedClassId == null) return;
-                      try {
-                        setIsExporting(true);
-                        const exportRows = await adminGdprApi.exportConsentRegister(selectedClassId);
-                        const csv = toConsentCsv(exportRows);
-                        downloadText(
-                          `consents_class_${selectedClassId}.csv`,
-                          csv,
-                          'text/csv;charset=utf-8'
-                        );
-                      } catch {
-                        setError('Impossible d’exporter le registre des consentements.');
-                      } finally {
-                        setIsExporting(false);
-                      }
-                    }}
-                  >
-                    ↓
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Legal footer */}
-        <div className="p-3 rounded-xl bg-bg-card border border-border">
-          <p className="text-xs text-text-muted leading-relaxed">
-            <span role="img" aria-label="drapeau France" className="mr-1">🇫🇷</span>
-            Données hébergées en France. Conformité RGPD assurée. DPO contactable via{' '}
-            <span className="text-text-secondary font-medium">dpo@juggleflow.fr</span>
+        <div className="mt-4 jf-admin-card p-4">
+          <label
+            htmlFor="rgpd-policy-version"
+            className="text-xs text-[var(--color-admin-text-muted)] block mb-1"
+          >
+            Version de la politique enregistrée sur le consentement
+          </label>
+          <input
+            id="rgpd-policy-version"
+            type="text"
+            value={policyVersion}
+            onChange={(e) => setPolicyVersion(e.target.value)}
+            className="jf-admin-input"
+          />
+          <p className="text-[0.65rem] text-[var(--color-admin-text-muted)] mt-2 leading-relaxed">
+            Le représentant légal enregistré en base est ton propre compte administrateur
+            (traçabilité établissement).
           </p>
         </div>
-      </main>
 
-      <BottomNav items={navItems} />
-    </div>
+        <div className="flex flex-wrap gap-2 mt-4">
+          <button
+            type="button"
+            onClick={() => setShowDetails(true)}
+            disabled={isLoading || rows.length === 0}
+            className="jf-admin-btn-primary"
+          >
+            Gérer ({missingRows.length} sans consentement)
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowDetails((v) => !v)}
+            disabled={isLoading || rows.length === 0}
+            className="jf-admin-btn-secondary"
+          >
+            {showDetails ? 'Masquer le détail' : 'Voir le détail'}
+          </button>
+        </div>
+
+        {showDetails && !isLoading && !error && rows.length > 0 && (
+          <div className="mt-4 jf-admin-card p-4">
+            <p className="jf-admin-section-title mb-3">Détail · classe sélectionnée</p>
+
+            <div className="mb-3 flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--color-admin-border)] bg-[var(--color-admin-bg)] focus-within:border-[var(--color-admin)]">
+              <span role="img" aria-label="recherche" className="text-sm">🔍</span>
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Rechercher un élève…"
+                className="flex-1 bg-transparent text-sm text-[var(--color-admin-text)] placeholder:text-[var(--color-admin-text-muted)] outline-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {filteredRows.map((r) => (
+                <div
+                  key={r.userId}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg bg-[var(--color-admin-bg)] border border-[var(--color-admin-border)]"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-[var(--color-admin-text)] font-semibold truncate">
+                      {r.firstName} {r.lastName}
+                    </p>
+                    <p className="text-xs text-[var(--color-admin-text-muted)]">
+                      Dernière mise à jour : {formatDate(r.consentDate)}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <span
+                      className={
+                        r.hasParentalConsent
+                          ? 'jf-admin-chip jf-admin-chip-success'
+                          : 'jf-admin-chip jf-admin-chip-danger'
+                      }
+                    >
+                      {r.hasParentalConsent ? 'Consentement ✓' : 'Consentement ✗'}
+                    </span>
+                    {!r.hasParentalConsent && (
+                      <button
+                        type="button"
+                        disabled={busyUserId === r.userId || !user?.id}
+                        onClick={() => recordParentalConsentRow(r.userId)}
+                        className="jf-admin-btn-primary"
+                      >
+                        {busyUserId === r.userId ? '…' : 'Enregistrer'}
+                      </button>
+                    )}
+                    {r.hasParentalConsent && (
+                      <button
+                        type="button"
+                        disabled={busyUserId === r.userId}
+                        onClick={() => revokeParentalForUser(r.userId)}
+                        className="jf-admin-btn-danger"
+                      >
+                        {busyUserId === r.userId ? '…' : 'Révoquer'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {filteredRows.length === 0 && (
+                <p className="text-xs text-[var(--color-admin-text-muted)] text-center py-4">
+                  Aucun élève trouvé.
+                </p>
+              )}
+              {filteredRows.length > 0 && (
+                <p className="text-xs text-[var(--color-admin-text-muted)] text-center pt-2">
+                  {filteredRows.length} élève(s)
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Droit à l'oubli */}
+      <section className="mb-6">
+        <h2 className="jf-admin-section-title mb-3">Droit à l&apos;oubli</h2>
+        <div className="jf-admin-card p-5">
+          <p className="text-sm text-[var(--color-admin-text-secondary)] mb-2">
+            Une tâche planifiée côté serveur anonymise les comptes élèves en fin d&apos;année scolaire.
+            La révocation du consentement parental ci-dessus désactive immédiatement le compte concerné.
+          </p>
+          <p className="text-xs text-[var(--color-admin-text-muted)]">
+            La suppression définitive personnalisée (hors anonymisation de masse) pourra être ajoutée
+            via un endpoint dédié si ton DPO l&apos;exige.
+          </p>
+        </div>
+      </section>
+
+      {/* Export */}
+      <section className="mb-6">
+        <h2 className="jf-admin-section-title mb-3">Export des données</h2>
+
+        <div className="jf-admin-card p-4 mb-3">
+          <label className="block text-xs text-[var(--color-admin-text-muted)] mb-1" htmlFor="rgpd-year">
+            Année scolaire (bilan de progression)
+          </label>
+          <select
+            id="rgpd-year"
+            className="jf-admin-input"
+            value={selectedSchoolYear ?? ''}
+            onChange={(e) => setSelectedSchoolYear(Number(e.target.value))}
+            disabled={availableSchoolYears.length === 0}
+          >
+            {availableSchoolYears.length === 0 && (
+              <option value="">Aucune année</option>
+            )}
+            {availableSchoolYears.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="jf-admin-card p-4 flex items-start gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-admin-bg)] border border-[var(--color-admin-border)] shrink-0">
+              <span role="img" aria-label="CSV" className="text-lg">📊</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-[var(--color-admin-text)] text-sm">
+                Bilan de progression
+              </p>
+              <p className="text-xs text-[var(--color-admin-text-muted)] mb-3">
+                Export CSV (toutes classes)
+              </p>
+              <button
+                type="button"
+                className="jf-admin-btn-primary"
+                disabled={isLoading || isExporting}
+                onClick={async () => {
+                  try {
+                    setIsExporting(true);
+                    const csv = await adminApi.exportProgressCsv(selectedSchoolYear ?? undefined);
+                    downloadText(
+                      selectedSchoolYear != null
+                        ? `progress_report_${selectedSchoolYear}.csv`
+                        : 'progress_report.csv',
+                      csv,
+                      'text/csv;charset=utf-8'
+                    );
+                  } catch {
+                    setError('Impossible d\u2019exporter le bilan de progression.');
+                  } finally {
+                    setIsExporting(false);
+                  }
+                }}
+              >
+                Télécharger
+              </button>
+            </div>
+          </div>
+
+          <div className="jf-admin-card p-4 flex items-start gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-admin-bg)] border border-[var(--color-admin-border)] shrink-0">
+              <span role="img" aria-label="CSV" className="text-lg">📋</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-[var(--color-admin-text)] text-sm">
+                Registre des consentements
+              </p>
+              <p className="text-xs text-[var(--color-admin-text-muted)] mb-3">
+                Export CSV (classe sélectionnée)
+              </p>
+              <button
+                type="button"
+                className="jf-admin-btn-primary"
+                disabled={selectedClassId == null || isLoading || isExporting || rows.length === 0}
+                onClick={async () => {
+                  if (selectedClassId == null) return;
+                  try {
+                    setIsExporting(true);
+                    const exportRows = await adminGdprApi.exportConsentRegister(selectedClassId);
+                    const csv = toConsentCsv(exportRows);
+                    downloadText(
+                      `consents_class_${selectedClassId}.csv`,
+                      csv,
+                      'text/csv;charset=utf-8'
+                    );
+                  } catch {
+                    setError('Impossible d\u2019exporter le registre des consentements.');
+                  } finally {
+                    setIsExporting(false);
+                  }
+                }}
+              >
+                Télécharger
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Mention légale */}
+      <div className="jf-admin-card p-3">
+        <p className="text-xs text-[var(--color-admin-text-muted)] leading-relaxed">
+          <span role="img" aria-label="drapeau France" className="mr-1">🇫🇷</span>
+          Données hébergées en France. Conformité RGPD assurée. DPO contactable via{' '}
+          <span className="text-[var(--color-admin-text-secondary)] font-medium">
+            dpo@juggleflow.fr
+          </span>
+        </p>
+      </div>
+    </>
   );
 }

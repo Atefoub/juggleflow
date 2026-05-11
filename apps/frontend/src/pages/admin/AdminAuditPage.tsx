@@ -1,13 +1,6 @@
-import BottomNav from '../../components/BottomNav';
 import { useCallback, useEffect, useState } from 'react';
 import { adminApi, type AdminAuditEvent } from '../../api/adminApi';
-
-const navItems = [
-  { label: 'Utilisateurs', icon: '👥', path: '/admin/users' },
-  { label: 'Classes',      icon: '🏫', path: '/admin/classes' },
-  { label: 'RGPD',         icon: '🔒', path: '/admin/rgpd' },
-  { label: 'Journal',      icon: '📋', path: '/admin/audit' },
-];
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
 
 function formatWhen(iso: string): string {
   const d = new Date(iso);
@@ -27,7 +20,7 @@ export default function AdminAuditPage() {
       const data = await adminApi.listAuditEvents(200);
       setRows(data);
     } catch {
-      setError('Impossible de charger le journal d’audit.');
+      setError('Impossible de charger le journal d\u2019audit.');
       setRows([]);
     } finally {
       setIsLoading(false);
@@ -39,69 +32,102 @@ export default function AdminAuditPage() {
   }, [load]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-24">
-
-      <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
-        <h1 className="font-display font-bold text-text-primary text-2xl mb-1">Journal d&apos;audit</h1>
-        <p className="text-xs text-text-muted">
-          Actions sensibles (comptes, classes, consentements RGPD) enregistrées côté serveur.
-        </p>
-      </header>
-
-      <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
-        <div className="flex justify-end">
+    <>
+      <AdminPageHeader
+        title="Journal d'audit"
+        description="Actions sensibles (comptes, classes, consentements RGPD) enregistrées côté serveur."
+        actions={
           <button
             type="button"
             onClick={() => load()}
             disabled={isLoading}
-            className="jf-btn-secondary jf-btn-secondary-sm disabled:opacity-50"
+            className="jf-admin-btn-secondary"
           >
-            Actualiser
+            {isLoading ? '…' : 'Actualiser'}
           </button>
-        </div>
+        }
+      />
 
-        {isLoading && (
-          <p className="text-sm text-text-muted text-center py-8">Chargement…</p>
-        )}
+      {isLoading && (
+        <p className="text-sm text-[var(--color-admin-text-muted)] text-center py-8">Chargement…</p>
+      )}
 
-        {!isLoading && error && (
-          <p className="text-sm text-alert text-center py-4">{error}</p>
-        )}
+      {!isLoading && error && (
+        <p className="text-sm text-[var(--color-admin-danger)] text-center py-4">{error}</p>
+      )}
 
-        {!isLoading && !error && rows.length === 0 && (
-          <p className="text-sm text-text-muted text-center py-8">
-            Aucun événement pour l’instant. Les prochaines actions admin apparaîtront ici.
+      {!isLoading && !error && rows.length === 0 && (
+        <div className="jf-admin-card p-8 text-center">
+          <p className="text-sm text-[var(--color-admin-text-muted)]">
+            Aucun événement pour l&apos;instant.
           </p>
-        )}
+          <p className="text-xs text-[var(--color-admin-text-muted)] mt-2">
+            Les prochaines actions admin apparaîtront ici.
+          </p>
+        </div>
+      )}
 
-        {!isLoading && rows.length > 0 && (
-          <div className="rounded-2xl border border-border bg-bg-card overflow-hidden">
-            <div className="grid grid-cols-[auto_1fr_auto] gap-2 px-3 py-2 bg-bg-primary border-b border-border text-[0.65rem] font-bold text-text-muted uppercase tracking-wide">
-              <span>Date</span>
-              <span>Action</span>
-              <span className="hidden sm:block">Acteur</span>
-            </div>
-            <ul className="divide-y divide-border max-h-[70vh] overflow-y-auto">
-              {rows.map((r) => (
-                <li key={r.id} className="px-3 py-3 text-sm">
+      {!isLoading && rows.length > 0 && (
+        <div className="jf-admin-card overflow-hidden">
+          <div className="hidden sm:grid grid-cols-[140px_1fr_220px] gap-4 px-4 py-2.5 bg-[var(--color-admin-bg)] border-b border-[var(--color-admin-border)]">
+            <span className="jf-admin-section-title">Date</span>
+            <span className="jf-admin-section-title">Action</span>
+            <span className="jf-admin-section-title">Acteur</span>
+          </div>
+          <ul className="max-h-[70vh] overflow-y-auto">
+            {rows.map((r, i) => (
+              <li
+                key={r.id}
+                className={`px-4 py-3 text-sm ${i < rows.length - 1 ? 'border-b border-[var(--color-admin-border)]' : ''}`}
+              >
+                {/* Desktop : table */}
+                <div className="hidden sm:grid grid-cols-[140px_1fr_220px] gap-4 items-start">
+                  <time
+                    className="text-xs text-[var(--color-admin-text-muted)] font-mono"
+                    dateTime={r.occurredAt}
+                  >
+                    {formatWhen(r.occurredAt)}
+                  </time>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[var(--color-admin-text)]">{r.action}</p>
+                    {r.details && (
+                      <p className="text-xs text-[var(--color-admin-text-secondary)] mt-1 font-mono break-all">
+                        {r.details}
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-xs text-[var(--color-admin-text-secondary)] break-all">
+                    {r.actorEmail}
+                  </p>
+                </div>
+
+                {/* Mobile : empilé */}
+                <div className="sm:hidden">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <time className="text-xs text-text-muted shrink-0" dateTime={r.occurredAt}>
+                    <time
+                      className="text-xs text-[var(--color-admin-text-muted)] font-mono shrink-0"
+                      dateTime={r.occurredAt}
+                    >
                       {formatWhen(r.occurredAt)}
                     </time>
-                    <span className="font-semibold text-text-primary">{r.action}</span>
+                    <span className="font-semibold text-[var(--color-admin-text)]">
+                      {r.action}
+                    </span>
                   </div>
-                  <p className="text-xs text-text-muted mt-1 break-all">{r.actorEmail}</p>
+                  <p className="text-xs text-[var(--color-admin-text-muted)] mt-1 break-all">
+                    {r.actorEmail}
+                  </p>
                   {r.details && (
-                    <p className="text-xs text-text-secondary mt-1 font-mono break-all">{r.details}</p>
+                    <p className="text-xs text-[var(--color-admin-text-secondary)] mt-1 font-mono break-all">
+                      {r.details}
+                    </p>
                   )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </main>
-
-      <BottomNav items={navItems} />
-    </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </>
   );
 }

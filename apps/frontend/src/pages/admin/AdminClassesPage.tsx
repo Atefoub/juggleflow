@@ -1,4 +1,3 @@
-import BottomNav from '../../components/BottomNav';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   adminApi,
@@ -7,13 +6,7 @@ import {
   type AdminSchoolClass,
   type AdminUser,
 } from '../../api/adminApi';
-
-const navItems = [
-  { label: 'Utilisateurs', icon: '👥', path: '/admin/users' },
-  { label: 'Classes',      icon: '🏫', path: '/admin/classes' },
-  { label: 'RGPD',         icon: '🔒', path: '/admin/rgpd' },
-  { label: 'Journal',      icon: '📋', path: '/admin/audit' },
-];
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
 
 const LEVELS = ['PS', 'MS', 'GS', 'CP', 'CE1', 'CE2', 'CM1', 'CM2'] as const;
 
@@ -24,10 +17,10 @@ function cycleLabel(level: string): string {
   return '—';
 }
 
-function groupColorClass(c: AdminClassStudent['groupColor']): string {
-  if (c === 'VERT') return 'text-success bg-success/10 border-success/30';
-  if (c === 'ORANGE') return 'text-amber-700 bg-amber-500/15 border-amber-500/40';
-  return 'text-alert bg-alert/10 border-alert/30';
+function groupChipClass(c: AdminClassStudent['groupColor']): string {
+  if (c === 'VERT')   return 'jf-admin-chip jf-admin-chip-success';
+  if (c === 'ORANGE') return 'jf-admin-chip jf-admin-chip-warning';
+  return 'jf-admin-chip jf-admin-chip-danger';
 }
 
 export default function AdminClassesPage() {
@@ -204,7 +197,7 @@ export default function AdminClassesPage() {
       await reloadAll();
       closeModal();
     } catch {
-      setFormError('Mise à jour impossible (contrainte d’unicité ou données invalides).');
+      setFormError('Mise à jour impossible (contrainte d\u2019unicité ou données invalides).');
     } finally {
       setBusy(false);
     }
@@ -213,7 +206,7 @@ export default function AdminClassesPage() {
   async function submitDeleteClass() {
     if (manageClass == null) return;
     if (manageClass.studentCount > 0) {
-      setFormError('Retire d’abord les élèves de la classe (côté enseignant ou support).');
+      setFormError('Retire d\u2019abord les élèves de la classe (côté enseignant ou support).');
       return;
     }
     if (!window.confirm(`Supprimer la classe « ${manageClass.name} » ? Cette action est définitive.`)) return;
@@ -231,166 +224,177 @@ export default function AdminClassesPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+    <>
+      <AdminPageHeader
+        title="Classes"
+        description="Vue établissement — données issues de la base. Création et modification de classes : administrateur ; titulaire = compte enseignant."
+        actions={
+          <button
+            type="button"
+            onClick={openCreate}
+            disabled={isLoading}
+            className="jf-admin-btn-primary"
+          >
+            + Nouvelle classe
+          </button>
+        }
+      />
 
-      <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
-        <h1 className="font-display font-bold text-text-primary text-2xl mb-1">Classes</h1>
-        <p className="text-xs text-text-muted">Vue établissement — données issues de la base</p>
-      </header>
-
-      <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
-
-        <section>
-          <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
-            Synthèse
-          </h2>
-          <div className="p-4 rounded-2xl bg-bg-card border border-border">
-            <p className="text-sm text-text-secondary mb-2">
-              Effectifs déclarés en base. Création et modification de classes : administrateur ; titulaire = compte
-              enseignant.
+      {/* Synthèse */}
+      <section className="mb-6">
+        <h2 className="jf-admin-section-title mb-3">Synthèse</h2>
+        <div className="jf-admin-card p-5">
+          {stats && (
+            <p className="text-xs text-[var(--color-admin-text-muted)] mb-4 leading-relaxed">
+              Comptes actifs (tous rôles) : <strong className="text-[var(--color-admin-text-secondary)]">{stats.activeUserCount}</strong> ·{' '}
+              Enseignants : <strong className="text-[var(--color-admin-text-secondary)]">{stats.teacherAccountCount}</strong> ·{' '}
+              Administrateurs : <strong className="text-[var(--color-admin-text-secondary)]">{stats.administratorAccountCount}</strong>
+              {stats.licenseSeatCap != null
+                ? <> · Plafond licence : <strong className="text-[var(--color-admin-text-secondary)]">{stats.licenseSeatCap}</strong></>
+                : <> · Plafond licence : non configuré côté serveur</>
+              }
             </p>
-            {stats && (
-              <p className="text-xs text-text-muted mb-3 leading-relaxed">
-                Comptes actifs (tous rôles) : {stats.activeUserCount} · Enseignants : {stats.teacherAccountCount} ·
-                Administrateurs : {stats.administratorAccountCount}
-                {stats.licenseSeatCap != null
-                  ? ` · Plafond licence : ${stats.licenseSeatCap}`
-                  : ' · Plafond licence : non configuré côté serveur'}
+          )}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="p-3 rounded-lg bg-[var(--color-admin-bg)] border border-[var(--color-admin-border)] text-center">
+              <p className="font-display font-bold text-2xl text-[var(--color-admin-text)]">
+                {stats != null ? stats.classCount : classes.length}
+              </p>
+              <p className="text-[0.65rem] text-[var(--color-admin-text-muted)] uppercase tracking-wide mt-1">
+                Classes
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-[var(--color-admin-bg)] border border-[var(--color-admin-border)] text-center">
+              <p className="font-display font-bold text-2xl text-[var(--color-admin-text)]">
+                {stats != null ? stats.studentCount : totalStudents}
+              </p>
+              <p className="text-[0.65rem] text-[var(--color-admin-text-muted)] uppercase tracking-wide mt-1">
+                Élèves (total)
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Liste des classes */}
+      <section>
+        <h2 className="jf-admin-section-title mb-3">Classes ({sorted.length})</h2>
+
+        {isLoading && (
+          <p className="text-sm text-[var(--color-admin-text-muted)] text-center py-8">Chargement…</p>
+        )}
+
+        {!isLoading && error && (
+          <p className="text-sm text-[var(--color-admin-danger)] text-center py-8">{error}</p>
+        )}
+
+        {!isLoading && !error && (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {sorted.map((cls) => (
+              <div key={cls.id} className="jf-admin-card p-4 flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[var(--color-admin-text)] truncate">{cls.name}</p>
+                    <p className="text-xs text-[var(--color-admin-text-muted)] mt-0.5">
+                      {cls.studentCount} élèves · {cycleLabel(cls.schoolLevel)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openManage(cls)}
+                    className="jf-admin-btn-ghost shrink-0"
+                  >
+                    Gérer
+                  </button>
+                </div>
+
+                <dl className="grid grid-cols-3 gap-2 text-center">
+                  <div className="p-2 rounded-md bg-[var(--color-admin-bg)] border border-[var(--color-admin-border)]">
+                    <dd className="font-display font-bold text-[var(--color-admin)] text-lg">{cls.studentCount}</dd>
+                    <dt className="text-[0.6rem] text-[var(--color-admin-text-muted)] uppercase tracking-wider">Élèves</dt>
+                  </div>
+                  <div className="p-2 rounded-md bg-[var(--color-admin-bg)] border border-[var(--color-admin-border)] min-w-0">
+                    <dd className="font-display font-bold text-[var(--color-admin-text)] text-sm truncate" title={cls.homeroomTeacherName ?? '—'}>
+                      {cls.homeroomTeacherName ?? '—'}
+                    </dd>
+                    <dt className="text-[0.6rem] text-[var(--color-admin-text-muted)] uppercase tracking-wider">Enseignant</dt>
+                  </div>
+                  <div className="p-2 rounded-md bg-[var(--color-admin-bg)] border border-[var(--color-admin-border)]">
+                    <dd className="font-display font-bold text-[var(--color-admin-text-muted)] text-lg">{cls.schoolYear}</dd>
+                    <dt className="text-[0.6rem] text-[var(--color-admin-text-muted)] uppercase tracking-wider">Année</dt>
+                  </div>
+                </dl>
+
+                <p className="text-[0.65rem] text-[var(--color-admin-text-muted)]">
+                  Ouvre « Gérer » pour le détail élèves et la progression.
+                </p>
+              </div>
+            ))}
+
+            {sorted.length === 0 && (
+              <p className="col-span-full text-sm text-[var(--color-admin-text-muted)] text-center py-8">
+                Aucune classe enregistrée.
               </p>
             )}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-xl bg-bg-primary border border-border text-center">
-                <p className="font-display font-bold text-2xl text-text-primary">
-                  {stats != null ? stats.classCount : classes.length}
-                </p>
-                <p className="text-[0.65rem] text-text-muted uppercase tracking-wide">Classes</p>
-              </div>
-              <div className="p-3 rounded-xl bg-bg-primary border border-border text-center">
-                <p className="font-display font-bold text-2xl text-text-primary">
-                  {stats != null ? stats.studentCount : totalStudents}
-                </p>
-                <p className="text-[0.65rem] text-text-muted uppercase tracking-wide">Élèves (total)</p>
-              </div>
-            </div>
           </div>
-        </section>
+        )}
+      </section>
 
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
-              Classes
-            </h2>
-            <button
-              type="button"
-              onClick={openCreate}
-              disabled={isLoading}
-              className="jf-btn-primary jf-btn-primary-sm"
-            >
-              + Classe
-            </button>
-          </div>
-
-          {isLoading && (
-            <p className="text-sm text-text-muted text-center py-8">Chargement…</p>
-          )}
-
-          {!isLoading && error && (
-            <p className="text-sm text-alert text-center py-8">{error}</p>
-          )}
-
-          {!isLoading && !error && (
-            <div className="flex flex-col gap-3">
-              {sorted.map((cls) => (
-                <div key={cls.id} className="p-4 rounded-2xl bg-bg-card border border-border">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="font-bold text-text-primary">{cls.name}</p>
-                      <p className="text-xs text-text-muted">
-                        {cls.studentCount} élèves · {cycleLabel(cls.schoolLevel)}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => openManage(cls)}
-                      className="text-xs px-3 py-1.5 rounded-lg bg-bg-primary border border-border text-text-primary font-semibold min-h-8 hover:opacity-90"
-                    >
-                      Gérer
-                    </button>
-                  </div>
-
-                  <div className="flex gap-3 mb-2">
-                    <div className="flex-1 p-2 rounded-xl bg-bg-primary border border-border text-center">
-                      <p className="font-display font-bold text-brand text-xl">{cls.studentCount}</p>
-                      <p className="text-[0.6rem] text-text-muted">Élèves</p>
-                    </div>
-                    <div className="flex-1 p-2 rounded-xl bg-bg-primary border border-border text-center">
-                      <p className="font-display font-bold text-text-primary text-xl truncate px-1">
-                        {cls.homeroomTeacherName ?? '—'}
-                      </p>
-                      <p className="text-[0.6rem] text-text-muted">Enseignant</p>
-                    </div>
-                    <div className="flex-1 p-2 rounded-xl bg-bg-primary border border-border text-center">
-                      <p className="font-display font-bold text-text-muted text-xl">{cls.schoolYear}</p>
-                      <p className="text-[0.6rem] text-text-muted">Année</p>
-                    </div>
-                  </div>
-                  <p className="text-[0.65rem] text-text-muted">
-                    Progression moyenne : ouvre « Gérer » pour le détail par élève.
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </main>
-
-      <BottomNav items={navItems} />
-
+      {/* ── Modal Create ── */}
       {modal === 'create' && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50"
+          className="fixed inset-0 z-50 bg-black/50 overflow-y-auto"
           role="presentation"
           onClick={(e) => e.target === e.currentTarget && !busy && closeModal()}
         >
-          <div
-            className="w-full max-w-md rounded-2xl bg-bg-card border border-border p-5 shadow-xl max-h-[90vh] overflow-y-auto"
-            role="dialog"
-            aria-labelledby="create-class-title"
-          >
-            <h2 id="create-class-title" className="font-display font-bold text-text-primary text-lg mb-4">
+          <div className="min-h-full grid place-items-center p-4">
+            <div
+              className="jf-admin-card w-full max-w-[28rem] p-5 shadow-xl"
+              role="dialog"
+              aria-labelledby="create-class-title"
+              aria-modal="true"
+              onClick={(e) => e.stopPropagation()}
+            >
+            <h2 id="create-class-title" className="font-display font-bold text-[var(--color-admin-text)] text-lg mb-4">
               Nouvelle classe
             </h2>
-            {formError && <p className="text-sm text-alert mb-3">{formError}</p>}
-            <label className="block text-xs text-text-muted mb-1">Nom</label>
+            {formError && (
+              <p className="text-sm text-[var(--color-admin-danger)] mb-3">{formError}</p>
+            )}
+            <label className="block text-xs text-[var(--color-admin-text-muted)] mb-1" htmlFor="cc-name">Nom</label>
             <input
+              id="cc-name"
               value={createName}
               onChange={(e) => setCreateName(e.target.value)}
-              className="w-full mb-3 px-3 py-2 rounded-xl bg-bg-primary border border-border text-sm text-text-primary outline-none"
+              className="jf-admin-input mb-3"
             />
-            <label className="block text-xs text-text-muted mb-1">Niveau</label>
+            <label className="block text-xs text-[var(--color-admin-text-muted)] mb-1" htmlFor="cc-level">Niveau</label>
             <select
+              id="cc-level"
               value={createLevel}
               onChange={(e) => setCreateLevel(e.target.value)}
-              className="w-full mb-3 px-3 py-2 rounded-xl bg-bg-primary border border-border text-sm text-text-primary outline-none"
+              className="jf-admin-input mb-3"
             >
               {LEVELS.map((lv) => (
                 <option key={lv} value={lv}>{lv}</option>
               ))}
             </select>
-            <label className="block text-xs text-text-muted mb-1">Année scolaire</label>
+            <label className="block text-xs text-[var(--color-admin-text-muted)] mb-1" htmlFor="cc-year">Année scolaire</label>
             <input
+              id="cc-year"
               type="number"
               min={2020}
               max={2100}
               value={createYear}
               onChange={(e) => setCreateYear(Number(e.target.value))}
-              className="w-full mb-3 px-3 py-2 rounded-xl bg-bg-primary border border-border text-sm text-text-primary outline-none"
+              className="jf-admin-input mb-3"
             />
-            <label className="block text-xs text-text-muted mb-1">Titulaire (enseignant)</label>
+            <label className="block text-xs text-[var(--color-admin-text-muted)] mb-1" htmlFor="cc-teacher">Titulaire (enseignant)</label>
             <select
+              id="cc-teacher"
               value={createTeacherId === '' ? '' : String(createTeacherId)}
               onChange={(e) => setCreateTeacherId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full mb-4 px-3 py-2 rounded-xl bg-bg-primary border border-border text-sm text-text-primary outline-none"
+              className="jf-admin-input mb-4"
             >
               {teachers.length === 0 && <option value="">Aucun enseignant actif</option>}
               {teachers.map((t) => (
@@ -399,60 +403,66 @@ export default function AdminClassesPage() {
                 </option>
               ))}
             </select>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={closeModal}
-                className="jf-btn-secondary flex-1 min-h-10 py-2.5 rounded-xl text-sm"
-              >
+            <div className="flex gap-2 justify-end">
+              <button type="button" disabled={busy} onClick={closeModal} className="jf-admin-btn-secondary">
                 Annuler
               </button>
               <button
                 type="button"
                 disabled={busy || teachers.length === 0}
                 onClick={submitCreate}
-                className="jf-btn-primary flex-1 min-h-10 py-2.5 rounded-xl text-sm disabled:opacity-50"
+                className="jf-admin-btn-primary"
               >
                 {busy ? '…' : 'Créer'}
               </button>
+            </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* ── Modal Manage ── */}
       {modal === 'manage' && manageClass != null && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50"
+          className="fixed inset-0 z-50 bg-black/50 overflow-y-auto"
           role="presentation"
           onClick={(e) => e.target === e.currentTarget && !busy && closeModal()}
         >
-          <div
-            className="w-full max-w-lg rounded-2xl bg-bg-card border border-border p-5 shadow-xl max-h-[90vh] overflow-y-auto"
-            role="dialog"
-            aria-labelledby="manage-class-title"
-          >
-            <h2 id="manage-class-title" className="font-display font-bold text-text-primary text-lg mb-1">
+          <div className="min-h-full grid place-items-center p-4">
+            <div
+              className="jf-admin-card w-full max-w-[32rem] p-5 shadow-xl"
+              role="dialog"
+              aria-labelledby="manage-class-title"
+              aria-modal="true"
+              onClick={(e) => e.stopPropagation()}
+            >
+            <h2 id="manage-class-title" className="font-display font-bold text-[var(--color-admin-text)] text-lg mb-1">
               {manageClass.name}
             </h2>
-            <p className="text-xs text-text-muted mb-4">Modifier la classe ou consulter les élèves.</p>
-            {formError && <p className="text-sm text-alert mb-3">{formError}</p>}
+            <p className="text-xs text-[var(--color-admin-text-muted)] mb-4">
+              Modifier la classe ou consulter les élèves.
+            </p>
+            {formError && (
+              <p className="text-sm text-[var(--color-admin-danger)] mb-3">{formError}</p>
+            )}
 
             <div className="space-y-3 mb-4">
               <div>
-                <label className="block text-xs text-text-muted mb-1">Nom</label>
+                <label className="block text-xs text-[var(--color-admin-text-muted)] mb-1" htmlFor="mc-name">Nom</label>
                 <input
+                  id="mc-name"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-bg-primary border border-border text-sm text-text-primary outline-none"
+                  className="jf-admin-input"
                 />
               </div>
               <div>
-                <label className="block text-xs text-text-muted mb-1">Niveau</label>
+                <label className="block text-xs text-[var(--color-admin-text-muted)] mb-1" htmlFor="mc-level">Niveau</label>
                 <select
+                  id="mc-level"
                   value={editLevel}
                   onChange={(e) => setEditLevel(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-bg-primary border border-border text-sm text-text-primary outline-none"
+                  className="jf-admin-input"
                 >
                   {LEVELS.map((lv) => (
                     <option key={lv} value={lv}>{lv}</option>
@@ -460,22 +470,24 @@ export default function AdminClassesPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-text-muted mb-1">Année scolaire</label>
+                <label className="block text-xs text-[var(--color-admin-text-muted)] mb-1" htmlFor="mc-year">Année scolaire</label>
                 <input
+                  id="mc-year"
                   type="number"
                   min={2020}
                   max={2100}
                   value={editYear}
                   onChange={(e) => setEditYear(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl bg-bg-primary border border-border text-sm text-text-primary outline-none"
+                  className="jf-admin-input"
                 />
               </div>
               <div>
-                <label className="block text-xs text-text-muted mb-1">Titulaire</label>
+                <label className="block text-xs text-[var(--color-admin-text-muted)] mb-1" htmlFor="mc-teacher">Titulaire</label>
                 <select
+                  id="mc-teacher"
                   value={editTeacherId === '' ? '' : String(editTeacherId)}
                   onChange={(e) => setEditTeacherId(e.target.value ? Number(e.target.value) : '')}
-                  className="w-full px-3 py-2 rounded-xl bg-bg-primary border border-border text-sm text-text-primary outline-none"
+                  className="jf-admin-input"
                 >
                   {teachers.map((t) => (
                     <option key={t.id} value={t.id}>
@@ -486,25 +498,25 @@ export default function AdminClassesPage() {
               </div>
             </div>
 
-            <p className="text-xs font-semibold text-text-secondary mb-2">
-              Progression moyenne de la classe : {loadingStudents ? '…' : `${avgProgress} %`}
+            <p className="text-xs font-semibold text-[var(--color-admin-text-secondary)] mb-2">
+              Progression moyenne : {loadingStudents ? '…' : `${avgProgress} %`}
             </p>
 
-            <div className="rounded-xl border border-border bg-bg-primary p-3 mb-4 max-h-48 overflow-y-auto">
-              <p className="text-xs text-text-muted mb-2">Élèves</p>
-              {loadingStudents && <p className="text-xs text-text-muted">Chargement…</p>}
+            <div className="rounded-lg border border-[var(--color-admin-border)] bg-[var(--color-admin-bg)] p-3 mb-4 max-h-48 overflow-y-auto">
+              <p className="jf-admin-section-title mb-2">Élèves</p>
+              {loadingStudents && <p className="text-xs text-[var(--color-admin-text-muted)]">Chargement…</p>}
               {!loadingStudents && students.length === 0 && (
-                <p className="text-xs text-text-muted">Aucun élève dans cette classe.</p>
+                <p className="text-xs text-[var(--color-admin-text-muted)]">Aucun élève dans cette classe.</p>
               )}
-              {!loadingStudents && students.map((st) => (
+              {!loadingStudents && students.map((st, i) => (
                 <div
                   key={st.id}
-                  className="flex items-center justify-between py-2 border-b border-border last:border-0 text-sm"
+                  className={`flex items-center justify-between py-2 text-sm ${i < students.length - 1 ? 'border-b border-[var(--color-admin-border)]' : ''}`}
                 >
-                  <span className="text-text-primary truncate pr-2">
+                  <span className="text-[var(--color-admin-text)] truncate pr-2">
                     {st.firstName} {st.lastName}
                   </span>
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border shrink-0 ${groupColorClass(st.groupColor)}`}>
+                  <span className={`${groupChipClass(st.groupColor)} shrink-0`}>
                     {st.progressionPercent}%
                   </span>
                 </div>
@@ -512,20 +524,15 @@ export default function AdminClassesPage() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={closeModal}
-                  className="jf-btn-secondary flex-1 min-h-10 py-2.5 rounded-xl text-sm"
-                >
+              <div className="flex gap-2 justify-end">
+                <button type="button" disabled={busy} onClick={closeModal} className="jf-admin-btn-secondary">
                   Fermer
                 </button>
                 <button
                   type="button"
                   disabled={busy}
                   onClick={submitManage}
-                  className="jf-btn-primary flex-1 min-h-10 py-2.5 rounded-xl text-sm disabled:opacity-50"
+                  className="jf-admin-btn-primary"
                 >
                   {busy ? '…' : 'Enregistrer'}
                 </button>
@@ -535,14 +542,15 @@ export default function AdminClassesPage() {
                 disabled={busy || manageClass.studentCount > 0}
                 title={manageClass.studentCount > 0 ? 'Retire tous les élèves avant suppression' : undefined}
                 onClick={submitDeleteClass}
-                className="w-full py-2 rounded-xl text-sm font-semibold text-alert border border-alert/40 bg-alert/10 min-h-10 disabled:opacity-40"
+                className="jf-admin-btn-danger w-full"
               >
                 Supprimer la classe (vide uniquement)
               </button>
             </div>
+            </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
