@@ -163,7 +163,12 @@ export default function ProgressPage() {
     });
   }, [trickProgress]);
 
-  const streakDays = useMemo(() => computeStreakFromProgress(trickProgress), [trickProgress]);
+  // Préférence : streak calculé côté backend (table user_streak). Fallback sur le calcul
+  // client (heuristique basée sur les dates de progression) si le backend ne renvoie rien.
+  const streakDays = useMemo(() => {
+    if (typeof stats?.currentStreakDays === 'number') return stats.currentStreakDays;
+    return computeStreakFromProgress(trickProgress);
+  }, [stats?.currentStreakDays, trickProgress]);
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -259,9 +264,18 @@ export default function ProgressPage() {
                 <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
                   Mes badges
                 </h2>
-                <span className="text-xs text-text-muted">
-                  {badges.length} / {allBadges.length}
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-text-muted">
+                    {badges.length} / {allBadges.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/student/badges')}
+                    className="text-xs text-brand-end underline underline-offset-2 hover:opacity-80 transition-opacity"
+                  >
+                    Voir tous →
+                  </button>
+                </div>
               </div>
 
               {badgeGrid.length === 0 ? (

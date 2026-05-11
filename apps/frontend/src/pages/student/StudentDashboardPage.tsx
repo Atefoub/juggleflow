@@ -3,7 +3,13 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
-import { studentApi, type StudentStats, type BadgeData, type LearningPath } from '../../api/studentApi';
+import {
+  studentApi,
+  type StudentStats,
+  type BadgeData,
+  type LearningPath,
+  type DailyChallenge,
+} from '../../api/studentApi';
 import OfflineBanner from '../../components/OfflineBanner';
 
 const navItems = [
@@ -24,6 +30,7 @@ export default function StudentDashboardPage() {
   const [badges, setBadges]       = useState<BadgeData[]>([]);
   const [allBadges, setAllBadges] = useState<BadgeData[]>([]);
   const [paths, setPaths]         = useState<LearningPath[]>([]);
+  const [challenge, setChallenge] = useState<DailyChallenge | null>(null);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
 
@@ -33,16 +40,31 @@ export default function StudentDashboardPage() {
       studentApi.getUnlockedBadges(),
       studentApi.getAllBadges(),
       studentApi.getMyLearningPaths(),
+      // Echec defi-du-jour ne doit pas casser le dashboard : fallback silencieux.
+      studentApi.getDailyChallenge().catch(() => null),
     ])
-      .then(([s, unlocked, all, p]) => {
+      .then(([s, unlocked, all, p, c]) => {
         setStats(s);
         setBadges(unlocked);
         setAllBadges(all);
         setPaths(p);
+        setChallenge(c);
       })
       .catch(() => setError('Impossible de charger les données. Veuillez réessayer.'))
       .finally(() => setLoading(false));
   }, []);
+
+  const challengeCtaLabel = challenge?.trickId
+    ? 'Commencer'
+    : 'Explorer';
+
+  const handleChallengeStart = () => {
+    if (challenge?.trickId) {
+      navigate(`/student/trick/${challenge.trickId}`);
+    } else {
+      navigate('/student/catalogue');
+    }
+  };
 
   const initials = user
     ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
@@ -119,26 +141,33 @@ export default function StudentDashboardPage() {
         {!loading && !error && (
           <>
             {/* ── Défi du jour (wireframes) ── */}
-            <section>
-              <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
-                Défi du jour
-              </h2>
-              <div className="p-4 rounded-2xl bg-bg-card border border-border flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="font-bold text-text-primary text-sm truncate">Jongle 2 balles × 10</p>
-                  <p className="text-xs text-text-muted mt-1">
-                    Répète l'enchaînement sans interruption
-                  </p>
+            {challenge ? (
+              <section>
+                <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
+                  Défi du jour
+                </h2>
+                <div className="p-4 rounded-2xl bg-bg-card border border-border flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="font-bold text-text-primary text-sm truncate">{challenge.title}</p>
+                    <p className="text-xs text-text-muted mt-1 line-clamp-2">
+                      {challenge.description}
+                    </p>
+                    {challenge.targetValue && challenge.targetUnit && (
+                      <p className="text-[0.65rem] text-brand-end font-semibold mt-1">
+                        Objectif : {challenge.targetValue} {challenge.targetUnit}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleChallengeStart}
+                    className="jf-btn-primary jf-btn-primary-sm shrink-0 min-h-11 rounded-xl px-4 py-2 text-xs"
+                  >
+                    {challengeCtaLabel}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => navigate('/student/catalogue')}
-                  className="jf-btn-primary jf-btn-primary-sm shrink-0 min-h-11 rounded-xl px-4 py-2 text-xs"
-                >
-                  Commencer
-                </button>
-              </div>
-            </section>
+              </section>
+            ) : null}
 
             {/* ── Parcours en cours ── */}
             {currentPath ? (
@@ -200,9 +229,18 @@ export default function StudentDashboardPage() {
 
             {/* ── Badges récents ── */}
             <section>
-              <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
-                Badges récents
-              </h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
+                  Badges récents
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => navigate('/student/badges')}
+                  className="text-xs text-brand-end underline underline-offset-2 hover:opacity-80 transition-opacity"
+                >
+                  Voir tous →
+                </button>
+              </div>
               {displayBadges.length === 0 ? (
                 <p className="text-xs text-text-muted">Aucun badge disponible pour l'instant.</p>
               ) : (

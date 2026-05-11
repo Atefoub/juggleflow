@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
@@ -99,6 +100,28 @@ public class GlobalExceptionHandler {
       .status(HttpStatus.FORBIDDEN.value())
       .error("Compte désactivé")
       .message("Ce compte a été désactivé. Contactez l'administrateur.")
+      .path(request.getRequestURI())
+      .build();
+
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+  }
+
+  /**
+   * AccessDeniedException : levee par {@code @PreAuthorize} quand le
+   * principal authentifie n'a pas l'autorite requise. Sans handler
+   * dedie, l'aspect AOP la laisse remonter au DispatcherServlet qui la
+   * traite via le fallback Exception (-> 500), ce qui est incorrect.
+   * Mapping explicite vers 403, message generique cote client.
+   */
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<ErrorResponse> handleAccessDenied(
+    AccessDeniedException ex,
+    HttpServletRequest request) {
+
+    ErrorResponse body = ErrorResponse.builder()
+      .status(HttpStatus.FORBIDDEN.value())
+      .error("Accès refusé")
+      .message("Vous n'avez pas les droits nécessaires pour effectuer cette action.")
       .path(request.getRequestURI())
       .build();
 
