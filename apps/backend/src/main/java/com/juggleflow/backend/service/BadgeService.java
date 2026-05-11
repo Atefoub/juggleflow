@@ -7,8 +7,10 @@ import com.juggleflow.backend.model.Badge;
 import com.juggleflow.backend.model.User;
 import com.juggleflow.backend.model.UserBadge;
 import com.juggleflow.backend.repository.BadgeRepository;
+import com.juggleflow.backend.repository.PracticeSessionRepository;
 import com.juggleflow.backend.repository.UserBadgeRepository;
 import com.juggleflow.backend.repository.UserProgressRepository;
+import com.juggleflow.backend.repository.UserStreakRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,8 @@ public class BadgeService {
     private final BadgeRepository badgeRepository;
     private final UserBadgeRepository userBadgeRepository;
     private final UserProgressRepository progressRepository;
+    private final UserStreakRepository userStreakRepository;
+    private final PracticeSessionRepository practiceSessionRepository;
     private final ObjectMapper objectMapper;
 
     /**
@@ -63,14 +67,16 @@ public class BadgeService {
     @Transactional
     public void checkAndUnlockBadges(User user) {
         List<Badge> allBadges = badgeRepository.findAllByOrderByDifficultyOrderAsc();
-        long masteredCount = progressRepository.countMasteredByUserId(user.getId());
+
+        // Snapshot des metriques calculees une seule fois (vs. par badge dans la boucle).
+        UserBadgeMetrics metrics = collectMetrics(user.getId());
 
         for (Badge badge : allBadges) {
             if (userBadgeRepository.existsByUser_IdAndBadge_Id(user.getId(), badge.getId())) {
-                continue; // déjà débloqué
+                continue;
             }
 
-            if (isBadgeEarned(badge, masteredCount)) {
+            if (isBadgeEarned(badge, metrics)) {
                 UserBadge userBadge = UserBadge.builder()
                     .user(user)
                     .badge(badge)
@@ -82,22 +88,56 @@ public class BadgeService {
         }
     }
 
+    private UserBadgeMetrics collectMetrics(Long userId) {
+        long mastered = progressRepository.countMasteredByUserId(userId);
+        int currentStreak = userStreakRepository.findByUserId(userId)
+            .map(s -> s.getCurrentStreakDays() == null ? 0 : s.getCurrentStreakDays())
+            .orElse(0);
+        long practiceMinutes = practiceSessionRepository.sumDurationSecondsByUserId(userId) / 60L;
+        return new UserBadgeMetrics(mastered, currentStreak, practiceMinutes);
+    }
+
     /**
-     * Évalue si un badge est mérité selon ses critères JSON.
-     * Format attendu : {"type":"tricks_mastered","count":5}
+     * Evalue si un badge est merite selon ses criteres JSON.
+     * Formats supportes :
+     *   {"type":"tricks_mastered","count":5}
+     *   {"type":"consecutive_days","count":7}
+     *   {"type":"practice_time","minutes":6000}
+     *
+     * Tout type inconnu retourne false (fail-closed) et est loggue.
      */
-    private boolean isBadgeEarned(Badge badge, long masteredCount) {
+    private boolean isBadgeEarned(Badge badge, UserBadgeMetrics metrics) {
         try {
             JsonNode criteria = objectMapper.readTree(badge.getUnlockCriteria());
             String type = criteria.path("type").asText();
 
             return switch (type) {
-                case "tricks_mastered" -> masteredCount >= criteria.path("count").asLong();
-                default -> false;
+                case "tricks_mastered" ->
+                    metrics.masteredCount() >= criteria.path("count").asLong();
+                case "consecutive_days" ->
+                    metrics.currentStreakDays() >= criteria.path("count").asLong();
+                case "practice_time" ->
+                    metrics.totalPracticeMinutes() >= criteria.path("minutes").asLong();
+                default -> {
+                    log.warn("Type de critere de badge inconnu pour '{}' : '{}'",
+                        badge.getName(), type);
+                    yield false;
+                }
             };
         } catch (Exception e) {
             log.warn("Critères de badge invalides pour '{}' : {}", badge.getName(), e.getMessage());
             return false;
         }
     }
+
+    /**
+     * Snapshot interne des metriques d'un utilisateur, evalue une fois par
+     * appel a {@link #checkAndUnlockBadges(User)} pour eviter N requetes
+     * SQL par badge.
+     */
+    private record UserBadgeMetrics(
+        long masteredCount,
+        long currentStreakDays,
+        long totalPracticeMinutes
+    ) {}
 }
