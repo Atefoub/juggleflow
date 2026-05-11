@@ -37,6 +37,13 @@
     <springdoc.version>2.8.6</springdoc.version>
     <bucket4j.version>8.10.1</bucket4j.version>
     <lombok.version>1.18.38</lombok.version>
+
+    <!--
+      OpenPDF : moteur PDF pour l'export du registre RGPD. Fork OSS d'iText
+      (licences MPL/LGPL, compatible Java 21 et Spring Boot 3.x).
+      Aligné sur la derniere release stable 3.0.3 (mars 2026).
+    -->
+    <openpdf.version>3.0.3</openpdf.version>
   </properties>
 
   <dependencies>
@@ -132,6 +139,13 @@
       <groupId>com.bucket4j</groupId>
       <artifactId>bucket4j-core</artifactId>
       <version>${bucket4j.version}</version>
+    </dependency>
+
+    <!-- OpenPDF : export PDF du registre des consentements RGPD -->
+    <dependency>
+      <groupId>com.github.librepdf</groupId>
+      <artifactId>openpdf</artifactId>
+      <version>${openpdf.version}</version>
     </dependency>
 
     <!-- Tests -->

@@ -1,6 +1,7 @@
 package com.juggleflow.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.juggleflow.backend.dto.AdminCreateUserRequest;
 import com.juggleflow.backend.dto.RegisterRequest;
 import com.juggleflow.backend.dto.SchoolClassRequest;
 import com.juggleflow.backend.model.Administrator;
@@ -153,6 +154,117 @@ class AdminControllerTest {
 
         mockMvc.perform(get("/api/admin/users")
                 .header("Authorization", "Bearer " + teacherToken))
+            .andExpect(status().isForbidden());
+    }
+
+    // ── POST /api/admin/users (P2.6 — création par l'admin) ──────────────
+
+    @Test
+    @DisplayName("POST /api/admin/users → 201, mot de passe généré et compte exploitable (admin)")
+    void createUser_shouldReturn201_andGeneratedPassword_whenAdmin() throws Exception {
+        String adminToken = createAdminAndLogin("admin@create.fr");
+
+        AdminCreateUserRequest body = new AdminCreateUserRequest();
+        body.setEmail("nouveau.prof@create.fr");
+        body.setFirstName("Lou");
+        body.setLastName("Pro");
+        body.setRole("ROLE_ENSEIGNANT");
+
+        MvcResult res = mockMvc.perform(post("/api/admin/users")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(body)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").exists())
+            .andExpect(jsonPath("$.email").value("nouveau.prof@create.fr"))
+            .andExpect(jsonPath("$.role").value("ROLE_ENSEIGNANT"))
+            .andExpect(jsonPath("$.enabled").value(true))
+            .andExpect(jsonPath("$.generatedPassword").isNotEmpty())
+            .andReturn();
+
+        String generatedPassword = objectMapper.readTree(res.getResponse().getContentAsString())
+            .get("generatedPassword").asText();
+
+        // Le mot de passe genere doit permettre de se connecter immediatement.
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"nouveau.prof@create.fr\",\"password\":\""
+                    + generatedPassword + "\"}"))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("POST /api/admin/users → 201 et n'expose PAS le mot de passe si fourni par l'admin")
+    void createUser_shouldNotEchoProvidedPassword() throws Exception {
+        String adminToken = createAdminAndLogin("admin2@create.fr");
+
+        AdminCreateUserRequest body = new AdminCreateUserRequest();
+        body.setEmail("eleve.fourni@create.fr");
+        body.setFirstName("Mila");
+        body.setLastName("Test");
+        body.setRole("ROLE_ELEVE");
+        body.setPassword("MotDePasseFort!2026");
+
+        mockMvc.perform(post("/api/admin/users")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(body)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.generatedPassword").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("POST /api/admin/users → 409 si l'email existe déjà")
+    void createUser_shouldReturn409_whenEmailAlreadyExists() throws Exception {
+        String adminToken = createAdminAndLogin("admin3@create.fr");
+        registerAndGetToken("collision@create.fr", "teacher");
+
+        AdminCreateUserRequest body = new AdminCreateUserRequest();
+        body.setEmail("collision@create.fr");
+        body.setFirstName("X");
+        body.setLastName("Y");
+        body.setRole("ROLE_ELEVE");
+
+        mockMvc.perform(post("/api/admin/users")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(body)))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("POST /api/admin/users → 400 si role invalide (whitelist stricte)")
+    void createUser_shouldReturn400_whenRoleInvalid() throws Exception {
+        String adminToken = createAdminAndLogin("admin4@create.fr");
+
+        AdminCreateUserRequest body = new AdminCreateUserRequest();
+        body.setEmail("bad@create.fr");
+        body.setFirstName("X");
+        body.setLastName("Y");
+        body.setRole("ROLE_SUPERHACKER");
+
+        mockMvc.perform(post("/api/admin/users")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(body)))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /api/admin/users → 403 si l'appelant n'est pas administrateur")
+    void createUser_shouldReturn403_whenNotAdmin() throws Exception {
+        String teacherToken = registerAndGetToken("teacher@create.fr", "teacher");
+
+        AdminCreateUserRequest body = new AdminCreateUserRequest();
+        body.setEmail("nope@create.fr");
+        body.setFirstName("X");
+        body.setLastName("Y");
+        body.setRole("ROLE_ELEVE");
+
+        mockMvc.perform(post("/api/admin/users")
+                .header("Authorization", "Bearer " + teacherToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(body)))
             .andExpect(status().isForbidden());
     }
 

@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { adminApi, type AdminUser } from '../../api/adminApi';
+import { adminApi, type AdminSchoolClass, type AdminUser } from '../../api/adminApi';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import CreateUserModal from '../../components/admin/CreateUserModal';
 
 type Role = 'Tous' | 'Enseignants' | 'Élèves';
 type UserStatus = 'Actif' | 'Inactif';
-type ConsentStatus = 'ok' | 'missing' | 'none';
+type ConsentStatus = 'ok' | 'expired' | 'missing' | 'none';
 
 interface AppUser {
   id: number;
@@ -56,10 +57,12 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState<Role>('Tous');
   const [search, setSearch]         = useState('');
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [classes, setClasses] = useState<AdminSchoolClass[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const reloadUsers = useCallback(async () => {
     const apiUsers = await adminApi.getUsers();
@@ -73,7 +76,13 @@ export default function AdminUsersPage() {
       try {
         setIsLoading(true);
         setError(null);
-        await reloadUsers();
+        // Les classes sont chargees en parallele pour pre-remplir le select
+        // "Classe" de la modale de creation d'eleve.
+        const [, cls] = await Promise.all([
+          reloadUsers(),
+          adminApi.getClasses().catch(() => [] as AdminSchoolClass[]),
+        ]);
+        if (!cancelled) setClasses(cls);
       } catch {
         if (!cancelled) setError('Impossible de charger les utilisateurs.');
       } finally {
@@ -96,8 +105,9 @@ export default function AdminUsersPage() {
     });
   }, [roleFilter, search, users]);
 
+  // On regroupe missing + expired : les deux nécessitent une action côté DPO.
   const missingConsent = useMemo(
-    () => users.filter((u) => u.consent === 'missing'),
+    () => users.filter((u) => u.consent === 'missing' || u.consent === 'expired'),
     [users]
   );
 
@@ -128,12 +138,15 @@ export default function AdminUsersPage() {
     <>
       <AdminPageHeader
         title="Utilisateurs"
-        description={
-          <>
-            Comptes enseignants et élèves de l&apos;établissement. Nouveaux comptes : inscription
-            publique (<code className="text-[var(--color-admin-text)]">/api/auth/register</code>)
-            ou import SQL / migration Flyway.
-          </>
+        description="Comptes enseignants et élèves de l'établissement. Crée un nouveau compte en un clic ou importe en masse via Flyway."
+        actions={
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            className="jf-admin-btn-primary"
+          >
+            + Créer un utilisateur
+          </button>
         }
       />
 
@@ -166,6 +179,19 @@ export default function AdminUsersPage() {
           />
         </div>
       </div>
+
+      <CreateUserModal
+        isOpen={showCreateModal}
+        classes={classes}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={() => {
+          // Le compte est cree cote serveur : on rafraichit la liste pour le faire
+          // apparaitre immediatement, et on garde la modale ouverte le temps que
+          // l'admin copie le mot de passe genere (la modale gere son propre etat).
+          reloadUsers().catch(() => undefined);
+          setFeedback('Utilisateur créé.');
+        }}
+      />
 
       {feedback && (
         <div className="jf-admin-card p-3 mb-4 text-sm text-[var(--color-admin-text-secondary)]">
@@ -229,6 +255,19 @@ export default function AdminUsersPage() {
                     {u.consent === 'ok' && (
                       <span className="jf-admin-chip jf-admin-chip-success">Consentement ✓</span>
                     )}
+                    {u.consent === 'expired' && (
+                      <span
+                        className="jf-admin-chip"
+                        style={{
+                          color: 'var(--color-admin-warning)',
+                          backgroundColor: 'var(--color-admin-warning-bg)',
+                          border: '1px solid color-mix(in srgb, var(--color-admin-warning) 30%, transparent)',
+                        }}
+                        title="Politique de confidentialité obsolète — à renouveler dans l'onglet RGPD"
+                      >
+                        Expiré ⚠
+                      </span>
+                    )}
                     {u.consent === 'missing' && (
                       <span className="jf-admin-chip jf-admin-chip-danger">Consentement ✗</span>
                     )}
@@ -262,7 +301,7 @@ export default function AdminUsersPage() {
                       {busyId === u.id ? '…' : u.status === 'Actif' ? 'Désactiver' : 'Réactiver'}
                     </button>
                   )}
-                  {u.role === 'Élève' && u.consent === 'missing' && (
+                  {u.role === 'Élève' && (u.consent === 'missing' || u.consent === 'expired') && (
                     <button
                       type="button"
                       onClick={() => navigate('/admin/rgpd')}

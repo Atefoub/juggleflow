@@ -22,8 +22,10 @@ public class AdminUserResponse {
 
     /**
      * Statut du consentement parental pour un élève.
-     * - ok      : consentement PARENTAL_MINOR accordé
-     * - missing : consentement absent ou non accordé
+     * - ok      : consentement PARENTAL_MINOR accordé et à jour
+     * - expired : consentement présent mais expiré (date d'expiration dépassée
+     *             ou policy_version obsolète)
+     * - missing : consentement absent, non accordé ou révoqué
      * - none    : non applicable (enseignant / admin)
      */
     private String parentalConsentStatus;
