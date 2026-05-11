@@ -112,13 +112,19 @@ export default function LoginPage() {
             )}
           </div>
 
-          {/* Lien mot de passe oublié */}
+          {/* Lien mot de passe oublié — bientôt disponible */}
           <div className="text-right">
             <button
               type="button"
-              className="text-sm underline text-text-secondary"
+              disabled
+              aria-disabled="true"
+              title="Bientôt disponible — contactez votre établissement pour réinitialiser votre mot de passe."
+              className="text-sm text-text-muted opacity-60 cursor-not-allowed inline-flex items-center gap-1"
             >
-              Mot de passe oublié ?
+              <span className="underline">Mot de passe oublié ?</span>
+              <span className="text-[0.6rem] uppercase tracking-wider rounded-md px-1.5 py-0.5 border border-border bg-bg-input">
+                Bientôt
+              </span>
             </button>
           </div>
 
@@ -148,12 +154,18 @@ export default function LoginPage() {
             <div className="flex-1 h-px bg-border" />
           </div>
 
-          {/* ENT */}
+          {/* ENT — bientôt disponible */}
           <button
             type="button"
-            className="jf-btn-outline w-full min-h-12 py-3 rounded-xl"
+            disabled
+            aria-disabled="true"
+            title="Le SSO ENT (EduConnect / GAR) sera disponible à la rentrée prochaine."
+            className="jf-btn-outline w-full min-h-12 py-3 rounded-xl opacity-60 cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Connexion via ENT de l'établissement
+            <span>Connexion via ENT de l'établissement</span>
+            <span className="text-[0.6rem] uppercase tracking-wider rounded-md px-1.5 py-0.5 border border-border bg-bg-input">
+              Bientôt
+            </span>
           </button>
         </form>
 

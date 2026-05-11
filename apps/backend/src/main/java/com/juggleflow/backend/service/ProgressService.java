@@ -8,6 +8,7 @@ import com.juggleflow.backend.model.Trick;
 import com.juggleflow.backend.model.User;
 import com.juggleflow.backend.model.UserProgress;
 import com.juggleflow.backend.model.UserProgress.ProgressStatus;
+import com.juggleflow.backend.repository.PracticeSessionRepository;
 import com.juggleflow.backend.repository.TrickRepository;
 import com.juggleflow.backend.repository.UserBadgeRepository;
 import com.juggleflow.backend.repository.UserProgressRepository;
@@ -17,17 +18,23 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ProgressService {
 
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Europe/Paris");
+
     private final UserProgressRepository progressRepository;
     private final UserRepository userRepository;
     private final TrickRepository trickRepository;
     private final UserBadgeRepository userBadgeRepository;
     private final BadgeService badgeService;
+    private final StreakService streakService;
+    private final PracticeSessionRepository practiceSessionRepository;
 
     /**
      * Récupère toute la progression d'un utilisateur.
@@ -74,7 +81,9 @@ public class ProgressService {
 
         UserProgress saved = progressRepository.save(progress);
 
-        // Vérifie si de nouveaux badges sont débloqués après cette mise à jour
+        // Incremente le streak AVANT de verifier les badges : le badge
+        // "Perseverant" doit pouvoir s'evaluer avec le streak du jour.
+        streakService.recordPracticeDay(user.getId(), LocalDate.now(DEFAULT_ZONE));
         badgeService.checkAndUnlockBadges(user);
 
         return ProgressResponse.from(saved);
@@ -93,11 +102,18 @@ public class ProgressService {
             .size();
         long badges = userBadgeRepository.findByUser_IdOrderByUnlockedAtDesc(user.getId())
             .size();
+        int currentStreak = streakService.getCurrentStreak(user.getId());
+        int longestStreak = streakService.getLongestStreak(user.getId());
+        long practiceMinutes =
+            practiceSessionRepository.sumDurationSecondsByUserId(user.getId()) / 60L;
 
         return StatisticsResponse.builder()
             .totalTricksLearned(mastered)
             .tricksInProgress(inProgress)
             .badgesEarned(badges)
+            .currentStreakDays(currentStreak)
+            .longestStreakDays(longestStreak)
+            .totalPracticeMinutes(practiceMinutes)
             .build();
     }
 
