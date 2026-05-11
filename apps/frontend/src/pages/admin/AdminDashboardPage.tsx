@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import { adminApi, type AdminEstablishmentStats, type AdminSchoolClass } from '../../api/adminApi';
 import { adminGdprApi, type ConsentStatusRow } from '../../api/adminGdprApi';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
 
 // ─── Sous-composants ──────────────────────────────────────────────────────────
 
@@ -16,14 +16,16 @@ interface KpiCardProps {
 
 function KpiCard({ label, value, sublabel, icon, iconLabel }: KpiCardProps) {
   return (
-    <div className="bg-white border border-[#E0E0E0] rounded-xl p-5 flex items-start gap-4">
-      <div className="w-10 h-10 bg-[#F5F5F5] border border-[#E0E0E0] rounded-lg flex items-center justify-center text-lg shrink-0">
+    <div className="jf-admin-card p-5 flex items-start gap-4">
+      <div className="w-10 h-10 bg-[var(--color-admin-bg)] border border-[var(--color-admin-border)] rounded-lg flex items-center justify-center text-lg shrink-0">
         <span role="img" aria-label={iconLabel}>{icon}</span>
       </div>
       <div>
-        <div className="text-2xl font-bold text-[#111] leading-none mb-1">{value}</div>
-        <div className="text-xs font-semibold text-[#555] uppercase tracking-wide">{label}</div>
-        {sublabel && <div className="text-xs text-[#999] mt-1">{sublabel}</div>}
+        <div className="text-2xl font-bold text-[var(--color-admin-text)] leading-none mb-1">{value}</div>
+        <div className="jf-admin-section-title">{label}</div>
+        {sublabel && (
+          <div className="text-xs text-[var(--color-admin-text-muted)] mt-1">{sublabel}</div>
+        )}
       </div>
     </div>
   );
@@ -73,7 +75,6 @@ function downloadText(filename: string, content: string, mime: string) {
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<'classes' | 'rgpd'>('classes');
 
   const [classes, setClasses] = useState<AdminSchoolClass[]>([]);
@@ -172,357 +173,352 @@ export default function AdminDashboardPage() {
   }, [classes]);
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] flex flex-col">
-
-      {/* ── Header ── */}
-      <header className="bg-white border-b border-[#E0E0E0] px-5 py-4 flex items-center justify-between sticky top-0 z-10">
-        <div>
-          <div className="text-xs text-[#999] uppercase tracking-widest font-semibold mb-0.5">
-            Administrateur
-          </div>
-          <div className="text-base font-bold text-[#111]">
-            {user ? `${user.firstName} ${user.lastName}` : 'École JuggleFlow'}
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={logout}
-          className="h-9 px-4 border border-[#DDD] rounded-lg text-sm font-medium text-[#555] hover:bg-[#F5F5F5] transition-colors"
-        >
-          Déconnexion
-        </button>
-      </header>
-
-      <main className="flex-1 p-5 max-w-4xl mx-auto w-full space-y-6">
-
-        {/* ── KPI Cards ── */}
-        <section>
-          <h2 className="text-xs font-bold text-[#888] uppercase tracking-widest mb-3">
-            Vue d'ensemble
-          </h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <KpiCard
-              icon="🏫"
-              iconLabel="Établissement"
-              label="Classes"
-              value={isLoading ? '—' : (stats != null ? stats.classCount : classes.length)}
-              sublabel="dans l'établissement"
-            />
-            <KpiCard
-              icon="👦"
-              iconLabel="Élèves"
-              label="Élèves inscrits"
-              value={isLoading ? '—' : (stats != null ? stats.studentCount : totalEleves)}
-              sublabel="toutes classes"
-            />
-            <KpiCard
-              icon="👩‍🏫"
-              iconLabel="Enseignants"
-              label="Enseignants"
-              value={isLoading ? '—' : (stats != null ? stats.teacherAccountCount : teacherCount)}
-              sublabel={stats != null ? 'comptes enseignant' : 'titulaires uniques'}
-            />
-            <KpiCard
-              icon="🔒"
-              iconLabel="RGPD"
-              label="Consentements manquants"
-              value={isLoading ? '—' : alertesRgpd}
-              sublabel="toutes classes"
-            />
-          </div>
-          {error && (
-            <p className="text-sm text-[#B00020] mt-3">{error}</p>
-          )}
-        </section>
-
-        {/* ── Actions rapides ── */}
-        <section>
-          <h2 className="text-xs font-bold text-[#888] uppercase tracking-widest mb-3">
-            Actions rapides
-          </h2>
-          <div className="flex flex-wrap gap-2">
+    <>
+      <AdminPageHeader
+        title="Tableau de bord"
+        description="Vue d'ensemble de l'établissement, indicateurs et exports."
+        actions={
+          <>
             <button
               type="button"
               onClick={() => navigate('/admin/classes')}
-              className="jf-btn-primary min-h-9 px-4 rounded-lg text-sm"
+              className="jf-admin-btn-primary"
             >
               + Créer une classe
             </button>
             <button
               type="button"
               onClick={() => navigate('/admin/users')}
-              className="jf-btn-surface"
+              className="jf-admin-btn-secondary"
             >
               Gérer les comptes
             </button>
-            <button
-              type="button"
-              onClick={() => navigate('/admin/audit')}
-              className="jf-btn-surface"
-            >
-              <span role="img" aria-label="Journaux d'activité">📋</span>
-              {' '}Journal d&apos;audit
-            </button>
-          </div>
-        </section>
+          </>
+        }
+      />
 
-        {/* ── Onglets ── */}
-        <section>
-          <div className="flex border-b border-[#E0E0E0] mb-5">
-            <button
-              type="button"
-              onClick={() => setActiveTab('classes')}
-              className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors ${
-                activeTab === 'classes'
-                  ? 'border-brand text-brand'
-                  : 'border-transparent text-[#999] hover:text-[#555]'
-              }`}
-            >
-              Classes
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('rgpd')}
-              className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
-                activeTab === 'rgpd'
-                  ? 'border-brand text-brand'
-                  : 'border-transparent text-[#999] hover:text-[#555]'
-              }`}
-            >
-              RGPD &amp; Données
-              {alertesRgpd > 0 && (
-                <span className="inline-flex items-center justify-center w-5 h-5 jf-nav-pill-active text-white text-xs font-bold rounded-full">
-                  {alertesRgpd}
-                </span>
-              )}
-            </button>
-          </div>
+      {/* ── KPI Cards ── */}
+      <section className="mb-8">
+        <h2 className="jf-admin-section-title mb-3">Vue d'ensemble</h2>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <KpiCard
+            icon="🏫"
+            iconLabel="Établissement"
+            label="Classes"
+            value={isLoading ? '—' : (stats != null ? stats.classCount : classes.length)}
+            sublabel="dans l'établissement"
+          />
+          <KpiCard
+            icon="👦"
+            iconLabel="Élèves"
+            label="Élèves inscrits"
+            value={isLoading ? '—' : (stats != null ? stats.studentCount : totalEleves)}
+            sublabel="toutes classes"
+          />
+          <KpiCard
+            icon="👩‍🏫"
+            iconLabel="Enseignants"
+            label="Enseignants"
+            value={isLoading ? '—' : (stats != null ? stats.teacherAccountCount : teacherCount)}
+            sublabel={stats != null ? 'comptes enseignant' : 'titulaires uniques'}
+          />
+          <KpiCard
+            icon="🔒"
+            iconLabel="RGPD"
+            label="Consentements manquants"
+            value={isLoading ? '—' : alertesRgpd}
+            sublabel="toutes classes"
+          />
+        </div>
+        {error && (
+          <p className="text-sm text-[var(--color-admin-danger)] mt-3">{error}</p>
+        )}
+      </section>
 
-          {/* ── Tableau classes ── */}
-          {activeTab === 'classes' && (
-            <div className="bg-white border border-[#E0E0E0] rounded-xl overflow-hidden">
-              <div className="hidden sm:grid grid-cols-[2fr_1fr_1fr_1fr_2fr_1fr] gap-4 px-5 py-3 bg-[#F9F9F9] border-b border-[#E0E0E0]">
-                {['Classe', 'Niveau', 'Enseignant', 'Élèves', 'Progression', 'Statut'].map((h) => (
-                  <div key={h} className="text-xs font-bold text-[#888] uppercase tracking-wide">{h}</div>
-                ))}
-              </div>
+      {/* ── Onglets ── */}
+      <section>
+        <div role="tablist" className="flex border-b border-[var(--color-admin-border)] mb-5">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'classes'}
+            onClick={() => setActiveTab('classes')}
+            className={[
+              'px-5 py-3 text-sm font-semibold border-b-2 -mb-px transition-colors',
+              activeTab === 'classes'
+                ? 'border-[var(--color-admin)] text-[var(--color-admin)]'
+                : 'border-transparent text-[var(--color-admin-text-muted)] hover:text-[var(--color-admin-text)]',
+            ].join(' ')}
+          >
+            Classes
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'rgpd'}
+            onClick={() => setActiveTab('rgpd')}
+            className={[
+              'px-5 py-3 text-sm font-semibold border-b-2 -mb-px transition-colors flex items-center gap-2',
+              activeTab === 'rgpd'
+                ? 'border-[var(--color-admin)] text-[var(--color-admin)]'
+                : 'border-transparent text-[var(--color-admin-text-muted)] hover:text-[var(--color-admin-text)]',
+            ].join(' ')}
+          >
+            RGPD &amp; Données
+            {alertesRgpd > 0 && (
+              <span className="jf-admin-chip jf-admin-chip-warning min-w-5 justify-center">
+                {alertesRgpd}
+              </span>
+            )}
+          </button>
+        </div>
 
-              {classes.map((cls, i) => (
-                <div
-                  key={cls.id}
-                  className={`px-5 py-4 ${i < classes.length - 1 ? 'border-b border-[#F0F0F0]' : ''}`}
-                >
-                  {/* Mobile */}
-                  <div className="sm:hidden space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-sm text-[#111]">{cls.name}</span>
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#EBEBEB] text-[#333]">
-                        Actif
-                      </span>
-                    </div>
-                    <div className="text-xs text-[#888]">
-                      {(cls.homeroomTeacherName ?? '—')} · {cls.studentCount} élèves · {cls.schoolLevel}
-                    </div>
-                    <div className="text-xs text-[#888]">
-                      Détail sur la page Classes
-                    </div>
-                  </div>
-
-                  {/* Desktop */}
-                  <div className="hidden sm:grid grid-cols-[2fr_1fr_1fr_1fr_2fr_1fr] gap-4 items-center">
-                    <span className="font-semibold text-sm text-[#111]">{cls.name}</span>
-                    <span className="text-sm text-[#555]">{cls.schoolLevel}</span>
-                    <span className="text-sm text-[#555]">{cls.homeroomTeacherName ?? '—'}</span>
-                    <span className="text-sm text-[#555]">{cls.studentCount}</span>
-                    <span className="text-xs text-[#888]">—</span>
-                    <span className="text-xs font-semibold px-2 py-1 rounded-full w-fit bg-[#EBEBEB] text-[#333]">
-                      Actif
-                    </span>
-                  </div>
-                </div>
+        {/* ── Tableau classes ── */}
+        {activeTab === 'classes' && (
+          <div className="jf-admin-card overflow-hidden">
+            <div className="hidden sm:grid grid-cols-[2fr_1fr_1fr_1fr_2fr_1fr] gap-4 px-5 py-3 bg-[var(--color-admin-bg)] border-b border-[var(--color-admin-border)]">
+              {['Classe', 'Niveau', 'Enseignant', 'Élèves', 'Progression', 'Statut'].map((h) => (
+                <div key={h} className="jf-admin-section-title">{h}</div>
               ))}
             </div>
-          )}
 
-          {/* ── Section RGPD ── */}
-          {activeTab === 'rgpd' && (
-            <div className="space-y-4">
+            {classes.length === 0 && !isLoading && (
+              <div className="p-6 text-center text-sm text-[var(--color-admin-text-muted)]">
+                Aucune classe enregistrée.
+              </div>
+            )}
 
-              {/* Consentements */}
-              <div className="bg-white border border-[#E0E0E0] rounded-xl p-5">
-                <h3 className="text-sm font-bold text-[#111] mb-4">Consentements parentaux</h3>
-
-                <div className="mb-4">
-                  <div className="text-xs text-[#888] mb-2">Classe</div>
-                  <select
-                    className="w-full h-10 px-3 border border-[#DDD] rounded-lg text-sm text-[#111] bg-white"
-                    value={selectedClassId ?? ''}
-                    onChange={(e) => setSelectedClassId(Number(e.target.value))}
-                    disabled={classes.length === 0}
-                  >
-                    {classes.length === 0 && (
-                      <option value="">Aucune classe</option>
-                    )}
-                    {classes.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} ({c.schoolYear})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3 mb-5">
-                  <div className="bg-[#F5F5F5] rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold text-[#111]">
-                      {isLoadingRgpd ? '—' : consentStats.accordes}
-                    </div>
-                    <div className="text-xs text-[#888] mt-1">Accordés</div>
+            {classes.map((cls, i) => (
+              <div
+                key={cls.id}
+                className={`px-5 py-4 ${i < classes.length - 1 ? 'border-b border-[var(--color-admin-border)]' : ''}`}
+              >
+                {/* Mobile */}
+                <div className="sm:hidden space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-sm text-[var(--color-admin-text)] truncate">{cls.name}</span>
+                    <span className="jf-admin-chip jf-admin-chip-success">Actif</span>
                   </div>
-                  <div className="bg-[#F0F0F0] rounded-lg p-3 text-center border border-[#DDD]">
-                    <div className="text-2xl font-bold text-[#111]">
-                      {isLoadingRgpd ? '—' : (selectedClassId != null ? (pendingByClass[selectedClassId] ?? 0) : 0)}
-                    </div>
-                    <div className="text-xs font-semibold text-[#555] mt-1">En attente</div>
-                  </div>
-                  <div className="bg-[#F5F5F5] rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold text-[#777]">0</div>
-                    <div className="text-xs text-[#999] mt-1">Expirés</div>
+                  <div className="text-xs text-[var(--color-admin-text-muted)]">
+                    {(cls.homeroomTeacherName ?? '—')} · {cls.studentCount} élèves · {cls.schoolLevel}
                   </div>
                 </div>
 
-                {!isLoadingRgpd && consentRows.length > 0 && (
-                  <div className="space-y-2">
-                    {consentRows.slice(0, 6).map((r) => (
-                      <div
-                        key={r.userId}
-                        className="flex items-center justify-between p-3 border border-[#E0E0E0] rounded-lg"
-                      >
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold text-[#111] truncate">
-                            {r.firstName} {r.lastName}
-                          </div>
-                          <div className="text-xs text-[#999]">
-                            {formatDate(r.consentDate)}
-                          </div>
+                {/* Desktop */}
+                <div className="hidden sm:grid grid-cols-[2fr_1fr_1fr_1fr_2fr_1fr] gap-4 items-center">
+                  <span className="font-semibold text-sm text-[var(--color-admin-text)] truncate">{cls.name}</span>
+                  <span className="text-sm text-[var(--color-admin-text-secondary)]">{cls.schoolLevel}</span>
+                  <span className="text-sm text-[var(--color-admin-text-secondary)]">{cls.homeroomTeacherName ?? '—'}</span>
+                  <span className="text-sm text-[var(--color-admin-text-secondary)]">{cls.studentCount}</span>
+                  <span className="text-xs text-[var(--color-admin-text-muted)]">—</span>
+                  <span className="jf-admin-chip jf-admin-chip-success w-fit">Actif</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Section RGPD ── */}
+        {activeTab === 'rgpd' && (
+          <div className="space-y-4">
+
+            {/* Consentements */}
+            <div className="jf-admin-card p-5">
+              <h3 className="text-sm font-bold text-[var(--color-admin-text)] mb-4">
+                Consentements parentaux
+              </h3>
+
+              <div className="mb-4">
+                <label htmlFor="dash-class" className="block text-xs text-[var(--color-admin-text-muted)] mb-1">
+                  Classe
+                </label>
+                <select
+                  id="dash-class"
+                  className="jf-admin-input"
+                  value={selectedClassId ?? ''}
+                  onChange={(e) => setSelectedClassId(Number(e.target.value))}
+                  disabled={classes.length === 0}
+                >
+                  {classes.length === 0 && (
+                    <option value="">Aucune classe</option>
+                  )}
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.schoolYear})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 mb-5">
+                <div className="bg-[var(--color-admin-bg)] rounded-lg p-3 text-center border border-[var(--color-admin-border)]">
+                  <div className="text-2xl font-bold text-[var(--color-admin-text)]">
+                    {isLoadingRgpd ? '—' : consentStats.accordes}
+                  </div>
+                  <div className="text-xs text-[var(--color-admin-text-muted)] mt-1">Accordés</div>
+                </div>
+                <div className="bg-[var(--color-admin-warning-bg)] rounded-lg p-3 text-center border border-[color-mix(in_srgb,var(--color-admin-warning)_25%,transparent)]">
+                  <div className="text-2xl font-bold text-[var(--color-admin-warning)]">
+                    {isLoadingRgpd ? '—' : (selectedClassId != null ? (pendingByClass[selectedClassId] ?? 0) : 0)}
+                  </div>
+                  <div className="text-xs font-semibold text-[var(--color-admin-warning)] mt-1">En attente</div>
+                </div>
+                <div className="bg-[var(--color-admin-bg)] rounded-lg p-3 text-center border border-[var(--color-admin-border)]">
+                  <div className="text-2xl font-bold text-[var(--color-admin-text-muted)]">0</div>
+                  <div className="text-xs text-[var(--color-admin-text-muted)] mt-1">Expirés</div>
+                </div>
+              </div>
+
+              {!isLoadingRgpd && consentRows.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  {consentRows.slice(0, 6).map((r) => (
+                    <div
+                      key={r.userId}
+                      className="flex items-center justify-between p-3 border border-[var(--color-admin-border)] rounded-lg"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-[var(--color-admin-text)] truncate">
+                          {r.firstName} {r.lastName}
                         </div>
-                        <div className="text-xs font-semibold">
-                          {r.hasParentalConsent ? 'Consentement ✓' : 'Consentement ✗'}
+                        <div className="text-xs text-[var(--color-admin-text-muted)]">
+                          {formatDate(r.consentDate)}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => navigate('/admin/rgpd')}
-                    className="jf-btn-primary min-h-9 px-4 rounded-lg text-sm"
-                  >
-                    Gérer les consentements ({alertesRgpd} en attente)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/admin/rgpd')}
-                    className="jf-btn-surface"
-                  >
-                    Page RGPD complète
-                  </button>
-                </div>
-              </div>
-
-              {/* Droit à l'oubli */}
-              <div className="bg-white border border-[#E0E0E0] rounded-xl p-5">
-                <h3 className="text-sm font-bold text-[#111] mb-2">Droit à l&apos;oubli</h3>
-                <p className="text-sm text-[#666] leading-relaxed">
-                  Anonymisation de fin d&apos;année gérée côté serveur. La révocation d&apos;un consentement parental
-                  désactive tout de suite le compte élève concerné — depuis la page RGPD.
-                </p>
-              </div>
-
-              {/* Export */}
-              <div className="bg-white border border-[#E0E0E0] rounded-xl p-5">
-                <h3 className="text-sm font-bold text-[#111] mb-4">Export des données</h3>
-                {exportMessage && (
-                  <p className="text-xs text-[#B00020] mb-3">{exportMessage}</p>
-                )}
-                <div className="space-y-4">
-                  <div className="p-3 border border-[#E0E0E0] rounded-lg">
-                    <div className="text-sm font-semibold text-[#111] mb-2">Bilan de progression (CSV)</div>
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <label htmlFor="dash-export-year" className="text-xs text-[#888]">Année</label>
-                      <select
-                        id="dash-export-year"
-                        className="h-9 px-2 border border-[#DDD] rounded-lg text-sm bg-white"
-                        value={progressExportYear ?? ''}
-                        onChange={(e) => setProgressExportYear(Number(e.target.value))}
-                        disabled={progressYearOptions.length === 0}
+                      <span
+                        className={
+                          r.hasParentalConsent
+                            ? 'jf-admin-chip jf-admin-chip-success'
+                            : 'jf-admin-chip jf-admin-chip-danger'
+                        }
                       >
-                        {progressYearOptions.map((y) => (
-                          <option key={y} value={y}>{y}</option>
-                        ))}
-                      </select>
+                        {r.hasParentalConsent ? 'Consentement ✓' : 'Consentement ✗'}
+                      </span>
                     </div>
-                    <button
-                      type="button"
-                      disabled={isExporting || progressExportYear == null}
-                      onClick={async () => {
-                        setExportMessage(null);
-                        try {
-                          setIsExporting(true);
-                          const csv = await adminApi.exportProgressCsv(progressExportYear ?? undefined);
-                          downloadText(
-                            `progress_report_${progressExportYear ?? 'all'}.csv`,
-                            csv,
-                            'text/csv;charset=utf-8',
-                          );
-                        } catch {
-                          setExportMessage('Export progression impossible.');
-                        } finally {
-                          setIsExporting(false);
-                        }
-                      }}
-                      className="jf-btn-primary min-h-9 px-4 rounded-lg text-sm disabled:opacity-50"
-                    >
-                      {isExporting ? '…' : 'Télécharger CSV'}
-                    </button>
-                  </div>
-                  <div className="p-3 border border-[#E0E0E0] rounded-lg">
-                    <div className="text-sm font-semibold text-[#111] mb-1">Registre des consentements (CSV)</div>
-                    <div className="text-xs text-[#999] mb-2">Classe sélectionnée ci-dessus</div>
-                    <button
-                      type="button"
-                      disabled={isExporting || selectedClassId == null}
-                      onClick={async () => {
-                        if (selectedClassId == null) return;
-                        setExportMessage(null);
-                        try {
-                          setIsExporting(true);
-                          const rows = await adminGdprApi.exportConsentRegister(selectedClassId);
-                          const csv = toConsentCsv(rows);
-                          downloadText(`consents_class_${selectedClassId}.csv`, csv, 'text/csv;charset=utf-8');
-                        } catch {
-                          setExportMessage('Export consentements impossible.');
-                        } finally {
-                          setIsExporting(false);
-                        }
-                      }}
-                      className="jf-btn-primary min-h-9 px-4 rounded-lg text-sm disabled:opacity-50"
-                    >
-                      {isExporting ? '…' : 'Télécharger CSV'}
-                    </button>
-                  </div>
+                  ))}
                 </div>
-                <div className="mt-4 p-3 bg-[#F9F9F9] border-l-2 border-[#CCC] rounded-r-lg">
-                  <p className="text-xs text-[#888] leading-relaxed">
-                    Exports réels via l’API admin. Pour le PDF ou une suppression ciblée, voir la feuille de route produit / DPO.
-                  </p>
-                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/rgpd')}
+                  className="jf-admin-btn-primary"
+                >
+                  Gérer les consentements ({alertesRgpd} en attente)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/rgpd')}
+                  className="jf-admin-btn-secondary"
+                >
+                  Page RGPD complète
+                </button>
               </div>
             </div>
-          )}
-        </section>
-      </main>
-    </div>
+
+            {/* Droit à l'oubli */}
+            <div className="jf-admin-card p-5">
+              <h3 className="text-sm font-bold text-[var(--color-admin-text)] mb-2">
+                Droit à l&apos;oubli
+              </h3>
+              <p className="text-sm text-[var(--color-admin-text-secondary)] leading-relaxed">
+                Anonymisation de fin d&apos;année gérée côté serveur. La révocation d&apos;un consentement parental
+                désactive tout de suite le compte élève concerné — depuis la page RGPD.
+              </p>
+            </div>
+
+            {/* Export */}
+            <div className="jf-admin-card p-5">
+              <h3 className="text-sm font-bold text-[var(--color-admin-text)] mb-4">
+                Export des données
+              </h3>
+              {exportMessage && (
+                <p className="text-xs text-[var(--color-admin-danger)] mb-3">{exportMessage}</p>
+              )}
+              <div className="space-y-4">
+                <div className="p-3 border border-[var(--color-admin-border)] rounded-lg">
+                  <div className="text-sm font-semibold text-[var(--color-admin-text)] mb-2">
+                    Bilan de progression (CSV)
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <label htmlFor="dash-export-year" className="text-xs text-[var(--color-admin-text-muted)]">
+                      Année
+                    </label>
+                    <select
+                      id="dash-export-year"
+                      className="jf-admin-input w-auto"
+                      value={progressExportYear ?? ''}
+                      onChange={(e) => setProgressExportYear(Number(e.target.value))}
+                      disabled={progressYearOptions.length === 0}
+                    >
+                      {progressYearOptions.map((y) => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isExporting || progressExportYear == null}
+                    onClick={async () => {
+                      setExportMessage(null);
+                      try {
+                        setIsExporting(true);
+                        const csv = await adminApi.exportProgressCsv(progressExportYear ?? undefined);
+                        downloadText(
+                          `progress_report_${progressExportYear ?? 'all'}.csv`,
+                          csv,
+                          'text/csv;charset=utf-8',
+                        );
+                      } catch {
+                        setExportMessage('Export progression impossible.');
+                      } finally {
+                        setIsExporting(false);
+                      }
+                    }}
+                    className="jf-admin-btn-primary"
+                  >
+                    {isExporting ? '…' : 'Télécharger CSV'}
+                  </button>
+                </div>
+                <div className="p-3 border border-[var(--color-admin-border)] rounded-lg">
+                  <div className="text-sm font-semibold text-[var(--color-admin-text)] mb-1">
+                    Registre des consentements (CSV)
+                  </div>
+                  <div className="text-xs text-[var(--color-admin-text-muted)] mb-3">
+                    Classe sélectionnée ci-dessus
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isExporting || selectedClassId == null}
+                    onClick={async () => {
+                      if (selectedClassId == null) return;
+                      setExportMessage(null);
+                      try {
+                        setIsExporting(true);
+                        const rows = await adminGdprApi.exportConsentRegister(selectedClassId);
+                        const csv = toConsentCsv(rows);
+                        downloadText(`consents_class_${selectedClassId}.csv`, csv, 'text/csv;charset=utf-8');
+                      } catch {
+                        setExportMessage('Export consentements impossible.');
+                      } finally {
+                        setIsExporting(false);
+                      }
+                    }}
+                    className="jf-admin-btn-primary"
+                  >
+                    {isExporting ? '…' : 'Télécharger CSV'}
+                  </button>
+                </div>
+              </div>
+              <div className="mt-4 p-3 bg-[var(--color-admin-bg)] border-l-2 border-[var(--color-admin-border-strong)] rounded-r-lg">
+                <p className="text-xs text-[var(--color-admin-text-muted)] leading-relaxed">
+                  Exports réels via l&apos;API admin. Pour le PDF ou une suppression ciblée, voir la feuille de route produit / DPO.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+    </>
   );
 }
