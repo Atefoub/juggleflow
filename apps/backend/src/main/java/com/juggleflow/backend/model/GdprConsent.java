@@ -61,6 +61,14 @@ public class GdprConsent {
     private String ipAddress;
 
     /**
+     * Date d'expiration du consentement (NULL = sans terme).
+     * Evaluee par {@code GdprService.evaluateStatus} pour determiner
+     * le statut visible cote admin (VALID / EXPIRED / REVOKED).
+     */
+    @Column(name = "expires_at")
+    private Instant expiresAt;
+
+    /**
      * Représentant légal (parent/tuteur) — obligatoire si consentType = PARENTAL_MINOR.
      */
     @ManyToOne(fetch = FetchType.LAZY)
@@ -72,5 +80,20 @@ public class GdprConsent {
         COMMUNICATION,
         COOKIES,
         PARENTAL_MINOR
+    }
+
+    /**
+     * Statut effectif d'un consentement, calcule au runtime.
+     * - MISSING  : aucun enregistrement en base (eleve sans consentement).
+     * - REVOKED  : enregistrement avec {@code consentGiven=false}.
+     * - EXPIRED  : {@code expiresAt < now} OU {@code policyVersion} differe
+     *              de la version courante de la politique.
+     * - VALID    : consentement actif et a jour.
+     */
+    public enum ConsentStatus {
+        MISSING,
+        REVOKED,
+        EXPIRED,
+        VALID
     }
 }

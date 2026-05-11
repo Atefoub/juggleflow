@@ -29,6 +29,12 @@ public class ConsentRequest {
     private Long legalGuardianId;
 
     /**
+     * Date d'expiration optionnelle. Si null, le service utilise
+     * {@code gdpr.consent-default-validity-days} jours apres la saisie.
+     */
+    private java.time.Instant expiresAt;
+
+    /**
      * Validation croisée : le consentement parental exige un représentant légal identifié.
      */
     @AssertTrue(
