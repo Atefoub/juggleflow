@@ -30,6 +30,26 @@
   --color-teacher: #4068D8;
   --color-admin: #5B20E6;
 
+  /* Admin — thème clair (back-office) ───────────────────────────────────────
+     Utilisés UNIQUEMENT dans la section /admin/* via le wrapper .jf-admin.
+     Le reste de l'app (student/teacher/login) reste sur le thème sombre. */
+  --color-admin-bg: #F7F8FA;
+  --color-admin-surface: #FFFFFF;
+  --color-admin-surface-hover: #F4F5F7;
+  --color-admin-border: #E5E7EB;
+  --color-admin-border-strong: #D1D5DB;
+  --color-admin-text: #0F172A;
+  --color-admin-text-secondary: #475569;
+  --color-admin-text-muted: #94A3B8;
+  --color-admin-danger: #DC2626;
+  --color-admin-danger-bg: #FEE2E2;
+  --color-admin-warning: #B45309;
+  --color-admin-warning-bg: #FEF3C7;
+  --color-admin-success: #15803D;
+  --color-admin-success-bg: #DCFCE7;
+  --color-admin-info: #1D4ED8;
+  --color-admin-info-bg: #DBEAFE;
+
   /* Textes */
   --color-text-primary: #FFFFFF;
   --color-text-secondary: #A0AABF;
@@ -73,6 +93,22 @@
 
   h1, h2, h3, h4 {
     font-family: 'Syne', sans-serif;
+  }
+
+  /* ── Wrapper de la section admin (thème clair scopé) ───────────────────
+     Tout descendant de .jf-admin hérite du fond clair et du texte sombre.
+     Le reste de l'app garde son thème sombre par défaut.                  */
+  .jf-admin {
+    background-color: var(--color-admin-bg);
+    color: var(--color-admin-text);
+    min-height: 100vh;
+  }
+
+  .jf-admin h1,
+  .jf-admin h2,
+  .jf-admin h3,
+  .jf-admin h4 {
+    color: var(--color-admin-text);
   }
 }
 
@@ -228,5 +264,253 @@
   .jf-btn-surface:disabled {
     opacity: 0.45;
     pointer-events: none;
+  }
+
+  /* ── Composants Admin (thème clair) ──────────────────────────────────────
+     Tous préfixés .jf-admin-* pour ne JAMAIS entrer en collision avec les
+     classes du thème sombre.                                              */
+
+  .jf-admin-card {
+    background: var(--color-admin-surface);
+    border: 1px solid var(--color-admin-border);
+    border-radius: var(--radius-md);
+  }
+
+  .jf-admin-section-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-admin-text-muted);
+  }
+
+  .jf-admin-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-admin-text-secondary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .jf-admin-nav-item:hover {
+    background: var(--color-admin-surface-hover);
+    color: var(--color-admin-text);
+  }
+
+  .jf-admin-nav-item:focus-visible {
+    outline: 2px solid var(--color-admin);
+    outline-offset: 2px;
+  }
+
+  .jf-admin-nav-item-active {
+    background: color-mix(in srgb, var(--color-admin) 10%, white);
+    color: var(--color-admin);
+    font-weight: 600;
+  }
+
+  .jf-admin-nav-item-active:hover {
+    background: color-mix(in srgb, var(--color-admin) 14%, white);
+    color: var(--color-admin);
+  }
+
+  .jf-admin-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.875rem;
+    line-height: 1.25;
+    color: #fff;
+    min-height: 2.25rem;
+    padding: 0 1rem;
+    border-radius: 0.5rem;
+    background: var(--color-admin);
+    border: 1px solid var(--color-admin);
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
+  }
+
+  .jf-admin-btn-primary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-admin) 88%, black);
+    border-color: color-mix(in srgb, var(--color-admin) 88%, black);
+  }
+
+  .jf-admin-btn-primary:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .jf-admin-btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .jf-admin-btn-primary:focus-visible {
+    outline: 2px solid var(--color-admin);
+    outline-offset: 2px;
+  }
+
+  .jf-admin-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--color-admin-text-secondary);
+    min-height: 2.25rem;
+    padding: 0 1rem;
+    border-radius: 0.5rem;
+    background: var(--color-admin-surface);
+    border: 1px solid var(--color-admin-border);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  }
+
+  .jf-admin-btn-secondary:hover:not(:disabled) {
+    background: var(--color-admin-surface-hover);
+    color: var(--color-admin-text);
+    border-color: var(--color-admin-border-strong);
+  }
+
+  .jf-admin-btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .jf-admin-btn-secondary:focus-visible {
+    outline: 2px solid var(--color-admin);
+    outline-offset: 2px;
+  }
+
+  .jf-admin-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 0.8125rem;
+    color: var(--color-admin-text-secondary);
+    min-height: 2rem;
+    padding: 0 0.625rem;
+    border-radius: 0.375rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .jf-admin-btn-ghost:hover:not(:disabled) {
+    background: var(--color-admin-surface-hover);
+    color: var(--color-admin-text);
+  }
+
+  .jf-admin-btn-ghost:focus-visible {
+    outline: 2px solid var(--color-admin);
+    outline-offset: 2px;
+  }
+
+  .jf-admin-btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--color-admin-danger);
+    min-height: 2.25rem;
+    padding: 0 1rem;
+    border-radius: 0.5rem;
+    background: var(--color-admin-surface);
+    border: 1px solid color-mix(in srgb, var(--color-admin-danger) 28%, var(--color-admin-border));
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+
+  .jf-admin-btn-danger:hover:not(:disabled) {
+    background: var(--color-admin-danger-bg);
+    border-color: var(--color-admin-danger);
+  }
+
+  .jf-admin-btn-danger:focus-visible {
+    outline: 2px solid var(--color-admin-danger);
+    outline-offset: 2px;
+  }
+
+  .jf-admin-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.5;
+    border: 1px solid var(--color-admin-border);
+    background: var(--color-admin-surface);
+    color: var(--color-admin-text-secondary);
+  }
+
+  .jf-admin-chip-success {
+    color: var(--color-admin-success);
+    background: var(--color-admin-success-bg);
+    border-color: color-mix(in srgb, var(--color-admin-success) 25%, transparent);
+  }
+
+  .jf-admin-chip-warning {
+    color: var(--color-admin-warning);
+    background: var(--color-admin-warning-bg);
+    border-color: color-mix(in srgb, var(--color-admin-warning) 30%, transparent);
+  }
+
+  .jf-admin-chip-danger {
+    color: var(--color-admin-danger);
+    background: var(--color-admin-danger-bg);
+    border-color: color-mix(in srgb, var(--color-admin-danger) 25%, transparent);
+  }
+
+  .jf-admin-chip-info {
+    color: var(--color-admin-info);
+    background: var(--color-admin-info-bg);
+    border-color: color-mix(in srgb, var(--color-admin-info) 25%, transparent);
+  }
+
+  .jf-admin-input {
+    display: block;
+    width: 100%;
+    min-height: 2.25rem;
+    padding: 0 0.75rem;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    color: var(--color-admin-text);
+    background: var(--color-admin-surface);
+    border: 1px solid var(--color-admin-border);
+    border-radius: 0.5rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .jf-admin-input::placeholder {
+    color: var(--color-admin-text-muted);
+  }
+
+  .jf-admin-input:focus {
+    outline: none;
+    border-color: var(--color-admin);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-admin) 18%, transparent);
   }
 }

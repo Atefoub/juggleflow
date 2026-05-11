@@ -1,15 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import BottomNav from '../../components/BottomNav';
 import { adminApi, type AdminUser } from '../../api/adminApi';
-
-const navItems = [
-  { label: 'Utilisateurs', icon: '👥', path: '/admin/users' },
-  { label: 'Classes',      icon: '🏫', path: '/admin/classes' },
-  { label: 'RGPD',         icon: '🔒', path: '/admin/rgpd' },
-  { label: 'Journal',      icon: '📋', path: '/admin/audit' },
-];
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
 
 type Role = 'Tous' | 'Enseignants' | 'Élèves';
 type UserStatus = 'Actif' | 'Inactif';
@@ -54,11 +47,11 @@ function toAppUser(u: AdminUser): AppUser {
 const ROLE_COLORS: Record<AppUser['role'], string> = {
   Enseignant: '#4068D8',
   Élève:      '#C724B1',
-  Admin:      '#8B2BE2',
+  Admin:      '#5B20E6',
 };
 
 export default function AdminUsersPage() {
-  const { user: currentUser, logout } = useAuth();
+  const { user: currentUser } = useAuth();
   const navigate = useNavigate();
   const [roleFilter, setRoleFilter] = useState<Role>('Tous');
   const [search, setSearch]         = useState('');
@@ -132,165 +125,164 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+    <>
+      <AdminPageHeader
+        title="Utilisateurs"
+        description={
+          <>
+            Comptes enseignants et élèves de l&apos;établissement. Nouveaux comptes : inscription
+            publique (<code className="text-[var(--color-admin-text)]">/api/auth/register</code>)
+            ou import SQL / migration Flyway.
+          </>
+        }
+      />
 
-      {/* Header */}
-      <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
-        <div className="flex items-center justify-between mb-1">
-          <h1 className="font-display font-bold text-text-primary text-2xl">Utilisateurs</h1>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={logout}
-              className="jf-btn-secondary jf-btn-secondary-sm"
-            >
-              Quitter
-            </button>
-          </div>
-        </div>
-        <p className="text-xs text-text-muted mb-2">
-          Nouveaux comptes : inscription publique (<code className="text-text-secondary">/api/auth/register</code>) ou import SQL / migration Flyway.
-        </p>
-
-        {/* Role filter */}
-        <div className="flex gap-2 mb-3">
+      {/* Barre de filtre + recherche */}
+      <div className="jf-admin-card p-4 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex gap-2 flex-wrap">
           {(['Tous', 'Enseignants', 'Élèves'] as Role[]).map((r) => (
             <button
               key={r}
               type="button"
               onClick={() => setRoleFilter(r)}
-              className={[
-                'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors',
+              className={
                 roleFilter === r
-                  ? 'jf-chip-active text-white border'
-                  : 'bg-bg-card border-border text-text-muted',
-              ].join(' ')}
+                  ? 'jf-admin-btn-primary'
+                  : 'jf-admin-btn-secondary'
+              }
             >
               {r}
             </button>
           ))}
         </div>
-
-        {/* Search */}
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-bg-card border border-border">
+        <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--color-admin-border)] bg-[var(--color-admin-bg)] focus-within:border-[var(--color-admin)] focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--color-admin)_18%,transparent)]">
           <span role="img" aria-label="recherche" className="text-sm">🔍</span>
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher un utilisateur…"
-            className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
+            className="flex-1 bg-transparent text-sm text-[var(--color-admin-text)] placeholder:text-[var(--color-admin-text-muted)] outline-none"
           />
         </div>
-      </header>
+      </div>
 
-      <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
+      {feedback && (
+        <div className="jf-admin-card p-3 mb-4 text-sm text-[var(--color-admin-text-secondary)]">
+          {feedback}
+        </div>
+      )}
 
-        {feedback && (
-          <p className="text-xs text-center text-text-secondary bg-bg-card border border-border rounded-xl px-3 py-2">
-            {feedback}
-          </p>
-        )}
-
-        {/* Missing consent alert */}
-        {missingConsent.length > 0 && (
-          <div className="flex items-start gap-3 p-4 rounded-2xl bg-[#1A1020] border border-brand/35">
-            <span role="img" aria-label="attention" className="text-lg shrink-0">⚠️</span>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-text-primary mb-0.5">
-                {missingConsent.length} consentement{missingConsent.length > 1 ? 's' : ''} manquant{missingConsent.length > 1 ? 's' : ''}
-              </p>
-              <p className="text-xs text-text-secondary">Enregistre le consentement parental dans l’onglet RGPD.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate('/admin/rgpd')}
-              className="jf-btn-primary jf-btn-primary-sm shrink-0"
-            >
-              Ouvrir RGPD
-            </button>
+      {/* Alerte consentement manquant */}
+      {missingConsent.length > 0 && (
+        <div className="mb-4 flex items-start gap-3 p-4 rounded-lg border border-[color-mix(in_srgb,var(--color-admin-warning)_30%,transparent)] bg-[var(--color-admin-warning-bg)]">
+          <span role="img" aria-label="attention" className="text-lg shrink-0">⚠️</span>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-[var(--color-admin-warning)] mb-0.5">
+              {missingConsent.length} consentement{missingConsent.length > 1 ? 's' : ''} manquant{missingConsent.length > 1 ? 's' : ''}
+            </p>
+            <p className="text-xs text-[var(--color-admin-text-secondary)]">
+              Enregistre le consentement parental dans l&apos;onglet RGPD.
+            </p>
           </div>
-        )}
+          <button
+            type="button"
+            onClick={() => navigate('/admin/rgpd')}
+            className="jf-admin-btn-primary shrink-0"
+          >
+            Ouvrir RGPD
+          </button>
+        </div>
+      )}
 
-        {isLoading && (
-          <p className="text-sm text-text-muted text-center py-8">Chargement…</p>
-        )}
+      {isLoading && (
+        <p className="text-sm text-[var(--color-admin-text-muted)] text-center py-8">
+          Chargement…
+        </p>
+      )}
 
-        {!isLoading && error && (
-          <p className="text-sm text-alert text-center py-8">{error}</p>
-        )}
+      {!isLoading && error && (
+        <p className="text-sm text-[var(--color-admin-danger)] text-center py-8">{error}</p>
+      )}
 
-        {/* User list */}
-        {!isLoading && !error && (
-          <div className="flex flex-col gap-2">
-            {filtered.map((u) => (
-              <div key={u.id} className="p-4 rounded-2xl bg-bg-card border border-border">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="flex items-center justify-center w-10 h-10 rounded-full text-xs font-bold text-white shrink-0"
-                    style={{ backgroundColor: ROLE_COLORS[u.role] }}
-                  >
-                    {u.initials}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-bold text-text-primary">
-                        {u.firstName} {u.lastName}
-                      </p>
-                      {u.consent === 'ok' && (
-                        <span className="text-xs text-success">Consentement ✓</span>
-                      )}
-                      {u.consent === 'missing' && (
-                        <span className="text-xs text-alert">Consentement ✗</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-text-muted">
-                      {u.role} · {u.group} ·{' '}
-                      <span className={u.status === 'Actif' ? 'text-success' : 'text-alert'}>
-                        {u.status}
-                      </span>
-                    </p>
-                  </div>
+      {!isLoading && !error && (
+        <div className="jf-admin-card overflow-hidden">
+          {filtered.map((u, i) => (
+            <div
+              key={u.id}
+              className={`p-4 ${i < filtered.length - 1 ? 'border-b border-[var(--color-admin-border)]' : ''}`}
+            >
+              <div className="flex items-center gap-3 flex-wrap">
+                <div
+                  className="flex items-center justify-center w-10 h-10 rounded-full text-xs font-bold text-white shrink-0"
+                  style={{ backgroundColor: ROLE_COLORS[u.role] }}
+                  aria-hidden
+                >
+                  {u.initials}
                 </div>
 
-                <div className="flex flex-wrap gap-2 mt-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-sm font-semibold text-[var(--color-admin-text)] truncate">
+                      {u.firstName} {u.lastName}
+                    </p>
+                    {u.consent === 'ok' && (
+                      <span className="jf-admin-chip jf-admin-chip-success">Consentement ✓</span>
+                    )}
+                    {u.consent === 'missing' && (
+                      <span className="jf-admin-chip jf-admin-chip-danger">Consentement ✗</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-[var(--color-admin-text-muted)] mt-0.5">
+                    {u.role} · {u.group} ·{' '}
+                    <span
+                      className={
+                        u.status === 'Actif'
+                          ? 'text-[var(--color-admin-success)] font-semibold'
+                          : 'text-[var(--color-admin-danger)] font-semibold'
+                      }
+                    >
+                      {u.status}
+                    </span>
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2 sm:ml-auto">
                   {u.id !== currentUser?.id && (
                     <button
                       type="button"
                       disabled={busyId === u.id}
                       onClick={() => setEnabledForUser(u, u.status !== 'Actif')}
-                      className={[
-                        'flex-1 min-w-[8rem] py-1.5 rounded-lg text-xs font-semibold min-h-8 border transition-opacity',
+                      className={
                         u.status === 'Actif'
-                          ? 'text-alert border-alert/40 bg-alert/10'
-                          : 'text-success border-success/40 bg-success/10',
-                      ].join(' ')}
+                          ? 'jf-admin-btn-danger'
+                          : 'jf-admin-btn-secondary'
+                      }
                     >
-                      {busyId === u.id ? '…' : u.status === 'Actif' ? 'Désactiver le compte' : 'Réactiver le compte'}
+                      {busyId === u.id ? '…' : u.status === 'Actif' ? 'Désactiver' : 'Réactiver'}
                     </button>
                   )}
                   {u.role === 'Élève' && u.consent === 'missing' && (
                     <button
                       type="button"
                       onClick={() => navigate('/admin/rgpd')}
-                      className="jf-btn-primary jf-btn-primary-sm flex-1 min-w-[8rem]"
+                      className="jf-admin-btn-primary"
                     >
-                      RGPD — consentement
+                      RGPD
                     </button>
                   )}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
 
-        {!isLoading && !error && filtered.length === 0 && (
-          <p className="text-sm text-text-muted text-center py-8">Aucun utilisateur trouvé.</p>
-        )}
-      </main>
-
-      <BottomNav items={navItems} />
-    </div>
+          {filtered.length === 0 && (
+            <p className="text-sm text-[var(--color-admin-text-muted)] text-center py-8">
+              Aucun utilisateur trouvé.
+            </p>
+          )}
+        </div>
+      )}
+    </>
   );
 }

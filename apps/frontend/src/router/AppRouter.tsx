@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { useAuth } from '../context/AuthContext';
 import { Role } from '../types/auth';
 import { isOnboardingCompleted } from '../utils/onboarding';
+import AdminLayout from '../components/admin/AdminLayout';
 
 // Lazy pages (code-splitting)
 const LoginPage            = lazy(() => import('../pages/LoginPage'));
@@ -95,7 +96,9 @@ const teacher = (el: React.ReactNode) => (
   <ProtectedRoute requiredRole="ROLE_ENSEIGNANT">{el}</ProtectedRoute>
 );
 const admin = (el: React.ReactNode) => (
-  <ProtectedRoute requiredRole="ROLE_ADMINISTRATEUR">{el}</ProtectedRoute>
+  <ProtectedRoute requiredRole="ROLE_ADMINISTRATEUR">
+    <AdminLayout>{el}</AdminLayout>
+  </ProtectedRoute>
 );
 
 export default function AppRouter() {
