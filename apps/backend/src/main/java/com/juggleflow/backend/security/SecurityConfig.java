@@ -8,7 +8,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.authorization.AuthorityAuthorizationManager;
 import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -21,6 +23,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -145,16 +148,7 @@ public class SecurityConfig {
         .requestMatchers(PUBLIC_ROUTES).permitAll()
 
         // [VULN-15] Swagger : public si swagger.public=true (dev), admin sinon (prod)
-        .requestMatchers(SWAGGER_ROUTES)
-        .access((authentication, context) -> {
-          if (swaggerPublic) {
-            return new AuthorizationDecision(true);
-          }
-          return new AuthorizationDecision(
-            authentication.get().getAuthorities().stream()
-              .anyMatch(a -> a.getAuthority().equals("ROLE_ADMINISTRATEUR"))
-          );
-        })
+        .requestMatchers(SWAGGER_ROUTES).access(swaggerAuthorizationManager())
 
         .requestMatchers("/api/admin/**")
         .hasAuthority("ROLE_ADMINISTRATEUR")
@@ -176,6 +170,26 @@ public class SecurityConfig {
       .addFilterBefore(rateLimitFilter, JwtFilter.class)
 
       .build();
+  }
+
+  /**
+   * [VULN-15] AuthorizationManager dédié pour les routes Swagger.
+   *
+   * Typage explicite (AuthorizationManager<RequestAuthorizationContext>) volontaire :
+   *   - rend l'intention testable indépendamment du SecurityFilterChain ;
+   *   - évite l'ambiguïté d'inférence de Spring Security 6.4 où l'interface
+   *     AuthorizationManager expose désormais check() ET authorize() (l'un des
+   *     deux est default), ce qui perturbe javac sur un lambda multi-instructions
+   *     passé directement à .access(...) ;
+   *   - réutilise AuthorityAuthorizationManager.hasAuthority(...) — l'API
+   *     idiomatique Spring Security — au lieu de réimplémenter la vérification
+   *     d'autorité à la main.
+   */
+  private AuthorizationManager<RequestAuthorizationContext> swaggerAuthorizationManager() {
+    if (swaggerPublic) {
+      return (authentication, context) -> new AuthorizationDecision(true);
+    }
+    return AuthorityAuthorizationManager.hasAuthority("ROLE_ADMINISTRATEUR");
   }
 
   @Bean
