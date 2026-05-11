@@ -10,12 +10,7 @@ import {
   type StudentSummary,
 } from '../../api/teacherApi';
 
-const navItems = [
-  { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
-  { label: 'Élèves',         icon: '👦', path: '/teacher/eleves'    },
-  { label: 'Parcours',       icon: '📚', path: '/teacher/parcours/assigner'  },
-  { label: 'Ressources',     icon: '📁', path: '/teacher/ressources'},
-];
+import { TEACHER_NAV_ITEMS } from '../../components/teacher/teacherNav';
 
 type GroupFilter = 'Tous' | 'VERT' | 'ORANGE' | 'ROUGE';
 
@@ -301,7 +296,7 @@ export default function StudentListPage() {
         )}
       </main>
 
-      <BottomNav items={navItems} />
+      <BottomNav items={TEACHER_NAV_ITEMS} />
     </div>
   );
 }

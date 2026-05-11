@@ -5,14 +5,10 @@ import {
   teacherApi,
   type SchoolClass,
   type LearningPathSummary,
+  type StudentSummary,
 } from '../../api/teacherApi';
 
-const navItems = [
-  { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
-  { label: 'Élèves',         icon: '👦', path: '/teacher/eleves' },
-  { label: 'Parcours',       icon: '📚', path: '/teacher/parcours/assigner' },
-  { label: 'Ressources',     icon: '📁', path: '/teacher/ressources' },
-];
+import { TEACHER_NAV_ITEMS } from '../../components/teacher/teacherNav';
 
 const LEVEL_CHIP: Record<string, string> = {
   Beginner:     'text-success  bg-success/10  border border-success/30',
@@ -24,7 +20,8 @@ const LEVEL_CHIP: Record<string, string> = {
   Avancé:       'text-brand    bg-brand/10    border border-brand/30',
 };
 
-type Step = 1 | 2;
+type Step = 1 | 2 | 3;
+type ScopeMode = 'WHOLE_CLASS' | 'SUBSET';
 
 export default function AssignPathPage() {
   const navigate = useNavigate();
@@ -47,6 +44,12 @@ export default function AssignPathPage() {
 
   const [classes, setClasses]                   = useState<SchoolClass[]>([]);
   const [selectedClass, setSelectedClass]       = useState<SchoolClass | null>(null);
+
+  // P2.8 - sous-ensemble d'eleves
+  const [students, setStudents]               = useState<StudentSummary[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [scopeMode, setScopeMode]             = useState<ScopeMode>('WHOLE_CLASS');
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<number>>(new Set());
 
   const [loadingPaths, setLoadingPaths]     = useState(true);
   const [loadingClasses, setLoadingClasses] = useState(true);
@@ -86,28 +89,68 @@ export default function AssignPathPage() {
       .finally(() => setLoadingClasses(false));
   }, [preselect.classId]);
 
+  // Charger les eleves quand on entre dans l'etape 2 et qu'on a une classe
+  useEffect(() => {
+    if (step !== 2 || !selectedClass) return;
+    setLoadingStudents(true);
+    teacherApi
+      .getClassStudents(selectedClass.id)
+      .then((s) => {
+        setStudents(s);
+        // Par defaut, tous coches (le toggle de scope reste maitre)
+        setSelectedStudentIds(new Set(s.map((stu) => stu.id)));
+      })
+      .catch(() => setError('Impossible de charger les eleves de la classe.'))
+      .finally(() => setLoadingStudents(false));
+  }, [step, selectedClass]);
+
   // Filtrage des parcours
   const uniqueLevels = ['Tous', ...Array.from(new Set(paths.map((p) => p.targetLevel ?? 'Tous').filter(Boolean)))];
   const filteredPaths = paths.filter(
     (p) => levelFilter === 'Tous' || p.targetLevel === levelFilter
   );
 
+  function toggleStudent(id: number) {
+    setSelectedStudentIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function selectAllStudents() {
+    setSelectedStudentIds(new Set(students.map((s) => s.id)));
+  }
+
+  function clearAllStudents() {
+    setSelectedStudentIds(new Set());
+  }
+
   async function handleSubmit() {
     if (!selectedPath || !selectedClass) return;
     setSubmitting(true);
     setError(null);
     try {
-      await teacherApi.assignPathToClass(selectedClass.id, selectedPath.id);
+      const studentIds: number[] | undefined =
+        scopeMode === 'WHOLE_CLASS' ? undefined : Array.from(selectedStudentIds);
+      await teacherApi.assignPathToClass(selectedClass.id, selectedPath.id, studentIds);
       setSuccess(true);
       setTimeout(() => navigate('/teacher/dashboard'), 1500);
-    } catch {
-      setError("Erreur lors de l'assignation. Veuillez réessayer.");
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 400) setError("Ce parcours est deja assigne a cette classe.");
+      else if (status === 422) setError("Selection d'eleves invalide.");
+      else setError("Erreur lors de l'assignation. Veuillez reessayer.");
     } finally {
       setSubmitting(false);
     }
   }
 
-  const STEPS = ['Parcours', 'Confirmation'];
+  const STEPS = ['Parcours', 'Eleves', 'Confirmation'];
+
+  const subsetCount = scopeMode === 'WHOLE_CLASS'
+    ? (selectedClass?.studentCount ?? 0)
+    : selectedStudentIds.size;
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -266,11 +309,115 @@ export default function AssignPathPage() {
           </>
         )}
 
-        {/* ── Step 2 : Confirmation ── */}
-        {step === 2 && selectedPath && (
+        {/* ── Step 2 : Choix des eleves ── */}
+        {step === 2 && selectedPath && selectedClass && (
           <>
             <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
-              Étape 2 — Confirmation
+              Étape 2 — Choisir les élèves
+            </h2>
+
+            {/* Scope toggle */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setScopeMode('WHOLE_CLASS')}
+                aria-pressed={scopeMode === 'WHOLE_CLASS'}
+                className={[
+                  'flex-1 px-3 py-2 rounded-xl text-xs font-semibold border transition-colors',
+                  scopeMode === 'WHOLE_CLASS'
+                    ? 'jf-chip-active border-transparent text-white'
+                    : 'border-border bg-bg-card text-text-muted',
+                ].join(' ')}
+              >Toute la classe</button>
+              <button
+                type="button"
+                onClick={() => setScopeMode('SUBSET')}
+                aria-pressed={scopeMode === 'SUBSET'}
+                className={[
+                  'flex-1 px-3 py-2 rounded-xl text-xs font-semibold border transition-colors',
+                  scopeMode === 'SUBSET'
+                    ? 'jf-chip-active border-transparent text-white'
+                    : 'border-border bg-bg-card text-text-muted',
+                ].join(' ')}
+              >Sélection</button>
+            </div>
+
+            {scopeMode === 'WHOLE_CLASS' ? (
+              <div className="rounded-2xl bg-bg-card border border-border p-4">
+                <p className="text-sm text-text-primary">
+                  Le parcours sera assigné à <strong>{selectedClass.studentCount} élève{selectedClass.studentCount > 1 ? 's' : ''}</strong> de la classe « {selectedClass.name} ».
+                </p>
+              </div>
+            ) : loadingStudents ? (
+              <div className="flex flex-col gap-2">
+                {[1, 2, 3].map((i) => <div key={i} className="h-12 rounded-xl animate-pulse bg-bg-card" />)}
+              </div>
+            ) : students.length === 0 ? (
+              <div className="rounded-2xl bg-bg-card border border-border p-6 text-center">
+                <p className="text-sm text-text-muted">Cette classe ne contient aucun élève.</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-text-muted">
+                    {selectedStudentIds.size} / {students.length} sélectionné{selectedStudentIds.size > 1 ? 's' : ''}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={selectAllStudents}
+                      className="text-brand-end hover:underline"
+                    >Tout cocher</button>
+                    <span className="text-text-muted">|</span>
+                    <button
+                      onClick={clearAllStudents}
+                      className="text-brand-end hover:underline"
+                    >Tout decocher</button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  {students.map((s) => {
+                    const checked = selectedStudentIds.has(s.id);
+                    return (
+                      <label
+                        key={s.id}
+                        className={[
+                          'flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors',
+                          checked ? 'border-brand bg-brand/10' : 'border-border bg-bg-card',
+                        ].join(' ')}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleStudent(s.id)}
+                          className="w-5 h-5 accent-brand"
+                        />
+                        <span
+                          className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                          style={{ backgroundColor: '#5B20E6' }}
+                        >
+                          {s.firstName.charAt(0)}{s.lastName.charAt(0)}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-text-primary truncate">
+                            {s.firstName} {s.lastName}
+                          </p>
+                          <p className="text-xs text-text-muted">{s.progressionPercent}% de progression</p>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ── Step 3 : Confirmation ── */}
+        {step === 3 && selectedPath && (
+          <>
+            <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
+              Étape 3 — Confirmation
             </h2>
 
             <div className="p-4 rounded-2xl bg-bg-card border border-border flex flex-col gap-3">
@@ -284,15 +431,20 @@ export default function AssignPathPage() {
               </div>
               <div className="h-px bg-border" />
               <div>
-                <p className="text-xs text-text-muted mb-1">Classe sélectionnée</p>
+                <p className="text-xs text-text-muted mb-1">Cible</p>
                 <p className="font-bold text-text-primary">
-                  {selectedClass?.name ?? '—'} · {selectedClass?.studentCount ?? 0} élève{(selectedClass?.studentCount ?? 0) > 1 ? 's' : ''}
+                  {selectedClass?.name ?? '—'}
+                  {scopeMode === 'WHOLE_CLASS'
+                    ? ` · ${selectedClass?.studentCount ?? 0} élève${(selectedClass?.studentCount ?? 0) > 1 ? 's' : ''} (toute la classe)`
+                    : ` · ${subsetCount} élève${subsetCount > 1 ? 's' : ''} sélectionné${subsetCount > 1 ? 's' : ''}`}
                 </p>
               </div>
             </div>
 
             <div className="rounded-xl border border-brand/30 bg-[#1A1028] p-3 text-xs text-brand-end">
-              ⚡ Le parcours sera assigné à toute la classe.
+              {scopeMode === 'WHOLE_CLASS'
+                ? '⚡ Le parcours sera assigné à tous les élèves de la classe.'
+                : `🎯 Le parcours sera assigné aux ${subsetCount} élève${subsetCount > 1 ? 's' : ''} cochés uniquement.`}
             </div>
           </>
         )}
@@ -308,10 +460,14 @@ export default function AssignPathPage() {
             ← Retour
           </button>
         )}
-        {step < 2 ? (
+        {step < 3 ? (
           <button
             onClick={() => setStep((s) => (s + 1) as Step)}
-            disabled={step === 1 ? !selectedPath || !selectedClass : false}
+            disabled={
+              step === 1 ? !selectedPath || !selectedClass :
+              step === 2 ? (scopeMode === 'SUBSET' && selectedStudentIds.size === 0) :
+              false
+            }
             className="jf-btn-primary flex-1 min-h-11 rounded-2xl py-3 text-sm disabled:opacity-40"
           >
             Continuer →
@@ -327,7 +483,7 @@ export default function AssignPathPage() {
         )}
       </div>
 
-      <BottomNav items={navItems} />
+      <BottomNav items={TEACHER_NAV_ITEMS} />
     </div>
   );
 }

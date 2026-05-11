@@ -7,7 +7,7 @@ interface NavItem {
 }
 
 interface BottomNavProps {
-  items: NavItem[];
+  items: readonly NavItem[];
 }
 
 export default function BottomNav({ items }: BottomNavProps) {

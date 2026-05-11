@@ -1,12 +1,7 @@
 import { useMemo, useState } from 'react';
 import BottomNav from '../../components/BottomNav';
 
-const navItems = [
-  { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
-  { label: 'Élèves',         icon: '👦', path: '/teacher/eleves' },
-  { label: 'Parcours',       icon: '📚', path: '/teacher/parcours/assigner' },
-  { label: 'Ressources',     icon: '📁', path: '/teacher/ressources' },
-];
+import { TEACHER_NAV_ITEMS } from '../../components/teacher/teacherNav';
 
 type Tab = 'Études' | 'Vidéos' | 'Fiches' | 'Guides EPS';
 
@@ -232,7 +227,7 @@ export default function ResourcesTeacherPage() {
         )}
       </main>
 
-      <BottomNav items={navItems} />
+      <BottomNav items={TEACHER_NAV_ITEMS} />
     </div>
   );
 }

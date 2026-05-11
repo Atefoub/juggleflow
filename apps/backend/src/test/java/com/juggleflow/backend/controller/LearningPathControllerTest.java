@@ -7,11 +7,15 @@ import com.juggleflow.backend.dto.SchoolClassRequest;
 import com.juggleflow.backend.model.LearningPath;
 import com.juggleflow.backend.repository.ClassLearningPathRepository;
 import com.juggleflow.backend.repository.LearningPathRepository;
+import com.juggleflow.backend.repository.LearningPathStudentAssignmentRepository;
 import com.juggleflow.backend.repository.SchoolClassRepository;
 import com.juggleflow.backend.repository.StudentRepository;
 import com.juggleflow.backend.repository.TeacherRepository;
 import com.juggleflow.backend.repository.UserRepository;
+import com.juggleflow.backend.model.SchoolClass;
 import com.juggleflow.backend.model.Student;
+
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,6 +49,7 @@ class LearningPathControllerTest {
   @Autowired private UserRepository userRepository;
   @Autowired private LearningPathRepository learningPathRepository;
   @Autowired private ClassLearningPathRepository classLearningPathRepository;
+  @Autowired private LearningPathStudentAssignmentRepository studentAssignmentRepository;
   @Autowired private SchoolClassRepository schoolClassRepository;
   @Autowired private StudentRepository studentRepository;
   @Autowired private TeacherRepository teacherRepository;
@@ -58,6 +63,7 @@ class LearningPathControllerTest {
       .apply(SecurityMockMvcConfigurers.springSecurity())
       .build();
 
+    studentAssignmentRepository.deleteAll();
     classLearningPathRepository.deleteAll();
     studentRepository.deleteAll();
     schoolClassRepository.deleteAll();
@@ -243,6 +249,141 @@ class LearningPathControllerTest {
       .andExpect(status().isForbidden());
   }
 
+  // ── P2.8 — Assignation a un sous-ensemble d'eleves ───────────
+
+  @Test
+  @DisplayName("assignPath → 201 avec studentIds et l'eleve assigne voit le parcours")
+  void assignPath_shouldReturn201_andAssignedStudentSeesPath() throws Exception {
+    String teacherToken = registerAndGetToken("teacher@subset.fr", "teacher");
+    Long classId = createClass(teacherToken);
+
+    String studentTokenA = registerAndGetToken("eleve_a@subset.fr", "student");
+    String studentTokenB = registerAndGetToken("eleve_b@subset.fr", "student");
+    Long studentIdA = attachStudentToClass("eleve_a@subset.fr", classId);
+    Long studentIdB = attachStudentToClass("eleve_b@subset.fr", classId);
+
+    LearningPath path = learningPathRepository.save(
+      buildPath("Subset", LearningPath.TargetLevel.BEGINNER));
+
+    AssignPathRequest req = buildAssignRequest(path.getId(), classId);
+    req.setStudentIds(List.of(studentIdA));
+
+    mockMvc.perform(post("/api/enseignant/classes/" + classId + "/paths")
+        .header("Authorization", "Bearer " + teacherToken)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(req)))
+      .andExpect(status().isCreated())
+      .andExpect(jsonPath("$.id").value(path.getId().intValue()));
+
+    // L'eleve A voit le parcours
+    mockMvc.perform(get("/api/eleve/learning-paths")
+        .header("Authorization", "Bearer " + studentTokenA))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.length()").value(1))
+      .andExpect(jsonPath("$[0].pathName").value("Subset"));
+
+    // L'eleve B ne le voit PAS
+    mockMvc.perform(get("/api/eleve/learning-paths")
+        .header("Authorization", "Bearer " + studentTokenB))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.length()").value(0));
+
+    // _ = anti-warning unused
+    assert studentIdB != null;
+  }
+
+  @Test
+  @DisplayName("assignPath → 422 si studentIds contient un eleve hors classe")
+  void assignPath_shouldReturn422_whenStudentNotInClass() throws Exception {
+    String teacherToken = registerAndGetToken("teacher@alien.fr", "teacher");
+    Long classId = createClass(teacherToken);
+
+    // Eleve cree mais jamais attache a la classe
+    registerAndGetToken("eleve_alien@subset.fr", "student");
+    Long alienId = userRepository.findByEmail("eleve_alien@subset.fr")
+        .orElseThrow().getId();
+
+    LearningPath path = learningPathRepository.save(
+      buildPath("Alien", LearningPath.TargetLevel.BEGINNER));
+
+    AssignPathRequest req = buildAssignRequest(path.getId(), classId);
+    req.setStudentIds(List.of(alienId));
+
+    mockMvc.perform(post("/api/enseignant/classes/" + classId + "/paths")
+        .header("Authorization", "Bearer " + teacherToken)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(req)))
+      .andExpect(status().isUnprocessableEntity());
+  }
+
+  @Test
+  @DisplayName("assignPath → 400 si studentIds est fourni alors qu'une assignation classe existe deja")
+  void assignPath_shouldReturn400_whenIndividualAfterClassWide() throws Exception {
+    String teacherToken = registerAndGetToken("teacher@dup.fr", "teacher");
+    Long classId = createClass(teacherToken);
+    String studentToken = registerAndGetToken("eleve_dup@subset.fr", "student");
+    Long studentId = attachStudentToClass("eleve_dup@subset.fr", classId);
+
+    LearningPath path = learningPathRepository.save(
+      buildPath("Dup", LearningPath.TargetLevel.BEGINNER));
+
+    // Premiere assignation a toute la classe
+    AssignPathRequest reqClass = buildAssignRequest(path.getId(), classId);
+    mockMvc.perform(post("/api/enseignant/classes/" + classId + "/paths")
+        .header("Authorization", "Bearer " + teacherToken)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(reqClass)))
+      .andExpect(status().isCreated());
+
+    // Tentative d'assignation individuelle sur le meme parcours -> 400
+    AssignPathRequest reqIndividual = buildAssignRequest(path.getId(), classId);
+    reqIndividual.setStudentIds(List.of(studentId));
+    mockMvc.perform(post("/api/enseignant/classes/" + classId + "/paths")
+        .header("Authorization", "Bearer " + teacherToken)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(reqIndividual)))
+      .andExpect(status().isBadRequest());
+
+    assert studentToken != null;
+  }
+
+  @Test
+  @DisplayName("unassignPath → supprime aussi les assignations individuelles")
+  void unassignPath_shouldRemoveIndividualAssignments() throws Exception {
+    String teacherToken = registerAndGetToken("teacher@undo.fr", "teacher");
+    Long classId = createClass(teacherToken);
+    String studentToken = registerAndGetToken("eleve_undo@subset.fr", "student");
+    Long studentId = attachStudentToClass("eleve_undo@subset.fr", classId);
+
+    LearningPath path = learningPathRepository.save(
+      buildPath("ToRemove", LearningPath.TargetLevel.BEGINNER));
+
+    AssignPathRequest req = buildAssignRequest(path.getId(), classId);
+    req.setStudentIds(List.of(studentId));
+    mockMvc.perform(post("/api/enseignant/classes/" + classId + "/paths")
+        .header("Authorization", "Bearer " + teacherToken)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(req)))
+      .andExpect(status().isCreated());
+
+    // L'eleve voit le parcours
+    mockMvc.perform(get("/api/eleve/learning-paths")
+        .header("Authorization", "Bearer " + studentToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.length()").value(1));
+
+    mockMvc.perform(delete("/api/enseignant/classes/" + classId
+        + "/paths/" + path.getId())
+        .header("Authorization", "Bearer " + teacherToken))
+      .andExpect(status().isNoContent());
+
+    // L'eleve ne le voit plus
+    mockMvc.perform(get("/api/eleve/learning-paths")
+        .header("Authorization", "Bearer " + studentToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.length()").value(0));
+  }
+
   // ── Helpers ──────────────────────────────────────────────────
 
   private String registerAndGetToken(String email, String role) throws Exception {
@@ -297,5 +438,18 @@ class LearningPathControllerTest {
     req.setStartDate(LocalDate.now());
     req.setExpectedEndDate(LocalDate.now().plusWeeks(6));
     return req;
+  }
+
+  /**
+   * Attache un eleve precedemment enregistre via /api/auth/register a une classe
+   * existante. Le helper teacher add-student demanderait un token enseignant
+   * different, plus complique a orchestrer dans le test.
+   */
+  private Long attachStudentToClass(String email, Long classId) {
+    SchoolClass cls = schoolClassRepository.findById(classId).orElseThrow();
+    Student s = studentRepository.findByEmail(email).orElseThrow();
+    s.setSchoolClass(cls);
+    studentRepository.save(s);
+    return s.getId();
   }
 }

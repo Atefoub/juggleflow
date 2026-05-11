@@ -47,7 +47,47 @@ export interface AssignPathRequest {
   classId: number;
   startDate: string; // YYYY-MM-DD
   expectedEndDate?: string; // YYYY-MM-DD
+  /** P2.8 - Sous-ensemble d'eleves. Omis = toute la classe ; tableau = assignation individuelle. */
+  studentIds?: number[];
 }
+
+// ── P2.7 — Groupes pedagogiques editables ─────────────────────
+
+export type StudentGroupColor =
+  | 'VERT' | 'ORANGE' | 'ROUGE' | 'BLEU' | 'VIOLET' | 'JAUNE' | 'GRIS';
+
+export interface StudentGroup {
+  id: number;
+  classId: number;
+  name: string;
+  color: StudentGroupColor;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+  memberIds: number[];
+  memberCount: number;
+}
+
+export interface CreateStudentGroupPayload {
+  name: string;
+  color: StudentGroupColor;
+}
+
+export interface UpdateStudentGroupPayload {
+  name?: string;
+  color?: StudentGroupColor;
+}
+
+/** Palette utilisee a la fois pour les groupes nommes et l'affichage VERT/ORANGE/ROUGE. */
+export const GROUP_PALETTE: Record<StudentGroupColor, { hex: string; label: string }> = {
+  VERT:   { hex: '#22C55E', label: 'Vert'   },
+  ORANGE: { hex: '#FF7A00', label: 'Orange' },
+  ROUGE:  { hex: '#FF4D4D', label: 'Rouge'  },
+  BLEU:   { hex: '#3B82F6', label: 'Bleu'   },
+  VIOLET: { hex: '#A855F7', label: 'Violet' },
+  JAUNE:  { hex: '#FACC15', label: 'Jaune'  },
+  GRIS:   { hex: '#9CA3AF', label: 'Gris'   },
+};
 
 export interface TrickProgressItem {
   trickId: number;
@@ -115,7 +155,19 @@ export const teacherApi = {
     return res.data;
   },
 
-  assignPathToClass: async (classId: number, pathId: number): Promise<LearningPathSummary> => {
+  /**
+   * Assigne un parcours a une classe (toute la classe) ou a un sous-ensemble
+   * d'eleves selon que `studentIds` est fourni ou non.
+   * @param classId    classe cible
+   * @param pathId     parcours a assigner
+   * @param studentIds laisse undefined pour assigner a toute la classe, sinon
+   *                   liste des eleves cibles (P2.8).
+   */
+  assignPathToClass: async (
+    classId: number,
+    pathId: number,
+    studentIds?: number[],
+  ): Promise<LearningPathSummary> => {
     const today = new Date();
     const startDate = today.toISOString().slice(0, 10); // YYYY-MM-DD
 
@@ -123,11 +175,56 @@ export const teacherApi = {
       classId,
       learningPathId: pathId,
       startDate,
+      ...(studentIds !== undefined ? { studentIds } : {}),
     };
 
     const res = await api.post<LearningPathSummary>(
       `/enseignant/classes/${classId}/paths`,
       payload
+    );
+    return res.data;
+  },
+
+  // ── P2.7 — Groupes pedagogiques ─────────────────────────────
+
+  listGroups: async (classId: number): Promise<StudentGroup[]> => {
+    const res = await api.get<StudentGroup[]>(`/enseignant/classes/${classId}/groups`);
+    return res.data;
+  },
+
+  createGroup: async (classId: number, payload: CreateStudentGroupPayload): Promise<StudentGroup> => {
+    const res = await api.post<StudentGroup>(`/enseignant/classes/${classId}/groups`, payload);
+    return res.data;
+  },
+
+  updateGroup: async (
+    classId: number, groupId: number, payload: UpdateStudentGroupPayload,
+  ): Promise<StudentGroup> => {
+    const res = await api.patch<StudentGroup>(
+      `/enseignant/classes/${classId}/groups/${groupId}`,
+      payload,
+    );
+    return res.data;
+  },
+
+  deleteGroup: async (classId: number, groupId: number): Promise<void> => {
+    await api.delete(`/enseignant/classes/${classId}/groups/${groupId}`);
+  },
+
+  reorderGroups: async (classId: number, groupIds: number[]): Promise<StudentGroup[]> => {
+    const res = await api.put<StudentGroup[]>(
+      `/enseignant/classes/${classId}/groups/reorder`,
+      { groupIds },
+    );
+    return res.data;
+  },
+
+  setGroupMembers: async (
+    classId: number, groupId: number, studentIds: number[],
+  ): Promise<StudentGroup> => {
+    const res = await api.put<StudentGroup>(
+      `/enseignant/classes/${classId}/groups/${groupId}/members`,
+      { studentIds },
     );
     return res.data;
   },

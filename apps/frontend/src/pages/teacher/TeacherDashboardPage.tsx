@@ -12,12 +12,7 @@ import {
   type LearningPathSummary,
 } from '../../api/teacherApi';
 
-const navItems = [
-  { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
-  { label: 'Élèves',         icon: '👦', path: '/teacher/eleves' },
-  { label: 'Parcours',       icon: '📚', path: '/teacher/parcours/assigner' },
-  { label: 'Ressources',     icon: '📁', path: '/teacher/ressources' },
-];
+import { TEACHER_NAV_ITEMS } from '../../components/teacher/teacherNav';
 
 function groupStudents(students: StudentSummary[]) {
   const groups: Record<StudentSummary['groupColor'], StudentSummary[]> = {
@@ -432,7 +427,7 @@ export default function TeacherDashboardPage() {
         )}
       </div>
 
-      <BottomNav items={navItems} />
+      <BottomNav items={TEACHER_NAV_ITEMS} />
     </div>
   );
 }
