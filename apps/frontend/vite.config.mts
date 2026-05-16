@@ -53,6 +53,12 @@ export default defineConfig(({ mode }) => {
         start_url: '/',
         categories: ['education', 'sports'],
         icons: [
+          { src: 'logo1.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'logo2.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'logo1.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: 'logo2.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
+        shortcuts: [
           {
             src: 'logo1.png',
             sizes: '192x192',
@@ -108,14 +114,22 @@ export default defineConfig(({ mode }) => {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
-            // Sécurité: ne jamais mettre en cache les endpoints d'auth.
-            // (cookies + tokens + risque d'effets de bord)
             urlPattern: ({ url }) => url.pathname.startsWith('/api/auth'),
             handler: 'NetworkOnly',
           },
           {
-            // Données "catalogue" (non sensibles): tolère offline/latence.
-            // Ajuster au besoin si certains endpoints exposent des données perso.
+            urlPattern: ({ url, request }) =>
+              request.method === 'PUT' && /^\/api\/progress\/\d+$/.test(url.pathname),
+            handler: 'NetworkOnly',
+            method: 'PUT',
+            options: {
+              backgroundSync: {
+                name: 'progress-sync-queue',
+                options: { maxRetentionTime: 24 * 60 },
+              },
+            },
+          },
+          {
             urlPattern: ({ url, request }) =>
               request.method === 'GET' &&
               (url.pathname.startsWith('/api/tricks') ||
@@ -124,16 +138,11 @@ export default defineConfig(({ mode }) => {
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-public-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24, // 24h
-              },
+              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 },
               networkTimeoutSeconds: 10,
             },
           },
           {
-            // Données utilisateur: ne pas servir depuis le cache.
-            // (progression, classes, exports RGPD/CSV…)
             urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
             handler: 'NetworkOnly',
           },
@@ -156,9 +165,6 @@ export default defineConfig(({ mode }) => {
         ],
       },
       devOptions: {
-        // En dev, Vite sert les fichiers en mémoire: la génération Workbox n'a
-        // souvent rien à "precache" dans `dev-dist` (à part sw/workbox ignorés),
-        // ce qui déclenche un warning inutile.
         enabled: !isDev,
         type: 'module',
       },
