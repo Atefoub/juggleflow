@@ -5,12 +5,15 @@ import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import { getOnboardingLevel } from '../../utils/onboarding';
 import OfflineBanner from '../../components/OfflineBanner';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { getStudentProgress, getStudentStatistics } from '../../api/studentOffline';
 import {
   studentApi,
   type StudentStats,
   type BadgeData,
   type TrickProgress,
 } from '../../api/studentApi';
+import { mergePendingIntoProgress } from '../../utils/offlineQueue';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -93,6 +96,7 @@ function computeStreakFromProgress(progress: TrickProgress[]): number {
 export default function ProgressPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
 
   const [stats, setStats]         = useState<StudentStats | null>(null);
   const [badges, setBadges]       = useState<BadgeData[]>([]);
@@ -102,11 +106,14 @@ export default function ProgressPage() {
   const [error, setError]         = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user?.id) return;
     Promise.all([
-      studentApi.getStatistics(),
-      studentApi.getUnlockedBadges(),
-      studentApi.getAllBadges(),
-      studentApi.getMyProgress(),
+      getStudentStatistics(isOnline, user.id),
+      isOnline ? studentApi.getUnlockedBadges() : Promise.resolve([] as BadgeData[]),
+      isOnline ? studentApi.getAllBadges() : Promise.resolve([] as BadgeData[]),
+      getStudentProgress(isOnline, user.id).then((p) =>
+        mergePendingIntoProgress(user.id, p),
+      ),
     ])
       .then(([s, unlocked, all, progress]) => {
         setStats(s);
@@ -114,9 +121,15 @@ export default function ProgressPage() {
         setAllBadges(all);
         setTrickProgress(progress);
       })
-      .catch(() => setError('Impossible de charger votre progression. Veuillez réessayer.'))
+      .catch(() =>
+        setError(
+          isOnline
+            ? 'Impossible de charger votre progression. Veuillez réessayer.'
+            : 'Progression en cache indisponible. Précharge le contenu depuis Profil.',
+        ),
+      )
       .finally(() => setLoading(false));
-  }, []);
+  }, [user?.id, isOnline]);
 
   useEffect(() => {
     const handler = (evt: Event) => {

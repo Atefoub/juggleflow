@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
-import { studentApi, type StudentStats, type LearningPath } from '../../api/studentApi';
+import type { StudentStats, LearningPath } from '../../api/studentApi';
+import { getStudentLearningPaths, getStudentStatistics } from '../../api/studentOffline';
 import { getOnboardingLevel, setOnboardingLevel, type OnboardingLevel } from '../../utils/onboarding';
 import { getOfflineMode, setOfflineMode } from '../../utils/preferences';
-import { prefetchOfflineCatalogue } from '../../utils/prefetchOfflineCatalogue';
+import { prefetchOfflineContent } from '../../utils/prefetchOfflineContent';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import OfflineBanner from '../../components/OfflineBanner';
 import PwaInstallPrompt from '../../components/PwaInstallPrompt';
@@ -36,9 +37,10 @@ export default function StudentProfilePage() {
   const [offlineHint, setOfflineHint]         = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user?.id) return;
     Promise.all([
-      studentApi.getStatistics(),
-      studentApi.getMyLearningPaths(),
+      getStudentStatistics(isOnline, user.id),
+      getStudentLearningPaths(isOnline, user.id),
     ])
       .then(([s, p]) => {
         setStats(s);
@@ -46,7 +48,7 @@ export default function StudentProfilePage() {
       })
       .catch(() => setError('Impossible de charger les données du profil.'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [user?.id, isOnline]);
 
   useEffect(() => {
     setOfflineModeState(getOfflineMode(user?.id));
@@ -56,13 +58,19 @@ export default function StudentProfilePage() {
     setOfflineHint(null);
     setOfflinePrefetching(true);
     try {
-      const { listPages, trickDetails } = await prefetchOfflineCatalogue();
+      if (!user?.id) return;
+      if (!isOnline) {
+        setOfflineHint('Connecte-toi pour précharger le contenu, puis réactive le mode hors-ligne.');
+        return;
+      }
+
+      const result = await prefetchOfflineContent(user.id);
 
       if ('serviceWorker' in navigator) {
         await navigator.serviceWorker.ready.catch(() => null);
       }
       setOfflineHint(
-        `Catalogue préchargé (${listPages} pages, ${trickDetails} fiches populaires). Consultation possible hors connexion.`,
+        `Contenu prêt hors-ligne : ${result.totalTricksStored} figures, ${result.pathsCount} parcours, ${result.progressCount} progressions en cache.`,
       );
     } finally {
       setOfflinePrefetching(false);

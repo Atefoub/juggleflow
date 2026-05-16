@@ -25,6 +25,7 @@ import { resetOnboarding } from '../utils/onboarding';
 import { resetPreferences } from '../utils/preferences';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { flushProgressUpdates, getPendingProgressUpdatesCount } from '../utils/offlineQueue';
+import { clearStudentSnapshot } from '../utils/offlineStudentStore';
 import { studentApi } from '../api/studentApi';
 
 export type OfflineSyncState = {
@@ -101,7 +102,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.clearInterval(id);
   }, [user?.id]);
 
-  // Sync des actions offline quand on redevient online (et périodiquement si nécessaire).
+  // Sync à la reconnexion, au retour sur l'onglet, et quand le SW termine un background sync.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine) {
+        setOfflineSync((s) => ({ ...s, pendingCount: user?.id ? getPendingProgressUpdatesCount(user.id) : 0 }));
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [user?.id]);
+
   useEffect(() => {
     if (!isOnline) return;
     if (!user?.id) return;
@@ -162,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user?.id) {
       resetOnboarding(user.id);
       resetPreferences(user.id);
+      void clearStudentSnapshot(user.id);
     }
 
     await authApi.logout().catch(() => {
