@@ -25,8 +25,9 @@ import { resetOnboarding } from '../utils/onboarding';
 import { resetPreferences } from '../utils/preferences';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { flushProgressUpdates, getPendingProgressUpdatesCount } from '../utils/offlineQueue';
-import { clearStudentSnapshot } from '../utils/offlineStudentStore';
+import { clearStudentSnapshot, saveStudentSnapshot } from '../utils/offlineStudentStore';
 import { studentApi } from '../api/studentApi';
+import { dispatchProgressUpdated } from '../lib/progressEvents';
 
 export type OfflineSyncState = {
   pendingCount: number;
@@ -145,9 +146,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         masteryScore: u.masteryScore,
       });
     })
-      .then((r) => {
+      .then(async (r) => {
         if (cancelled) return;
         const nextPending = getPendingProgressUpdatesCount(user.id);
+        if (r.applied > 0) {
+          dispatchProgressUpdated();
+          try {
+            const progress = await studentApi.getMyProgress();
+            await saveStudentSnapshot(user.id, { progress });
+          } catch {
+            // snapshot refresh best-effort
+          }
+        }
         setOfflineSync((s) => ({
           ...s,
           pendingCount: nextPending,
