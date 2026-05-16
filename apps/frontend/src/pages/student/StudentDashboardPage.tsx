@@ -10,6 +10,8 @@ import {
   type LearningPath,
   type DailyChallenge,
 } from '../../api/studentApi';
+import { getStudentLearningPaths, getStudentStatistics } from '../../api/studentOffline';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import OfflineBanner from '../../components/OfflineBanner';
 
 const navItems = [
@@ -25,6 +27,7 @@ const XP_MAX = 500;
 export default function StudentDashboardPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
 
   const [stats, setStats]         = useState<StudentStats | null>(null);
   const [badges, setBadges]       = useState<BadgeData[]>([]);
@@ -35,13 +38,13 @@ export default function StudentDashboardPage() {
   const [error, setError]         = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user?.id) return;
     Promise.all([
-      studentApi.getStatistics(),
-      studentApi.getUnlockedBadges(),
-      studentApi.getAllBadges(),
-      studentApi.getMyLearningPaths(),
-      // Echec defi-du-jour ne doit pas casser le dashboard : fallback silencieux.
-      studentApi.getDailyChallenge().catch(() => null),
+      getStudentStatistics(isOnline, user.id),
+      isOnline ? studentApi.getUnlockedBadges() : Promise.resolve([] as BadgeData[]),
+      isOnline ? studentApi.getAllBadges() : Promise.resolve([] as BadgeData[]),
+      getStudentLearningPaths(isOnline, user.id),
+      isOnline ? studentApi.getDailyChallenge().catch(() => null) : Promise.resolve(null),
     ])
       .then(([s, unlocked, all, p, c]) => {
         setStats(s);
@@ -50,9 +53,15 @@ export default function StudentDashboardPage() {
         setPaths(p);
         setChallenge(c);
       })
-      .catch(() => setError('Impossible de charger les données. Veuillez réessayer.'))
+      .catch(() =>
+        setError(
+          isOnline
+            ? 'Impossible de charger les données. Veuillez réessayer.'
+            : 'Données limitées hors-ligne. Active le préchargement depuis Profil.',
+        ),
+      )
       .finally(() => setLoading(false));
-  }, []);
+  }, [user?.id, isOnline]);
 
   const challengeCtaLabel = challenge?.trickId
     ? 'Commencer'

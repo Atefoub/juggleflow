@@ -5,7 +5,10 @@ import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import OfflineBanner from '../../components/OfflineBanner';
 import { getPopularTricks, getTricksPage } from '../../api/catalogueOffline';
 import { LEVEL_LABELS, scoreToStars, type TrickResponse } from '../../api/catalogueApi';
-import { studentApi, type TrickProgress } from '../../api/studentApi';
+import { getStudentProgress } from '../../api/studentOffline';
+import { useAuth } from '../../context/AuthContext';
+import { mergePendingIntoProgress } from '../../utils/offlineQueue';
+import type { TrickProgress } from '../../api/studentApi';
 import { resolveTrickAnimation } from '../../utils/jugglingLab';
 
 // ── Config ────────────────────────────────────────────────────
@@ -193,6 +196,7 @@ function TrickCardSkeleton() {
 
 export default function CataloguePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const isOnline = useOnlineStatus();
   const [search, setSearch]                   = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -219,8 +223,9 @@ export default function CataloguePage() {
   }, [isOnline]);
 
   useEffect(() => {
-    studentApi
-      .getMyProgress()
+    if (!user?.id) return;
+    getStudentProgress(isOnline, user.id)
+      .then((progress) => mergePendingIntoProgress(user.id, progress))
       .then((progress: TrickProgress[]) => {
         const next: Record<number, ProgressStatus> = {};
         for (const p of progress) {
@@ -231,7 +236,7 @@ export default function CataloguePage() {
       .catch(() => {
         // silencieux : le catalogue reste utilisable sans l'info de progression
       });
-  }, []);
+  }, [user?.id, isOnline]);
 
   useEffect(() => {
     const handler = (evt: Event) => {
