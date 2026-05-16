@@ -1,6 +1,7 @@
 import {
   studentApi,
   type BadgeData,
+  type DailyChallenge,
   type LearningPath,
   type StudentStats,
   type TrickProgress,
@@ -73,4 +74,24 @@ export async function getStudentBadges(
     unlocked: snap?.badgesUnlocked ?? [],
     all: snap?.badgesAll ?? [],
   };
+}
+
+export async function getStudentDailyChallenge(
+  isOnline: boolean,
+  userId: number | string,
+): Promise<DailyChallenge | null> {
+  if (isOnline) {
+    const challenge = await studentApi.getDailyChallenge();
+    await saveStudentSnapshot(userId, { dailyChallenge: challenge });
+    return challenge;
+  }
+  const snap = await loadStudentSnapshot(userId);
+  return snap?.dailyChallenge ?? null;
+}
+
+export async function getStudentSnapshotSavedAt(
+  userId: number | string,
+): Promise<string | null> {
+  const snap = await loadStudentSnapshot(userId);
+  return snap?.savedAt ?? null;
 }

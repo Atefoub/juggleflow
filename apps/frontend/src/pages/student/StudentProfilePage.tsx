@@ -3,7 +3,11 @@ import { useAuth } from '../../context/AuthContext';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import type { StudentStats, LearningPath } from '../../api/studentApi';
-import { getStudentLearningPaths, getStudentStatistics } from '../../api/studentOffline';
+import {
+  getStudentLearningPaths,
+  getStudentSnapshotSavedAt,
+  getStudentStatistics,
+} from '../../api/studentOffline';
 import { getOnboardingLevel, setOnboardingLevel, type OnboardingLevel } from '../../utils/onboarding';
 import { getOfflineMode, setOfflineMode } from '../../utils/preferences';
 import { prefetchOfflineContent } from '../../utils/prefetchOfflineContent';
@@ -35,6 +39,7 @@ export default function StudentProfilePage() {
   const [offlineMode, setOfflineModeState]    = useState(() => getOfflineMode(user?.id));
   const [offlinePrefetching, setOfflinePrefetching] = useState(false);
   const [offlineHint, setOfflineHint]         = useState<string | null>(null);
+  const [snapshotSavedAt, setSnapshotSavedAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -54,6 +59,14 @@ export default function StudentProfilePage() {
     setOfflineModeState(getOfflineMode(user?.id));
   }, [user?.id]);
 
+  useEffect(() => {
+    if (!user?.id || !offlineMode) {
+      setSnapshotSavedAt(null);
+      return;
+    }
+    getStudentSnapshotSavedAt(user.id).then(setSnapshotSavedAt);
+  }, [user?.id, offlineMode, offlineHint]);
+
   async function enableOfflineMode() {
     setOfflineHint(null);
     setOfflinePrefetching(true);
@@ -69,9 +82,11 @@ export default function StudentProfilePage() {
       if ('serviceWorker' in navigator) {
         await navigator.serviceWorker.ready.catch(() => null);
       }
+      const challengeNote = result.hasDailyChallenge ? 'défi du jour' : 'pas de défi du jour';
       setOfflineHint(
-        `Contenu prêt hors-ligne : ${result.totalTricksStored} figures, ${result.pathsCount} parcours, ${result.progressCount} progressions, ${result.badgesCount} badges.`,
+        `Contenu prêt hors-ligne : ${result.totalTricksStored} figures, ${result.pathsCount} parcours, ${result.progressCount} progressions, ${result.badgesCount} badges, ${challengeNote}.`,
       );
+      setSnapshotSavedAt(new Date().toISOString());
     } finally {
       setOfflinePrefetching(false);
     }
@@ -358,11 +373,24 @@ export default function StudentProfilePage() {
 
           <PwaInstallPrompt className="mt-3" />
 
-          {(offlinePrefetching || offlineHint) && (
+          {(offlinePrefetching || offlineHint || (offlineMode && snapshotSavedAt)) && (
             <div className="mt-3 p-3 rounded-xl bg-bg-card border border-border">
-              <p className="text-xs text-text-muted">
-                {offlinePrefetching ? 'Préchargement du contenu pour le hors-ligne…' : offlineHint}
-              </p>
+              {offlinePrefetching ? (
+                <p className="text-xs text-text-muted">Préchargement du contenu pour le hors-ligne…</p>
+              ) : (
+                <>
+                  {offlineHint && <p className="text-xs text-text-muted">{offlineHint}</p>}
+                  {offlineMode && snapshotSavedAt && (
+                    <p className="text-xs text-text-muted mt-1">
+                      Dernière synchro :{' '}
+                      {new Date(snapshotSavedAt).toLocaleString('fr-FR', {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      })}
+                    </p>
+                  )}
+                </>
+              )}
             </div>
           )}
 
