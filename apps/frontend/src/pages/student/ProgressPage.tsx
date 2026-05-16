@@ -6,13 +6,8 @@ import ProgressBar from '../../components/ProgressBar';
 import { getOnboardingLevel } from '../../utils/onboarding';
 import OfflineBanner from '../../components/OfflineBanner';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
-import { getStudentProgress, getStudentStatistics } from '../../api/studentOffline';
-import {
-  studentApi,
-  type StudentStats,
-  type BadgeData,
-  type TrickProgress,
-} from '../../api/studentApi';
+import { getStudentBadges, getStudentProgress, getStudentStatistics } from '../../api/studentOffline';
+import type { StudentStats, BadgeData, TrickProgress } from '../../api/studentApi';
 import { mergePendingIntoProgress } from '../../utils/offlineQueue';
 
 const navItems = [
@@ -109,16 +104,15 @@ export default function ProgressPage() {
     if (!user?.id) return;
     Promise.all([
       getStudentStatistics(isOnline, user.id),
-      isOnline ? studentApi.getUnlockedBadges() : Promise.resolve([] as BadgeData[]),
-      isOnline ? studentApi.getAllBadges() : Promise.resolve([] as BadgeData[]),
+      getStudentBadges(isOnline, user.id),
       getStudentProgress(isOnline, user.id).then((p) =>
         mergePendingIntoProgress(user.id, p),
       ),
     ])
-      .then(([s, unlocked, all, progress]) => {
+      .then(([s, badgeBundle, progress]) => {
         setStats(s);
-        setBadges(unlocked);
-        setAllBadges(all);
+        setBadges(badgeBundle.unlocked);
+        setAllBadges(badgeBundle.all);
         setTrickProgress(progress);
       })
       .catch(() =>

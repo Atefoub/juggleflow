@@ -102,15 +102,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.clearInterval(id);
   }, [user?.id]);
 
-  // Sync à la reconnexion, au retour sur l'onglet, et quand le SW termine un background sync.
+  // Sync à la reconnexion, au retour sur l'onglet, et après background sync Workbox.
   useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === 'visible' && navigator.onLine) {
-        setOfflineSync((s) => ({ ...s, pendingCount: user?.id ? getPendingProgressUpdatesCount(user.id) : 0 }));
-      }
+    const refreshPending = () => {
+      if (!user?.id) return;
+      setOfflineSync((s) => ({ ...s, pendingCount: getPendingProgressUpdatesCount(user.id) }));
     };
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine) refreshPending();
+    };
+
+    const onOnline = () => refreshPending();
+
     document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', onOnline);
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.type === 'SYNC_PROGRESS_DONE') refreshPending();
+      });
+    }
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', onOnline);
+    };
   }, [user?.id]);
 
   useEffect(() => {
