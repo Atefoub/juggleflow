@@ -28,6 +28,7 @@ import { flushProgressUpdates, getPendingProgressUpdatesCount } from '../utils/o
 import { clearStudentSnapshot, saveStudentSnapshot } from '../utils/offlineStudentStore';
 import { studentApi } from '../api/studentApi';
 import { dispatchProgressUpdated } from '../lib/progressEvents';
+import { notifyServiceWorkerProgressSynced } from '../lib/swNotify';
 
 export type OfflineSyncState = {
   pendingCount: number;
@@ -121,7 +122,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data?.type === 'SYNC_PROGRESS_DONE') refreshPending();
+        if (event.data?.type === 'SYNC_PROGRESS_DONE') {
+          refreshPending();
+          dispatchProgressUpdated();
+        }
       });
     }
 
@@ -151,9 +155,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const nextPending = getPendingProgressUpdatesCount(user.id);
         if (r.applied > 0) {
           dispatchProgressUpdated();
+          notifyServiceWorkerProgressSynced();
           try {
-            const progress = await studentApi.getMyProgress();
-            await saveStudentSnapshot(user.id, { progress });
+            const [progress, stats] = await Promise.all([
+              studentApi.getMyProgress(),
+              studentApi.getStatistics().catch(() => null),
+            ]);
+            await saveStudentSnapshot(user.id, {
+              progress,
+              ...(stats ? { stats } : {}),
+            });
           } catch {
             // snapshot refresh best-effort
           }
