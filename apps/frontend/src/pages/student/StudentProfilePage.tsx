@@ -13,6 +13,7 @@ import {
 } from '../../api/studentOffline';
 import { mergePendingIntoProgress } from '../../utils/offlineQueue';
 import { PROGRESS_UPDATED_EVENT } from '../../lib/progressEvents';
+import { computePathCompletionPercent } from '../../utils/pathProgress';
 import { getOnboardingLevel, setOnboardingLevel, type OnboardingLevel } from '../../utils/onboarding';
 import { getOfflineMode, setOfflineMode } from '../../utils/preferences';
 import { prefetchOfflineContent } from '../../utils/prefetchOfflineContent';
@@ -49,6 +50,7 @@ export default function StudentProfilePage() {
   const [offlinePrefetching, setOfflinePrefetching] = useState(false);
   const [offlineHint, setOfflineHint]         = useState<string | null>(null);
   const [snapshotSavedAt, setSnapshotSavedAt] = useState<string | null>(null);
+  const [pathProgressPercent, setPathProgressPercent] = useState(0);
 
   const loadProfileData = () => {
     if (!user?.id) return;
@@ -134,9 +136,13 @@ export default function StudentProfilePage() {
   const xpDisplay   = Math.min(xp, XP_MAX);
   const currentPath = paths[0] ?? null;
 
-  const pathProgressPercent = currentPath && currentPath.stepCount > 0
-    ? Math.round(((stats?.totalTricksLearned ?? 0) / currentPath.stepCount) * 100)
-    : 0;
+  useEffect(() => {
+    if (!currentPath) {
+      setPathProgressPercent(0);
+      return;
+    }
+    void computePathCompletionPercent(currentPath, progressByTrickId).then(setPathProgressPercent);
+  }, [currentPath, progressByTrickId]);
 
   // Estimation du temps total en heures (fictif mais calculé)
   const totalMinutes = (stats?.totalTricksLearned ?? 0) * 15;

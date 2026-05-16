@@ -9,6 +9,7 @@ import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { getStudentBadges, getStudentProgress, getStudentStatistics } from '../../api/studentOffline';
 import type { StudentStats, BadgeData, TrickProgress } from '../../api/studentApi';
 import { mergePendingIntoProgress } from '../../utils/offlineQueue';
+import { PROGRESS_UPDATED_EVENT } from '../../lib/progressEvents';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -27,8 +28,6 @@ const STREAK_BADGES = [
 ];
 
 type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED';
-
-const PROGRESS_UPDATED_EVENT = 'juggleflow:progress-updated';
 
 const STATUS_BADGE: Record<ProgressStatus, { label: string; cls: string; icon: string }> = {
   MASTERED: {

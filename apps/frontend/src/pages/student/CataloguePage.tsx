@@ -10,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import { mergePendingIntoProgress } from '../../utils/offlineQueue';
 import type { TrickProgress } from '../../api/studentApi';
 import { resolveTrickAnimation } from '../../utils/jugglingLab';
+import { PROGRESS_UPDATED_EVENT } from '../../lib/progressEvents';
 
 // ── Config ────────────────────────────────────────────────────
 
@@ -110,8 +111,6 @@ function AnimationPreview({ trick }: { trick: TrickResponse }) {
 }
 
 type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED';
-
-const PROGRESS_UPDATED_EVENT = 'juggleflow:progress-updated';
 
 function ProgressChip({ status }: { status: ProgressStatus }) {
   if (status === 'NOT_STARTED') return null;
