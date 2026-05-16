@@ -6,10 +6,11 @@ import ProgressBar from '../../components/ProgressBar';
 import PathTrickList from '../../components/student/PathTrickList';
 import OfflineBanner from '../../components/OfflineBanner';
 import type { LearningPath } from '../../api/studentApi';
-import { getStudentLearningPaths, getStudentProgress, getStudentStatistics } from '../../api/studentOffline';
+import { getStudentLearningPaths, getStudentProgress } from '../../api/studentOffline';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { mergePendingIntoProgress } from '../../utils/offlineQueue';
 import { PROGRESS_UPDATED_EVENT } from '../../lib/progressEvents';
+import { computePathCompletionPercent } from '../../utils/pathProgress';
 
 const navItems = [
   { label: 'Accueil', icon: '🏠', path: '/student/dashboard' },
@@ -26,8 +27,9 @@ export default function StudentLearningPathPage() {
   const { user } = useAuth();
   const isOnline = useOnlineStatus();
 
+  const [allPaths, setAllPaths] = useState<LearningPath[]>([]);
   const [path, setPath] = useState<LearningPath | null>(null);
-  const [statsLearned, setStatsLearned] = useState(0);
+  const [pathProgressPercent, setPathProgressPercent] = useState(0);
   const [progressByTrickId, setProgressByTrickId] = useState<Record<number, ProgressStatus>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,22 +40,27 @@ export default function StudentLearningPathPage() {
 
     Promise.all([
       getStudentLearningPaths(isOnline, user.id),
-      getStudentStatistics(isOnline, user.id),
       getStudentProgress(isOnline, user.id).then((p) => mergePendingIntoProgress(user.id, p)),
     ])
-      .then(([paths, stats, mergedProgress]) => {
+      .then(async ([paths, mergedProgress]) => {
+        setAllPaths(paths);
         const selected =
           wantedId != null && !Number.isNaN(wantedId)
             ? paths.find((p) => p.id === wantedId) ?? paths[0] ?? null
             : paths[0] ?? null;
         setPath(selected);
-        setStatsLearned(stats?.totalTricksLearned ?? 0);
+        if (!selected) {
+          setError('Aucun parcours assigné.');
+          setPathProgressPercent(0);
+          return;
+        }
+        setError(null);
         const byId: Record<number, ProgressStatus> = {};
         for (const row of mergedProgress) {
           byId[row.trickId] = row.status;
         }
         setProgressByTrickId(byId);
-        if (!selected) setError('Aucun parcours assigné.');
+        setPathProgressPercent(await computePathCompletionPercent(selected, byId));
       })
       .catch(() =>
         setError(
@@ -76,9 +83,6 @@ export default function StudentLearningPathPage() {
     return () => window.removeEventListener(PROGRESS_UPDATED_EVENT, reload);
   }, [reload]);
 
-  const pathProgressPercent =
-    path && path.stepCount > 0 ? Math.round((statsLearned / path.stepCount) * 100) : 0;
-
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
       <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
@@ -90,7 +94,7 @@ export default function StudentLearningPathPage() {
           ← Retour
         </button>
         <h1 className="font-display font-bold text-text-primary text-xl">
-          {path?.pathName ?? 'Mon parcours'}
+          {path?.pathName ?? 'Mes parcours'}
         </h1>
         {path?.targetLevel && (
           <p className="text-xs text-text-secondary mt-1">Niveau : {path.targetLevel}</p>
@@ -108,6 +112,29 @@ export default function StudentLearningPathPage() {
 
         {loading && <div className="h-24 rounded-2xl animate-pulse bg-bg-card" />}
 
+        {!loading && allPaths.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {allPaths.map((p) => {
+              const active = path?.id === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => navigate(`/student/parcours/${p.id}`)}
+                  className={[
+                    'shrink-0 px-3 py-2 rounded-xl text-xs font-semibold border min-h-10',
+                    active
+                      ? 'bg-linear-to-br from-brand to-brand-end border-brand text-white'
+                      : 'bg-bg-card border-border text-text-muted',
+                  ].join(' ')}
+                >
+                  {p.pathName}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {!loading && path && (
           <section className="p-4 rounded-2xl bg-bg-card border border-border">
             {path.description && (
@@ -118,7 +145,7 @@ export default function StudentLearningPathPage() {
               {path.estimatedDurationDays != null ? ` · ~${path.estimatedDurationDays} jours` : ''}
             </p>
             <div className="flex justify-between mb-2">
-              <span className="text-xs text-text-muted">Progression globale</span>
+              <span className="text-xs text-text-muted">Figures maîtrisées dans ce parcours</span>
               <span className="text-xs text-text-secondary font-bold">{pathProgressPercent}%</span>
             </div>
             <ProgressBar

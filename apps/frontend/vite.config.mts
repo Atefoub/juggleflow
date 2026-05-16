@@ -80,9 +80,17 @@ export default defineConfig(({ mode }) => {
             url: '/student/dashboard',
             icons: [{ src: 'logo1.png', sizes: '192x192', type: 'image/png' }],
           },
+          {
+            name: 'Mon parcours',
+            short_name: 'Parcours',
+            description: 'Voir les étapes de ton parcours',
+            url: '/student/parcours',
+            icons: [{ src: 'logo1.png', sizes: '192x192', type: 'image/png' }],
+          },
         ],
       },
       workbox: {
+        importScripts: ['sw-broadcast.js'],
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/api\//],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],

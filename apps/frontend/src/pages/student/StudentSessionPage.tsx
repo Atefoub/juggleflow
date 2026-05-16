@@ -8,6 +8,7 @@ import { studentApi } from '../../api/studentApi';
 import { useAuth } from '../../context/AuthContext';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { enqueueProgressUpdate } from '../../utils/offlineQueue';
+import { dispatchProgressUpdated } from '../../lib/progressEvents';
 import OfflineBanner from '../../components/OfflineBanner';
 import { resolveTrickAnimation } from '../../utils/jugglingLab';
 
@@ -19,8 +20,6 @@ const navItems = [
 ];
 
 type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED';
-
-const PROGRESS_UPDATED_EVENT = 'juggleflow:progress-updated';
 
 function formatDuration(seconds: number): string {
   const s = Math.max(0, Math.floor(seconds));
@@ -68,9 +67,7 @@ export default function StudentSessionPage() {
           enqueueProgressUpdate(user.id, { trickId, status: 'IN_PROGRESS' });
         }
 
-        window.dispatchEvent(new CustomEvent(PROGRESS_UPDATED_EVENT, {
-          detail: { trickId, status: 'IN_PROGRESS' as ProgressStatus },
-        }));
+        dispatchProgressUpdated({ trickId });
       })
       .catch(() => setError('Impossible de démarrer la session.'))
       .finally(() => setLoading(false));
@@ -94,9 +91,7 @@ export default function StudentSessionPage() {
         await studentApi.updateProgress(trick.id, { status: 'MASTERED', masteryScore: 10 });
       }
       setStatus('MASTERED');
-      window.dispatchEvent(new CustomEvent(PROGRESS_UPDATED_EVENT, {
-        detail: { trickId: trick.id, status: 'MASTERED' as ProgressStatus },
-      }));
+      dispatchProgressUpdated({ trickId: trick.id });
     } catch {
       setError('Impossible de sauvegarder. Réessaie.');
     } finally {
