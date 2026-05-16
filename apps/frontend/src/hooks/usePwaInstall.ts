@@ -41,7 +41,9 @@ export function usePwaInstall() {
       setIsInstalled(true);
     };
 
-    const onDisplayModeChange = () => setIsInstalled(isStandaloneDisplay());
+    const onDisplayModeChange = () => {
+      setIsInstalled(isStandaloneDisplay());
+    };
 
     window.addEventListener('beforeinstallprompt', onBeforeInstall);
     window.addEventListener('appinstalled', onInstalled);
@@ -67,5 +69,11 @@ export function usePwaInstall() {
     return outcome;
   }, [deferredPrompt]);
 
-  return { canInstall, showIosHint, showAndroidHint, isInstalled, install };
+  return {
+    canInstall,
+    showIosHint,
+    showAndroidHint,
+    isInstalled,
+    install,
+  };
 }

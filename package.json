@@ -4,8 +4,8 @@
   "license": "MIT",
   "scripts": {
     "frontend:build": "nx build @juggleflow/frontend",
-    "frontend:serve": "nx serve @juggleflow/frontend",
     "frontend:preview": "nx preview @juggleflow/frontend --host",
+    "frontend:serve": "nx serve @juggleflow/frontend",
     "frontend:preview:pwa": "nx build @juggleflow/frontend && nx preview @juggleflow/frontend --host"
   },
   "private": true,
