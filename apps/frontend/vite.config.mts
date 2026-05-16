@@ -23,7 +23,13 @@ export default defineConfig(({ mode }) => {
   },
   preview: {
     port: 4300,
-    host: 'localhost',
+    host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
   },
   plugins: [
     tailwindcss(),
@@ -31,43 +37,66 @@ export default defineConfig(({ mode }) => {
     nxViteTsPaths(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'logo1.png', 'logo2.png'],
+      includeAssets: ['favicon.ico', 'logo1.png', 'logo2.png', 'apple-touch-icon.png'],
       manifest: {
+        id: '/',
         name: 'JuggleFlow',
         short_name: 'JuggleFlow',
-        description: 'Plateforme pédagogique de jonglage',
+        description: 'Plateforme pédagogique pour apprendre le jonglage',
+        lang: 'fr',
+        dir: 'ltr',
         theme_color: '#0A0E2A',
         background_color: '#0A0E2A',
         display: 'standalone',
+        orientation: 'portrait',
         scope: '/',
         start_url: '/',
+        categories: ['education', 'sports'],
         icons: [
+          { src: 'logo1.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'logo2.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'logo1.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: 'logo2.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
+        shortcuts: [
           {
-            src: 'logo1.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any maskable',
+            name: 'Catalogue',
+            short_name: 'Catalogue',
+            description: 'Parcourir les figures',
+            url: '/student/catalogue',
+            icons: [{ src: 'logo1.png', sizes: '192x192', type: 'image/png' }],
           },
           {
-            src: 'logo2.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable',
+            name: 'Progression',
+            short_name: 'Progression',
+            description: 'Voir ta progression',
+            url: '/student/progression',
+            icons: [{ src: 'logo1.png', sizes: '192x192', type: 'image/png' }],
           },
         ],
       },
       workbox: {
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api\//],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
-            // Sécurité: ne jamais mettre en cache les endpoints d'auth.
-            // (cookies + tokens + risque d'effets de bord)
             urlPattern: ({ url }) => url.pathname.startsWith('/api/auth'),
             handler: 'NetworkOnly',
           },
           {
-            // Données "catalogue" (non sensibles): tolère offline/latence.
-            // Ajuster au besoin si certains endpoints exposent des données perso.
+            urlPattern: ({ url, request }) =>
+              request.method === 'PUT' && /^\/api\/progress\/\d+$/.test(url.pathname),
+            handler: 'NetworkOnly',
+            method: 'PUT',
+            options: {
+              backgroundSync: {
+                name: 'progress-sync-queue',
+                options: { maxRetentionTime: 24 * 60 },
+              },
+            },
+          },
+          {
             urlPattern: ({ url, request }) =>
               request.method === 'GET' &&
               (url.pathname.startsWith('/api/tricks') ||
@@ -76,16 +105,11 @@ export default defineConfig(({ mode }) => {
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-public-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24, // 24h
-              },
+              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 },
               networkTimeoutSeconds: 10,
             },
           },
           {
-            // Données utilisateur: ne pas servir depuis le cache.
-            // (progression, classes, exports RGPD/CSV…)
             urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
             handler: 'NetworkOnly',
           },
@@ -97,12 +121,17 @@ export default defineConfig(({ mode }) => {
               expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
             },
           },
+          {
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
         ],
       },
       devOptions: {
-        // En dev, Vite sert les fichiers en mémoire: la génération Workbox n'a
-        // souvent rien à "precache" dans `dev-dist` (à part sw/workbox ignorés),
-        // ce qui déclenche un warning inutile.
         enabled: !isDev,
         type: 'module',
       },

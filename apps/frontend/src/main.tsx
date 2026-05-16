@@ -1,11 +1,10 @@
 import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
-import { registerSW } from 'virtual:pwa-register';
 import App from './app/app';
 import './index.css';
+import { registerPwa } from './lib/pwaRegister';
 
-// Enregistrement du service worker PWA
-registerSW({ immediate: true });
+registerPwa();
 
 // Import des polices Google Fonts
 const link = document.createElement('link');

@@ -2,7 +2,12 @@
   "name": "@juggleflow/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "frontend:build": "nx build @juggleflow/frontend",
+    "frontend:serve": "nx serve @juggleflow/frontend",
+    "frontend:preview": "nx preview @juggleflow/frontend --host",
+    "frontend:preview:pwa": "nx build @juggleflow/frontend && nx preview @juggleflow/frontend --host"
+  },
   "private": true,
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
