@@ -104,10 +104,10 @@ export default defineConfig(({ mode }) => {
             },
           },
           {
+            // Catalogue public uniquement — pas /api/badges ni /api/eleve (données par utilisateur).
             urlPattern: ({ url, request }) =>
               request.method === 'GET' &&
               (url.pathname.startsWith('/api/tricks') ||
-                url.pathname.startsWith('/api/badges') ||
                 url.pathname.startsWith('/api/learning-paths')),
             handler: 'NetworkFirst',
             options: {

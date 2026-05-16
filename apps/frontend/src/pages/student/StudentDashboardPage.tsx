@@ -10,7 +10,7 @@ import {
   type LearningPath,
   type DailyChallenge,
 } from '../../api/studentApi';
-import { getStudentLearningPaths, getStudentStatistics } from '../../api/studentOffline';
+import { getStudentBadges, getStudentLearningPaths, getStudentStatistics } from '../../api/studentOffline';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import OfflineBanner from '../../components/OfflineBanner';
 
@@ -41,15 +41,14 @@ export default function StudentDashboardPage() {
     if (!user?.id) return;
     Promise.all([
       getStudentStatistics(isOnline, user.id),
-      isOnline ? studentApi.getUnlockedBadges() : Promise.resolve([] as BadgeData[]),
-      isOnline ? studentApi.getAllBadges() : Promise.resolve([] as BadgeData[]),
+      getStudentBadges(isOnline, user.id),
       getStudentLearningPaths(isOnline, user.id),
       isOnline ? studentApi.getDailyChallenge().catch(() => null) : Promise.resolve(null),
     ])
-      .then(([s, unlocked, all, p, c]) => {
+      .then(([s, badgeBundle, p, c]) => {
         setStats(s);
-        setBadges(unlocked);
-        setAllBadges(all);
+        setBadges(badgeBundle.unlocked);
+        setAllBadges(badgeBundle.all);
         setPaths(p);
         setChallenge(c);
       })
