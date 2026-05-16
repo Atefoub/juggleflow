@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
+import PathTrickList from '../../components/student/PathTrickList';
 import type { StudentStats, LearningPath } from '../../api/studentApi';
 import {
   getStudentLearningPaths,
+  getStudentProgress,
   getStudentSnapshotSavedAt,
   getStudentStatistics,
 } from '../../api/studentOffline';
+import { mergePendingIntoProgress } from '../../utils/offlineQueue';
+import { PROGRESS_UPDATED_EVENT } from '../../lib/progressEvents';
 import { getOnboardingLevel, setOnboardingLevel, type OnboardingLevel } from '../../utils/onboarding';
 import { getOfflineMode, setOfflineMode } from '../../utils/preferences';
 import { prefetchOfflineContent } from '../../utils/prefetchOfflineContent';
@@ -27,10 +32,14 @@ const XP_MAX = 500;
 
 export default function StudentProfilePage() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const isOnline = useOnlineStatus();
 
   const [stats, setStats]       = useState<StudentStats | null>(null);
   const [paths, setPaths]       = useState<LearningPath[]>([]);
+  const [progressByTrickId, setProgressByTrickId] = useState<
+    Record<number, 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED'>
+  >({});
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
 
@@ -41,18 +50,35 @@ export default function StudentProfilePage() {
   const [offlineHint, setOfflineHint]         = useState<string | null>(null);
   const [snapshotSavedAt, setSnapshotSavedAt] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadProfileData = () => {
     if (!user?.id) return;
     Promise.all([
       getStudentStatistics(isOnline, user.id),
       getStudentLearningPaths(isOnline, user.id),
+      getStudentProgress(isOnline, user.id).then((p) => mergePendingIntoProgress(user.id, p)),
     ])
-      .then(([s, p]) => {
+      .then(([s, p, mergedProgress]) => {
         setStats(s);
         setPaths(p);
+        const byId: Record<number, 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED'> = {};
+        for (const row of mergedProgress) {
+          byId[row.trickId] = row.status;
+        }
+        setProgressByTrickId(byId);
       })
       .catch(() => setError('Impossible de charger les données du profil.'))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    setLoading(true);
+    loadProfileData();
+  }, [user?.id, isOnline]);
+
+  useEffect(() => {
+    const handler = () => loadProfileData();
+    window.addEventListener(PROGRESS_UPDATED_EVENT, handler);
+    return () => window.removeEventListener(PROGRESS_UPDATED_EVENT, handler);
   }, [user?.id, isOnline]);
 
   useEffect(() => {
@@ -214,9 +240,20 @@ export default function StudentProfilePage() {
 
         {/* Assigned path */}
         <section>
-          <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
-            Parcours assigné
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
+              Parcours assigné
+            </h2>
+            {currentPath && (
+              <button
+                type="button"
+                onClick={() => navigate(`/student/parcours/${currentPath.id}`)}
+                className="text-xs text-brand-end underline underline-offset-2 hover:opacity-80"
+              >
+                Détail →
+              </button>
+            )}
+          </div>
           {loading ? (
             <div className="h-20 rounded-2xl animate-pulse bg-bg-card" />
           ) : currentPath ? (
@@ -237,6 +274,7 @@ export default function StudentProfilePage() {
                 <span className="text-xs text-text-secondary font-bold">{pathProgressPercent}%</span>
               </div>
               <ProgressBar value={pathProgressPercent} color="linear-gradient(90deg, #8B2BE2, #C724B1)" height="8px" />
+              <PathTrickList path={currentPath} progressByTrickId={progressByTrickId} />
             </div>
           ) : (
             <div className="p-4 rounded-2xl bg-bg-card border border-border text-xs text-text-muted">

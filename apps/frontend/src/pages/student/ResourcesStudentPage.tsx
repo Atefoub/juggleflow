@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import BottomNav from '../../components/BottomNav';
 import OfflineBanner from '../../components/OfflineBanner';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { getBrainModuleStarted, setBrainModuleStarted } from '../../utils/resourcesLocalState';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -39,8 +42,18 @@ const EXERCISES = [
 ];
 
 export default function ResourcesStudentPage() {
-  const [tab, setTab]         = useState<Tab>('Vidéos');
-  const [moduleStarted, setModuleStarted] = useState(false);
+  const { user } = useAuth();
+  const isOnline = useOnlineStatus();
+  const [tab, setTab] = useState<Tab>('Vidéos');
+  const [moduleStarted, setModuleStarted] = useState(() =>
+    user?.id ? getBrainModuleStarted(user.id) : false,
+  );
+  const [offlineVideoHint, setOfflineVideoHint] = useState(false);
+
+  function handlePlayVideo() {
+    if (isOnline) return;
+    setOfflineVideoHint(true);
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -70,7 +83,13 @@ export default function ResourcesStudentPage() {
       </header>
 
       <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
-        <OfflineBanner />
+        <OfflineBanner message="Contenu consultable hors-ligne. Les vidéos nécessitent une connexion pour la lecture." />
+
+        {offlineVideoHint && !isOnline && (
+          <p className="text-xs text-brand-end">
+            Lecture vidéo indisponible hors-ligne — reconnecte-toi pour regarder le tutoriel.
+          </p>
+        )}
 
         {/* ── Vidéos ── */}
         {tab === 'Vidéos' && (
@@ -89,7 +108,9 @@ export default function ResourcesStudentPage() {
                   >
                     <span role="img" aria-label={video.title} className="text-6xl">{video.trickEmoji}</span>
                     <button
+                      type="button"
                       aria-label={`Lire ${video.title}`}
+                      onClick={handlePlayVideo}
                       className="absolute inset-0 flex items-center justify-center"
                     >
                       <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
@@ -182,7 +203,11 @@ export default function ResourcesStudentPage() {
                 </div>
 
                 <button
-                  onClick={() => setModuleStarted(true)}
+                  type="button"
+                  onClick={() => {
+                    setModuleStarted(true);
+                    if (user?.id) setBrainModuleStarted(user.id, true);
+                  }}
                   className="w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-linear-to-br from-brand to-brand-end min-h-11 hover:opacity-90 transition-opacity"
                 >
                   {moduleStarted ? '▶ Continuer le module' : 'Commencer le module →'}

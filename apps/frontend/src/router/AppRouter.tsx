@@ -17,6 +17,7 @@ const ProgressPage         = lazy(() => import('../pages/student/ProgressPage'))
 const BadgesPage           = lazy(() => import('../pages/student/BadgesPage'));
 const StudentProfilePage   = lazy(() => import('../pages/student/StudentProfilePage'));
 const ResourcesStudentPage = lazy(() => import('../pages/student/ResourcesStudentPage'));
+const StudentLearningPathPage = lazy(() => import('../pages/student/StudentLearningPathPage'));
 
 const TeacherDashboardPage  = lazy(() => import('../pages/teacher/TeacherDashboardPage'));
 const StudentDetailPage     = lazy(() => import('../pages/teacher/StudentDetailPage'));
@@ -119,6 +120,8 @@ export default function AppRouter() {
           <Route path="/student/badges"      element={student(<BadgesPage />)} />
           <Route path="/student/profil"      element={student(<StudentProfilePage />)} />
           <Route path="/student/resources"   element={student(<ResourcesStudentPage />)} />
+          <Route path="/student/parcours"     element={student(<StudentLearningPathPage />)} />
+          <Route path="/student/parcours/:pathId" element={student(<StudentLearningPathPage />)} />
 
           {/* ── Enseignant ── */}
           <Route path="/teacher/dashboard"        element={teacher(<TeacherDashboardPage />)} />
