@@ -20,6 +20,7 @@ import PathTrickList from '../../components/student/PathTrickList';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import OfflineBanner from '../../components/OfflineBanner';
 import { mergePendingIntoProgress } from '../../utils/offlineQueue';
+import { computePathCompletionPercent } from '../../utils/pathProgress';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -44,6 +45,7 @@ export default function StudentDashboardPage() {
   const [progressByTrickId, setProgressByTrickId] = useState<
     Record<number, 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED'>
   >({});
+  const [pathProgressPercent, setPathProgressPercent] = useState(0);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
 
@@ -111,6 +113,14 @@ export default function StudentDashboardPage() {
   const xpPercent   = Math.min((xp / XP_MAX) * 100, 100);
   const xpDisplay   = Math.min(xp, XP_MAX);
   const currentPath = paths[0] ?? null;
+
+  useEffect(() => {
+    if (!currentPath) {
+      setPathProgressPercent(0);
+      return;
+    }
+    void computePathCompletionPercent(currentPath, progressByTrickId).then(setPathProgressPercent);
+  }, [currentPath, progressByTrickId]);
 
   const unlockedIds   = new Set(badges.map((b) => b.id));
   const displayBadges = [
@@ -231,16 +241,7 @@ export default function StudentDashboardPage() {
                   <p className="text-xs text-text-muted mb-3">
                     {currentPath.stepCount} figure{currentPath.stepCount > 1 ? 's' : ''} au programme
                   </p>
-                  <ProgressBar
-                    value={
-                      currentPath.stepCount > 0
-                        ? Math.round(
-                            ((stats?.totalTricksLearned ?? 0) / currentPath.stepCount) * 100
-                          )
-                        : 0
-                    }
-                    color="#8B2BE2"
-                  />
+                  <ProgressBar value={pathProgressPercent} color="#8B2BE2" />
                   <PathTrickList path={currentPath} progressByTrickId={progressByTrickId} />
                 </div>
               </section>
