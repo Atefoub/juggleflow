@@ -3,12 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import OfflineBanner from '../../components/OfflineBanner';
-import {
-  catalogueApi,
-  LEVEL_LABELS,
-  scoreToStars,
-  type TrickResponse,
-} from '../../api/catalogueApi';
+import { getPopularTricks, getTricksPage } from '../../api/catalogueOffline';
+import { LEVEL_LABELS, scoreToStars, type TrickResponse } from '../../api/catalogueApi';
 import { studentApi, type TrickProgress } from '../../api/studentApi';
 import { resolveTrickAnimation } from '../../utils/jugglingLab';
 
@@ -219,8 +215,8 @@ export default function CataloguePage() {
   }, [search]);
 
   useEffect(() => {
-    catalogueApi.getPopular().then(setPopular).catch(() => { /* empty */ });
-  }, []);
+    getPopularTricks(isOnline).then(setPopular).catch(() => { /* empty */ });
+  }, [isOnline]);
 
   useEffect(() => {
     studentApi
@@ -252,7 +248,7 @@ export default function CataloguePage() {
     reset ? setLoading(true) : setLoadingMore(true);
     setError(null);
     try {
-      const data = await catalogueApi.getTricks({
+      const data = await getTricksPage(isOnline, {
         level: activeFilter === 'Tous' ? undefined : activeFilter,
         search: debouncedSearch || undefined,
         page: pageNum,
@@ -261,13 +257,18 @@ export default function CataloguePage() {
       setTricks((prev) => reset ? data.content : [...prev, ...data.content]);
       setHasMore(data.number < data.totalPages - 1);
       setPage(data.number);
-    } catch {
-      setError('Impossible de charger le catalogue. Vérifie ta connexion.');
+    } catch (err) {
+      const code = err instanceof Error ? err.message : '';
+      setError(
+        code === 'OFFLINE_CATALOGUE_EMPTY'
+          ? 'Catalogue hors-ligne vide. Active le mode hors-ligne dans Profil (en ligne) pour précharger.'
+          : 'Impossible de charger le catalogue. Vérifie ta connexion.',
+      );
     } finally {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [activeFilter, debouncedSearch]);
+  }, [activeFilter, debouncedSearch, isOnline]);
 
   useEffect(() => { fetchTricks(0, true); }, [fetchTricks]);
 
