@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
-import { catalogueApi, LEVEL_LABELS, type TrickResponse } from '../../api/catalogueApi';
+import { getTrickDetail } from '../../api/catalogueOffline';
+import { LEVEL_LABELS, type TrickResponse } from '../../api/catalogueApi';
 import { studentApi } from '../../api/studentApi';
 import { useAuth } from '../../context/AuthContext';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
@@ -54,8 +55,7 @@ export default function StudentSessionPage() {
     }
 
     Promise.all([
-      catalogueApi.getTrickById(trickId),
-      // Dès l'entrée en session, on marque "en cours" (idempotent).
+      getTrickDetail(isOnline, trickId),
       isOnline
         ? studentApi.updateProgress(trickId, { status: 'IN_PROGRESS' }).catch(() => { /* empty */ })
         : Promise.resolve(),

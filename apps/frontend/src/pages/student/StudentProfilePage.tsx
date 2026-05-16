@@ -70,7 +70,7 @@ export default function StudentProfilePage() {
         await navigator.serviceWorker.ready.catch(() => null);
       }
       setOfflineHint(
-        `Contenu prêt hors-ligne : ${result.totalTricksStored} figures, ${result.pathsCount} parcours, ${result.progressCount} progressions en cache.`,
+        `Contenu prêt hors-ligne : ${result.totalTricksStored} figures, ${result.pathsCount} parcours, ${result.progressCount} progressions, ${result.badgesCount} badges.`,
       );
     } finally {
       setOfflinePrefetching(false);
