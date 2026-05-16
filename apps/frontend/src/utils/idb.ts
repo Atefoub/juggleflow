@@ -1,5 +1,7 @@
 const DB_NAME = 'juggleflow';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
+
+const STORES = ['catalogue', 'student'] as const;
 
 export function openAppDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -8,8 +10,10 @@ export function openAppDb(): Promise<IDBDatabase> {
     request.onsuccess = () => resolve(request.result);
     request.onupgradeneeded = () => {
       const db = request.result;
-      if (!db.objectStoreNames.contains('catalogue')) {
-        db.createObjectStore('catalogue');
+      for (const store of STORES) {
+        if (!db.objectStoreNames.contains(store)) {
+          db.createObjectStore(store);
+        }
       }
     };
   });
@@ -31,6 +35,19 @@ export async function idbSet<T>(storeName: string, key: string, value: T): Promi
   return new Promise((resolve, reject) => {
     const tx = db.transaction(storeName, 'readwrite');
     const req = tx.objectStore(storeName).put(value, key);
+    req.onerror = () => reject(req.error);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+  });
+}
+
+export async function idbDelete(storeName: string, key: string): Promise<void> {
+  const db = await openAppDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const req = tx.objectStore(storeName).delete(key);
     req.onerror = () => reject(req.error);
     tx.oncomplete = () => {
       db.close();
