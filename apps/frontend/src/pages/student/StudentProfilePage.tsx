@@ -5,9 +5,10 @@ import ProgressBar from '../../components/ProgressBar';
 import { studentApi, type StudentStats, type LearningPath } from '../../api/studentApi';
 import { getOnboardingLevel, setOnboardingLevel, type OnboardingLevel } from '../../utils/onboarding';
 import { getOfflineMode, setOfflineMode } from '../../utils/preferences';
-import { catalogueApi } from '../../api/catalogueApi';
+import { prefetchOfflineCatalogue } from '../../utils/prefetchOfflineCatalogue';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import OfflineBanner from '../../components/OfflineBanner';
+import PwaInstallPrompt from '../../components/PwaInstallPrompt';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -55,20 +56,14 @@ export default function StudentProfilePage() {
     setOfflineHint(null);
     setOfflinePrefetching(true);
     try {
-      // Précharge des endpoints non sensibles (catalogue) pour l'usage hors-ligne.
-      // La logique Workbox met en cache uniquement certains GET du catalogue.
-      await Promise.all([
-        catalogueApi.getPopular().catch(() => null),
-        catalogueApi.getTricks({ page: 0, size: 10 }).catch(() => null),
-        catalogueApi.getTricks({ page: 1, size: 10 }).catch(() => null),
-        catalogueApi.getTricks({ page: 2, size: 10 }).catch(() => null),
-      ]);
+      const { listPages, trickDetails } = await prefetchOfflineCatalogue();
 
-      // Attend le SW si dispo (meilleur UX, pas obligatoire).
       if ('serviceWorker' in navigator) {
         await navigator.serviceWorker.ready.catch(() => null);
       }
-      setOfflineHint("Catalogue préchargé. Tu peux consulter des figures même sans connexion (si déjà visité).");
+      setOfflineHint(
+        `Catalogue préchargé (${listPages} pages, ${trickDetails} fiches populaires). Consultation possible hors connexion.`,
+      );
     } finally {
       setOfflinePrefetching(false);
     }
@@ -352,6 +347,8 @@ export default function StudentProfilePage() {
               </button>
             </div>
           </div>
+
+          <PwaInstallPrompt className="mt-3" />
 
           {(offlinePrefetching || offlineHint) && (
             <div className="mt-3 p-3 rounded-xl bg-bg-card border border-border">
