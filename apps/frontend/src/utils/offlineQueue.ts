@@ -56,6 +56,23 @@ export function getPendingProgressUpdates(userId: number | string): PendingProgr
   return [...list].sort((a, b) => a.queuedAt.localeCompare(b.queuedAt));
 }
 
+/** Fusionne la progression locale en attente pour l'affichage hors-ligne. */
+export function mergePendingIntoProgress<T extends { trickId: number; status: string }>(
+  userId: number | string,
+  items: T[],
+): T[] {
+  const map = new Map(items.map((p) => [p.trickId, p]));
+  for (const u of getPendingProgressUpdates(userId)) {
+    const existing = map.get(u.trickId);
+    map.set(u.trickId, {
+      ...(existing ?? { trickId: u.trickId }),
+      trickId: u.trickId,
+      status: u.status,
+    } as T);
+  }
+  return [...map.values()];
+}
+
 export async function flushProgressUpdates(
   userId: number | string,
   apply: (u: PendingProgressUpdate) => Promise<void>

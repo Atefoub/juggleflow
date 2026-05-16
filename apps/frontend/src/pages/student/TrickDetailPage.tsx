@@ -4,7 +4,9 @@ import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import { getTrickDetail } from '../../api/catalogueOffline';
 import { LEVEL_LABELS, scoreToStars, type TrickResponse } from '../../api/catalogueApi';
-import { studentApi, type TrickProgress } from '../../api/studentApi';
+import { getStudentProgress } from '../../api/studentOffline';
+import { mergePendingIntoProgress } from '../../utils/offlineQueue';
+import type { TrickProgress } from '../../api/studentApi';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { useAuth } from '../../context/AuthContext';
 import { enqueueProgressUpdate } from '../../utils/offlineQueue';
@@ -85,8 +87,9 @@ export default function TrickDetailPage() {
     const trickId = Number(id);
     if (Number.isNaN(trickId)) return;
 
-    studentApi
-      .getMyProgress()
+    if (!user?.id) return;
+    getStudentProgress(isOnline, user.id)
+      .then((progress) => mergePendingIntoProgress(user.id, progress))
       .then((progress: TrickProgress[]) => {
         const p = progress.find((x) => x.trickId === trickId);
         if (p?.status) setStatus(p.status);
@@ -94,7 +97,7 @@ export default function TrickDetailPage() {
       .catch(() => {
         // silencieux : la page reste fonctionnelle même si la progression ne charge pas
       });
-  }, [id]);
+  }, [id, isOnline, user?.id]);
 
   const level      = trick?.levelName ?? 'Beginner';
   const xp         = XP_BY_LEVEL[level] ?? 100;
