@@ -22,7 +22,9 @@ export default function PwaInstallPrompt({ className = '' }: { className?: strin
   if (isInstalled) {
     return (
       <Card className={className}>
-        <p className="text-xs text-text-muted">Application installée sur cet appareil.</p>
+        <p className="text-xs text-text-muted">
+          Application installée sur cet appareil.
+        </p>
       </Card>
     );
   }
@@ -34,7 +36,7 @@ export default function PwaInstallPrompt({ className = '' }: { className?: strin
           <div>
             <p className="text-sm font-semibold text-text-primary">Installer l&apos;application</p>
             <p className="text-xs text-text-muted mt-0.5">
-              Accès rapide depuis l&apos;écran d&apos;accueil, avec contenu hors-ligne préchargé.
+              Accès rapide depuis l&apos;écran d&apos;accueil, même hors connexion (contenu préchargé).
             </p>
           </div>
           <button
@@ -62,9 +64,13 @@ export default function PwaInstallPrompt({ className = '' }: { className?: strin
       <Card className={className}>
         <p className="text-sm font-semibold text-text-primary">Installer sur Android</p>
         <ol className="mt-2 space-y-1.5 text-xs text-text-muted list-decimal list-inside">
-          <li>Menu Chrome (⋮) → « Installer l&apos;application »</li>
-          <li>Confirme — l&apos;icône JuggleFlow apparaît sur l&apos;écran d&apos;accueil</li>
+          <li>Ouvre le menu Chrome (⋮ en haut à droite)</li>
+          <li>Choisis « Installer l&apos;application » ou « Ajouter à l&apos;écran d&apos;accueil »</li>
+          <li>Valide — l&apos;icône JuggleFlow apparaît sur ton écran d&apos;accueil</li>
         </ol>
+        <p className="mt-2 text-[11px] text-text-muted/80">
+          Le bouton peut apparaître ici après une visite en HTTPS. Utilise Chrome ou Edge.
+        </p>
       </Card>
     );
   }
@@ -74,7 +80,7 @@ export default function PwaInstallPrompt({ className = '' }: { className?: strin
       <Card className={className}>
         <p className="text-sm font-semibold text-text-primary">Installer sur iPhone / iPad</p>
         <p className="text-xs text-text-muted mt-1">
-          Safari → Partager → « Sur l&apos;écran d&apos;accueil ».
+          Dans Safari : bouton Partager, puis « Sur l&apos;écran d&apos;accueil ».
         </p>
       </Card>
     );

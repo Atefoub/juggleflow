@@ -5,10 +5,10 @@ import ProgressBar from '../../components/ProgressBar';
 import { studentApi, type StudentStats, type LearningPath } from '../../api/studentApi';
 import { getOnboardingLevel, setOnboardingLevel, type OnboardingLevel } from '../../utils/onboarding';
 import { getOfflineMode, setOfflineMode } from '../../utils/preferences';
+import { prefetchOfflineCatalogue } from '../../utils/prefetchOfflineCatalogue';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import OfflineBanner from '../../components/OfflineBanner';
 import PwaInstallPrompt from '../../components/PwaInstallPrompt';
-import { prefetchOfflineCatalogue } from '../../utils/prefetchOfflineCatalogue';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -56,18 +56,13 @@ export default function StudentProfilePage() {
     setOfflineHint(null);
     setOfflinePrefetching(true);
     try {
-      if (!isOnline) {
-        setOfflineHint('Connecte-toi pour précharger le catalogue, puis réactive le mode hors-ligne.');
-        return;
-      }
-
-      const { listPages, trickDetails, totalTricksStored } = await prefetchOfflineCatalogue();
+      const { listPages, trickDetails } = await prefetchOfflineCatalogue();
 
       if ('serviceWorker' in navigator) {
         await navigator.serviceWorker.ready.catch(() => null);
       }
       setOfflineHint(
-        `Catalogue prêt hors-ligne : ${totalTricksStored} figures (${listPages} pages, ${trickDetails} fiches détaillées).`,
+        `Catalogue préchargé (${listPages} pages, ${trickDetails} fiches populaires). Consultation possible hors connexion.`,
       );
     } finally {
       setOfflinePrefetching(false);
