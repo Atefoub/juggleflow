@@ -6,6 +6,7 @@ export type OfflineContentPrefetchResult = OfflineCataloguePrefetchResult & {
   pathsCount: number;
   progressCount: number;
   badgesCount: number;
+  hasDailyChallenge: boolean;
   hasStats: boolean;
 };
 
@@ -15,13 +16,14 @@ export type OfflineContentPrefetchResult = OfflineCataloguePrefetchResult & {
 export async function prefetchOfflineContent(
   userId: number | string,
 ): Promise<OfflineContentPrefetchResult> {
-  const [catalogue, stats, paths, progress, unlocked, all] = await Promise.all([
+  const [catalogue, stats, paths, progress, unlocked, all, dailyChallenge] = await Promise.all([
     prefetchOfflineCatalogue(),
     studentApi.getStatistics().catch(() => null),
     studentApi.getMyLearningPaths().catch(() => [] as Awaited<ReturnType<typeof studentApi.getMyLearningPaths>>),
     studentApi.getMyProgress().catch(() => [] as Awaited<ReturnType<typeof studentApi.getMyProgress>>),
     studentApi.getUnlockedBadges().catch(() => [] as Awaited<ReturnType<typeof studentApi.getUnlockedBadges>>),
     studentApi.getAllBadges().catch(() => [] as Awaited<ReturnType<typeof studentApi.getAllBadges>>),
+    studentApi.getDailyChallenge().catch(() => null),
   ]);
 
   await saveStudentSnapshot(userId, {
@@ -30,6 +32,7 @@ export async function prefetchOfflineContent(
     progress,
     badgesUnlocked: unlocked,
     badgesAll: all,
+    dailyChallenge,
   });
 
   return {
@@ -37,6 +40,7 @@ export async function prefetchOfflineContent(
     pathsCount: paths.length,
     progressCount: progress.length,
     badgesCount: unlocked.length,
+    hasDailyChallenge: dailyChallenge != null,
     hasStats: stats != null,
   };
 }

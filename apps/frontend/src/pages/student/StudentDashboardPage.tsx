@@ -3,16 +3,23 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
-import {
-  studentApi,
-  type StudentStats,
-  type BadgeData,
-  type LearningPath,
-  type DailyChallenge,
+import type {
+  StudentStats,
+  BadgeData,
+  LearningPath,
+  DailyChallenge,
 } from '../../api/studentApi';
-import { getStudentBadges, getStudentLearningPaths, getStudentStatistics } from '../../api/studentOffline';
+import {
+  getStudentBadges,
+  getStudentDailyChallenge,
+  getStudentLearningPaths,
+  getStudentProgress,
+  getStudentStatistics,
+} from '../../api/studentOffline';
+import PathTrickList from '../../components/student/PathTrickList';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import OfflineBanner from '../../components/OfflineBanner';
+import { mergePendingIntoProgress } from '../../utils/offlineQueue';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -34,6 +41,9 @@ export default function StudentDashboardPage() {
   const [allBadges, setAllBadges] = useState<BadgeData[]>([]);
   const [paths, setPaths]         = useState<LearningPath[]>([]);
   const [challenge, setChallenge] = useState<DailyChallenge | null>(null);
+  const [progressByTrickId, setProgressByTrickId] = useState<
+    Record<number, 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED'>
+  >({});
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
 
@@ -43,14 +53,22 @@ export default function StudentDashboardPage() {
       getStudentStatistics(isOnline, user.id),
       getStudentBadges(isOnline, user.id),
       getStudentLearningPaths(isOnline, user.id),
-      isOnline ? studentApi.getDailyChallenge().catch(() => null) : Promise.resolve(null),
+      getStudentDailyChallenge(isOnline, user.id),
+      getStudentProgress(isOnline, user.id).then((progress) =>
+        mergePendingIntoProgress(user.id, progress),
+      ),
     ])
-      .then(([s, badgeBundle, p, c]) => {
+      .then(([s, badgeBundle, p, c, mergedProgress]) => {
         setStats(s);
         setBadges(badgeBundle.unlocked);
         setAllBadges(badgeBundle.all);
         setPaths(p);
         setChallenge(c);
+        const byId: Record<number, 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED'> = {};
+        for (const row of mergedProgress) {
+          byId[row.trickId] = row.status;
+        }
+        setProgressByTrickId(byId);
       })
       .catch(() =>
         setError(
@@ -66,12 +84,23 @@ export default function StudentDashboardPage() {
     ? 'Commencer'
     : 'Explorer';
 
-  const handleChallengeStart = () => {
+  const handleChallengeStart = async () => {
     if (challenge?.trickId) {
       navigate(`/student/trick/${challenge.trickId}`);
-    } else {
-      navigate('/student/catalogue');
+      return;
     }
+    if (challenge?.trickName) {
+      const { loadCatalogueSnapshot } = await import('../../utils/offlineCatalogueStore');
+      const { findTrickIdByName } = await import('../../utils/catalogueTrickLookup');
+      const snap = await loadCatalogueSnapshot();
+      const pool = [...(snap?.tricks ?? []), ...(snap?.popular ?? [])];
+      const id = findTrickIdByName(challenge.trickName, pool);
+      if (id != null) {
+        navigate(`/student/trick/${id}`);
+        return;
+      }
+    }
+    navigate('/student/catalogue');
   };
 
   const initials = user
@@ -203,6 +232,7 @@ export default function StudentDashboardPage() {
                     }
                     color="#8B2BE2"
                   />
+                  <PathTrickList path={currentPath} progressByTrickId={progressByTrickId} />
                 </div>
               </section>
             ) : (
