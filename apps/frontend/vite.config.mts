@@ -23,7 +23,13 @@ export default defineConfig(({ mode }) => {
   },
   preview: {
     port: 4300,
-    host: 'localhost',
+    host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
   },
   plugins: [
     tailwindcss(),
@@ -31,32 +37,74 @@ export default defineConfig(({ mode }) => {
     nxViteTsPaths(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'logo1.png', 'logo2.png'],
+      includeAssets: ['favicon.ico', 'logo1.png', 'logo2.png', 'apple-touch-icon.png'],
       manifest: {
+        id: '/',
         name: 'JuggleFlow',
         short_name: 'JuggleFlow',
-        description: 'Plateforme pédagogique de jonglage',
+        description: 'Plateforme pédagogique pour apprendre le jonglage',
+        lang: 'fr',
+        dir: 'ltr',
         theme_color: '#0A0E2A',
         background_color: '#0A0E2A',
         display: 'standalone',
+        orientation: 'portrait',
         scope: '/',
         start_url: '/',
+        categories: ['education', 'sports'],
         icons: [
           {
             src: 'logo1.png',
             sizes: '192x192',
             type: 'image/png',
-            purpose: 'any maskable',
+            purpose: 'any',
           },
           {
             src: 'logo2.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable',
+            purpose: 'any',
+          },
+          {
+            src: 'logo1.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+          {
+            src: 'logo2.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+        shortcuts: [
+          {
+            name: 'Catalogue',
+            short_name: 'Catalogue',
+            description: 'Parcourir les figures de jonglage',
+            url: '/student/catalogue',
+            icons: [{ src: 'logo1.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Progression',
+            short_name: 'Progression',
+            description: 'Voir ta progression',
+            url: '/student/progression',
+            icons: [{ src: 'logo1.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Accueil',
+            short_name: 'Accueil',
+            description: 'Tableau de bord élève',
+            url: '/student/dashboard',
+            icons: [{ src: 'logo1.png', sizes: '192x192', type: 'image/png' }],
           },
         ],
       },
       workbox: {
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api\//],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
@@ -95,6 +143,14 @@ export default defineConfig(({ mode }) => {
             options: {
               cacheName: 'google-fonts-cache',
               expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+          {
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
         ],
