@@ -1,5 +1,6 @@
 import {
   studentApi,
+  type BadgeData,
   type LearningPath,
   type StudentStats,
   type TrickProgress,
@@ -48,4 +49,28 @@ export async function getStudentProgress(
   }
   const snap = await loadStudentSnapshot(userId);
   return snap?.progress ?? [];
+}
+
+export type StudentBadgesBundle = {
+  unlocked: BadgeData[];
+  all: BadgeData[];
+};
+
+export async function getStudentBadges(
+  isOnline: boolean,
+  userId: number | string,
+): Promise<StudentBadgesBundle> {
+  if (isOnline) {
+    const [unlocked, all] = await Promise.all([
+      studentApi.getUnlockedBadges(),
+      studentApi.getAllBadges(),
+    ]);
+    await saveStudentSnapshot(userId, { badgesUnlocked: unlocked, badgesAll: all });
+    return { unlocked, all };
+  }
+  const snap = await loadStudentSnapshot(userId);
+  return {
+    unlocked: snap?.badgesUnlocked ?? [],
+    all: snap?.badgesAll ?? [],
+  };
 }

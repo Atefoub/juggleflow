@@ -1,10 +1,10 @@
-import type { LearningPath, StudentStats, TrickProgress } from '../api/studentApi';
+import type { BadgeData, LearningPath, StudentStats, TrickProgress } from '../api/studentApi';
 import { idbDelete, idbGet, idbSet } from './idb';
 
 const STORE = 'student';
 
 function snapshotKey(userId: number | string): string {
-  return `snapshot:v1:${userId}`;
+  return `snapshot:v2:${userId}`;
 }
 
 export type StudentSnapshot = {
@@ -12,6 +12,8 @@ export type StudentSnapshot = {
   stats: StudentStats | null;
   paths: LearningPath[];
   progress: TrickProgress[];
+  badgesUnlocked: BadgeData[];
+  badgesAll: BadgeData[];
 };
 
 export async function loadStudentSnapshot(
@@ -33,6 +35,8 @@ export async function saveStudentSnapshot(
     stats: null,
     paths: [],
     progress: [],
+    badgesUnlocked: [],
+    badgesAll: [],
   };
 
   const next: StudentSnapshot = {
@@ -40,6 +44,8 @@ export async function saveStudentSnapshot(
     stats: partial.stats !== undefined ? partial.stats : existing.stats,
     paths: partial.paths ?? existing.paths,
     progress: partial.progress ?? existing.progress,
+    badgesUnlocked: partial.badgesUnlocked ?? existing.badgesUnlocked,
+    badgesAll: partial.badgesAll ?? existing.badgesAll,
   };
 
   await idbSet(STORE, snapshotKey(userId), next);

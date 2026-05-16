@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
-import { studentApi, type BadgeData, type StudentStats, type TrickProgress } from '../../api/studentApi';
+import OfflineBanner from '../../components/OfflineBanner';
+import { useAuth } from '../../context/AuthContext';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import {
+  getStudentBadges,
+  getStudentProgress,
+  getStudentStatistics,
+} from '../../api/studentOffline';
+import type { BadgeData, StudentStats, TrickProgress } from '../../api/studentApi';
+import { mergePendingIntoProgress } from '../../utils/offlineQueue';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -81,6 +90,8 @@ function BadgeItem({ icon, label, unlocked, iconLabel }: {
 }
 
 export default function BadgesPage() {
+  const { user } = useAuth();
+  const isOnline = useOnlineStatus();
   const [badges, setBadges]       = useState<BadgeData[]>([]);
   const [allBadges, setAllBadges] = useState<BadgeData[]>([]);
   const [stats, setStats]         = useState<StudentStats | null>(null);
@@ -89,21 +100,27 @@ export default function BadgesPage() {
   const [error, setError]         = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user?.id) return;
     Promise.all([
-      studentApi.getUnlockedBadges(),
-      studentApi.getAllBadges(),
-      studentApi.getStatistics(),
-      studentApi.getMyProgress(),
+      getStudentBadges(isOnline, user.id),
+      getStudentStatistics(isOnline, user.id),
+      getStudentProgress(isOnline, user.id).then((p) => mergePendingIntoProgress(user.id, p)),
     ])
-      .then(([unlocked, all, s, p]) => {
-        setBadges(unlocked);
-        setAllBadges(all);
+      .then(([badgeBundle, s, p]) => {
+        setBadges(badgeBundle.unlocked);
+        setAllBadges(badgeBundle.all);
         setStats(s);
         setProgress(p);
       })
-      .catch(() => setError('Impossible de charger les badges.'))
+      .catch(() =>
+        setError(
+          isOnline
+            ? 'Impossible de charger les badges.'
+            : 'Badges non disponibles hors-ligne. Précharge le contenu depuis Profil.',
+        ),
+      )
       .finally(() => setLoading(false));
-  }, []);
+  }, [user?.id, isOnline]);
 
   const unlockedIds = new Set(badges.map((b) => b.id));
   const levelBadges = [
@@ -153,6 +170,7 @@ export default function BadgesPage() {
       </header>
 
       <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-6">
+        <OfflineBanner className="mb-1" />
 
         {error && (
           <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
