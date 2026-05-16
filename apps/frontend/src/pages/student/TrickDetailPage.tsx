@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
-import { catalogueApi, LEVEL_LABELS, scoreToStars, type TrickResponse } from '../../api/catalogueApi';
+import { getTrickDetail } from '../../api/catalogueOffline';
+import { LEVEL_LABELS, scoreToStars, type TrickResponse } from '../../api/catalogueApi';
 import { studentApi, type TrickProgress } from '../../api/studentApi';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { useAuth } from '../../context/AuthContext';
@@ -67,12 +68,17 @@ export default function TrickDetailPage() {
       setLoading(false);
       return;
     }
-    catalogueApi
-      .getTrickById(trickId)
+    getTrickDetail(isOnline, trickId)
       .then(setTrick)
-      .catch(() => setError('Impossible de charger cette figure.'))
+      .catch(() =>
+        setError(
+          isOnline
+            ? 'Impossible de charger cette figure.'
+            : 'Figure non disponible hors-ligne. Précharge le catalogue depuis Profil.',
+        ),
+      )
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, isOnline]);
 
   useEffect(() => {
     if (!id) return;
