@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { usePwaInstall } from '../hooks/usePwaInstall';
 
-function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+function Card({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div className={['p-4 bg-bg-card rounded-2xl border border-border', className].join(' ')}>
       {children}
