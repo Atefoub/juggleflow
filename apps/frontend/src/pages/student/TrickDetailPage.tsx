@@ -6,7 +6,8 @@ import { getTrickDetail } from '../../api/catalogueOffline';
 import { LEVEL_LABELS, scoreToStars, type TrickResponse } from '../../api/catalogueApi';
 import { getStudentProgress } from '../../api/studentOffline';
 import { mergePendingIntoProgress } from '../../utils/offlineQueue';
-import type { TrickProgress } from '../../api/studentApi';
+import { studentApi, type TrickProgress } from '../../api/studentApi';
+import { dispatchProgressUpdated } from '../../lib/progressEvents';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { useAuth } from '../../context/AuthContext';
 import { enqueueProgressUpdate } from '../../utils/offlineQueue';
@@ -34,8 +35,6 @@ const XP_NEXT = 500;
 
 type Tab = 'description' | 'conseils' | 'prerequis';
 type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED';
-
-const PROGRESS_UPDATED_EVENT = 'juggleflow:progress-updated';
 
 function StarRating({ score }: { score: number }) {
   const stars = scoreToStars(score);
@@ -126,9 +125,7 @@ export default function TrickDetailPage() {
       }
       setStatus(newStatus);
 
-      window.dispatchEvent(new CustomEvent(PROGRESS_UPDATED_EVENT, {
-        detail: { trickId: trick.id, status: newStatus },
-      }));
+      dispatchProgressUpdated({ trickId: trick.id });
     } catch {
       setStatusError('Impossible de sauvegarder. Réessaie.');
     } finally {

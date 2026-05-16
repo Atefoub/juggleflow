@@ -209,9 +209,18 @@ export default function StudentDashboardPage() {
             {/* ── Parcours en cours ── */}
             {currentPath ? (
               <section>
-                <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
-                  Parcours en cours
-                </h2>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
+                    Parcours en cours
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/student/parcours/${currentPath.id}`)}
+                    className="text-xs text-brand-end underline underline-offset-2 hover:opacity-80"
+                  >
+                    Détail →
+                  </button>
+                </div>
                 <div className="p-4 rounded-2xl bg-bg-card border border-border">
                   <p className="font-bold text-text-primary text-sm mb-1">{currentPath.pathName}</p>
                   {currentPath.targetLevel && (
