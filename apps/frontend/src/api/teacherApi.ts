@@ -9,13 +9,17 @@ export interface SchoolClass {
   homeroomTeacherName: string | null;
 }
 
+export type StudentGroupColor = 'VERT' | 'ORANGE' | 'ROUGE';
+
 export interface StudentSummary {
   id: number;
   firstName: string;
   lastName: string;
   progressionPercent: number;
   lastActivityAt: string | null;
-  groupColor: 'VERT' | 'ORANGE' | 'ROUGE';
+  groupColor: StudentGroupColor;
+  groupColorAuto: StudentGroupColor;
+  groupColorManual: boolean;
 }
 
 export interface StudentPathProgress {
@@ -142,6 +146,18 @@ export const teacherApi = {
 
   removeStudentFromClass: async (classId: number, studentId: number): Promise<void> => {
     await api.delete(`/enseignant/classes/${classId}/students/${studentId}`);
+  },
+
+  updateStudentGroup: async (
+    classId: number,
+    studentId: number,
+    groupColor: StudentGroupColor | null,
+  ): Promise<StudentSummary> => {
+    const res = await api.patch<StudentSummary>(
+      `/enseignant/classes/${classId}/students/${studentId}/group`,
+      { groupColor },
+    );
+    return res.data;
   },
 };
 

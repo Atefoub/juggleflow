@@ -25,6 +25,7 @@ const StudentListPage       = lazy(() => import('../pages/teacher/StudentListPag
 const AssignPathPage        = lazy(() => import('../pages/teacher/AssignPathPage'));
 const ResourcesTeacherPage  = lazy(() => import('../pages/teacher/ResourcesTeacherPage'));
 const TeacherPathDetailPage = lazy(() => import('../pages/teacher/TeacherPathDetailPage'));
+const GroupManagementPage   = lazy(() => import('../pages/teacher/GroupManagementPage'));
 
 const AdminDashboardPage = lazy(() => import('../pages/admin/AdminDashboardPage'));
 const AdminUsersPage     = lazy(() => import('../pages/admin/AdminUsersPage'));
@@ -128,6 +129,7 @@ export default function AppRouter() {
           {/* ── Enseignant ── */}
           <Route path="/teacher/dashboard"        element={teacher(<TeacherDashboardPage />)} />
           <Route path="/teacher/eleves"           element={teacher(<StudentListPage />)} />
+          <Route path="/teacher/groupes"         element={teacher(<GroupManagementPage />)} />
           <Route path="/teacher/eleve/:id"        element={teacher(<StudentDetailPage />)} />
           <Route path="/teacher/parcours/assigner" element={teacher(<AssignPathPage />)} />
           <Route path="/teacher/classe/:classId/parcours/:pathId" element={teacher(<TeacherPathDetailPage />)} />
