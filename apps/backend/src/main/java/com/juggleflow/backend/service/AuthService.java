@@ -53,7 +53,8 @@ public class AuthService {
   private final PasswordEncoder      passwordEncoder;
   private final JwtUtils             jwtUtils;
   private final AuthenticationManager authenticationManager;
-  private final UserDetailsService   userDetailsService;
+  private final UserDetailsService           userDetailsService;
+  private final EstablishmentLicenseService establishmentLicenseService;
 
   // ── Connexion ──────────────────────────────────────────────────
 
@@ -87,6 +88,9 @@ public class AuthService {
     }
 
     User user = createUserByRole(request);
+    if (user instanceof Student || user instanceof Teacher) {
+      establishmentLicenseService.assertSeatAvailableForNewAccount();
+    }
     userRepository.save(user);
 
     UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());

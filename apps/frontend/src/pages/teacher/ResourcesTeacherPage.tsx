@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import BottomNav from '../../components/BottomNav';
-import { resourcesApi, type PedagogicalResource, type ResourceType } from '../../api/resourcesApi';
+import {
+  resourcesApi,
+  type PedagogicalResource,
+  type ResourceType,
+} from '../../api/resourcesApi';
 
 const navItems = [
   { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
@@ -174,7 +178,7 @@ function EmptySearch() {
 }
 
 function PdfCard({ res }: { res: PedagogicalResource }) {
-  const href = res.resourceUrl ?? '#';
+  const canDownload = Boolean(res.resourceUrl);
   return (
     <div className="p-4 rounded-2xl bg-bg-card border border-border">
       <div className="flex items-start gap-3 mb-3">
@@ -195,14 +199,19 @@ function PdfCard({ res }: { res: PedagogicalResource }) {
             </span>
           ))}
         </div>
-        <a
-          href={href}
+        <button
+          type="button"
+          disabled={!canDownload}
           aria-label={`Télécharger ${res.title}`}
-          className="jf-btn-secondary jf-btn-secondary-sm inline-flex gap-1"
+          onClick={() => {
+            if (!canDownload) return;
+            void resourcesApi.download(res.id, res.title);
+          }}
+          className="jf-btn-secondary jf-btn-secondary-sm inline-flex gap-1 disabled:opacity-50"
         >
           <span role="img" aria-label="télécharger">↓</span>
           PDF
-        </a>
+        </button>
       </div>
     </div>
   );
@@ -226,7 +235,7 @@ function VideoRow({ res }: { res: PedagogicalResource }) {
 }
 
 function GuideRow({ res }: { res: PedagogicalResource }) {
-  const href = res.resourceUrl ?? '#';
+  const canDownload = Boolean(res.resourceUrl);
   return (
     <div className="p-4 rounded-2xl bg-bg-card border border-border flex items-center gap-3">
       <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-success/10 border border-success/30 shrink-0">
@@ -236,13 +245,18 @@ function GuideRow({ res }: { res: PedagogicalResource }) {
         <p className="font-bold text-text-primary text-sm">{res.title}</p>
         {res.metaLabel && <p className="text-xs text-text-muted">{res.metaLabel}</p>}
       </div>
-      <a
-        href={href}
+      <button
+        type="button"
+        disabled={!canDownload}
         aria-label={`Télécharger ${res.title}`}
-        className="text-xs px-2 py-1.5 rounded-lg bg-success/10 border border-success/30 text-success font-semibold hover:opacity-80 transition-opacity"
+        onClick={() => {
+          if (!canDownload) return;
+          void resourcesApi.download(res.id, res.title);
+        }}
+        className="text-xs px-2 py-1.5 rounded-lg bg-success/10 border border-success/30 text-success font-semibold hover:opacity-80 transition-opacity disabled:opacity-50"
       >
         ↓
-      </a>
+      </button>
     </div>
   );
 }
