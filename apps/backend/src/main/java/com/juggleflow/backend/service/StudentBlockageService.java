@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 /**
  * Détecte les élèves bloqués sur la figure courante d'un parcours assigné
- * (wireframe 12 : ≥ 3 tentatives sans maîtrise).
+ * Bloqué si ≥ 3 tentatives sur l'étape courante sans maîtrise.
  */
 @Service
 @RequiredArgsConstructor

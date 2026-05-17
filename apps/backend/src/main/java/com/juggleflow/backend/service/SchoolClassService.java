@@ -1,4 +1,3 @@
-// filename: backend/src/main/java/com/juggleflow/backend/service/SchoolClassService.java
 package com.juggleflow.backend.service;
 
 import com.juggleflow.backend.dto.AdminCreateSchoolClassRequest;
@@ -89,7 +88,7 @@ public class SchoolClassService {
     }
 
     /**
-     * Assigne ou réinitialise le groupe pédagogique d'un élève (wireframe 11).
+     * Assigne ou réinitialise le groupe pédagogique d'un élève.
      */
     @Transactional
     public StudentSummaryResponse updateStudentGroup(
@@ -257,7 +256,6 @@ public class SchoolClassService {
         log.info("Classe {} supprimée par {}", classId, teacherEmail);
     }
 
-    // ── Administration (ROLE_ADMINISTRATEUR) ─────────────────────
 
     /**
      * Crée une classe en choisissant explicitement le titulaire (enseignant).
@@ -326,7 +324,6 @@ public class SchoolClassService {
         log.info("Classe {} supprimée par admin", classId);
     }
 
-    // ── Helpers privés ───────────────────────────────────────────
 
     private Teacher findTeacherByEmail(String email) {
         return teacherRepository.findByEmail(email)

@@ -68,7 +68,6 @@ public class GdprController {
   @Value("${app.trusted-proxy:false}")
   private boolean trustedProxy;
 
-  // ── Endpoints ───────────────────────────────────────────────────────────────
 
   /**
    * GET /api/admin/gdpr/classes/{classId}/consents
@@ -193,7 +192,6 @@ public class GdprController {
       .body(pdf);
   }
 
-  // ── Helper : extraction IP ──────────────────────────────────────────────────
 
   /**
    * Extraction sécurisée de l'IP cliente pour la traçabilité RGPD.

@@ -1,4 +1,3 @@
-// filename: backend/src/main/java/com/juggleflow/backend/service/LearningPathService.java
 package com.juggleflow.backend.service;
 
 import com.juggleflow.backend.dto.AssignPathRequest;
@@ -298,7 +297,6 @@ public class LearningPathService {
                 .build();
     }
 
-    // ── Helpers privés ───────────────────────────────────────────
 
     private static StudentPathProgressResponse.TrickProgressDetail toTrickProgressDetail(
             LearningPathStep step,

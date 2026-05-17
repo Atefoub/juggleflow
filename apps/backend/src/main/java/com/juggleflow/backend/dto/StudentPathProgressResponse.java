@@ -1,4 +1,3 @@
-// filename: backend/src/main/java/com/juggleflow/backend/dto/StudentPathProgressResponse.java
 package com.juggleflow.backend.dto;
 
 import lombok.Builder;

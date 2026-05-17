@@ -70,10 +70,8 @@ public class JwtUtils {
 
   private SecretKey key;
 
-  // ── Constructeur Spring ─────────────────────────────────────────────────────
   public JwtUtils() {}
 
-  // ── Constructeur pour les tests unitaires ───────────────────────────────────
   public JwtUtils(String secret, long expirationMs, long refreshExpirationMs) {
     this.secret = secret;
     this.expirationMs = expirationMs;
@@ -99,7 +97,6 @@ public class JwtUtils {
     }
   }
 
-  // ── Génération ──────────────────────────────────────────────────────────────
 
   public String generateToken(UserDetails userDetails) {
     return buildToken(userDetails, expirationMs, TYPE_ACCESS);
@@ -131,7 +128,6 @@ public class JwtUtils {
       .compact();
   }
 
-  // ── Extraction ──────────────────────────────────────────────────────────────
 
   public String extractEmail(String token) {
     return extractClaim(token, Claims::getSubject);
@@ -161,7 +157,6 @@ public class JwtUtils {
       .getPayload();
   }
 
-  // ── Validation ──────────────────────────────────────────────────────────────
 
   /**
    * Valide un access token.
@@ -241,7 +236,6 @@ public class JwtUtils {
     return extractExpiration(token).before(new Date());
   }
 
-  // ── Accesseurs ──────────────────────────────────────────────────────────────
 
   public long getExpirationMs() {
     return expirationMs;

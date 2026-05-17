@@ -160,7 +160,6 @@ class AdminControllerTest {
             .andExpect(status().isForbidden());
     }
 
-    // ── POST /api/admin/users (P2.6 — création par l'admin) ──────────────
 
     @Test
     @DisplayName("POST /api/admin/users → 201, mot de passe généré et compte exploitable (admin)")
@@ -306,7 +305,6 @@ class AdminControllerTest {
             .andExpect(status().isForbidden());
     }
 
-    // ── Helpers ──────────────────────────────────────────────────
 
     private String registerAndGetToken(String email, String role) throws Exception {
         RegisterRequest req = new RegisterRequest();
