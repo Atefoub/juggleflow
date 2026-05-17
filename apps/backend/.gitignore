@@ -43,3 +43,6 @@ Thumbs.db
 # ── LOGS ─────────────────────────────────────────────────────
 *.log
 logs/
+
+# ── Fichiers ressources uploadés ─────────────────────────────
+uploads/

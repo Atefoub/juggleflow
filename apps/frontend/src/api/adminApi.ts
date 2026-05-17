@@ -80,6 +80,8 @@ export interface AdminEstablishmentStats {
   administratorAccountCount: number;
   activeUserCount: number;
   licenseSeatCap: number | null;
+  licenseUsedCount: number;
+  licenseExpiresAt: string | null;
 }
 
 export interface AdminAuditEvent {

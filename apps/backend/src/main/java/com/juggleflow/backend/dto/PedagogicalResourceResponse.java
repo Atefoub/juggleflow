@@ -21,6 +21,13 @@ public class PedagogicalResourceResponse {
     List<String> tags;
 
     public static PedagogicalResourceResponse from(PedagogicalResource resource) {
+        return from(resource, resource.getResourceUrl());
+    }
+
+    public static PedagogicalResourceResponse from(
+        PedagogicalResource resource,
+        String effectiveUrl
+    ) {
         List<String> tagList = resource.getTags() == null || resource.getTags().isBlank()
             ? List.of()
             : Arrays.stream(resource.getTags().split(","))
@@ -35,7 +42,7 @@ public class PedagogicalResourceResponse {
             .title(resource.getTitle())
             .subtitle(resource.getSubtitle())
             .metaLabel(resource.getMetaLabel())
-            .resourceUrl(resource.getResourceUrl())
+            .resourceUrl(effectiveUrl)
             .tags(tagList)
             .build();
     }

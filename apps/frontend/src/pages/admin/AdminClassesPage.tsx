@@ -249,10 +249,19 @@ export default function AdminClassesPage() {
               Comptes actifs (tous rôles) : <strong className="text-[var(--color-admin-text-secondary)]">{stats.activeUserCount}</strong> ·{' '}
               Enseignants : <strong className="text-[var(--color-admin-text-secondary)]">{stats.teacherAccountCount}</strong> ·{' '}
               Administrateurs : <strong className="text-[var(--color-admin-text-secondary)]">{stats.administratorAccountCount}</strong>
-              {stats.licenseSeatCap != null
-                ? <> · Plafond licence : <strong className="text-[var(--color-admin-text-secondary)]">{stats.licenseSeatCap}</strong></>
-                : <> · Plafond licence : non configuré côté serveur</>
-              }
+              {stats.licenseSeatCap != null ? (
+                <>
+                  {' '}· Licence :{' '}
+                  <strong className="text-[var(--color-admin-text-secondary)]">
+                    {stats.licenseUsedCount} / {stats.licenseSeatCap}
+                  </strong>
+                  {stats.licenseExpiresAt
+                    ? <> (expire le {stats.licenseExpiresAt})</>
+                    : null}
+                </>
+              ) : (
+                <> · Plafond licence : non configuré côté serveur</>
+              )}
             </p>
           )}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

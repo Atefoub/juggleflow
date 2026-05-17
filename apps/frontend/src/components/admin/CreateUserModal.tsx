@@ -90,11 +90,8 @@ export default function CreateUserModal({ isOpen, classes, onClose, onCreated }:
       const message =
         err && typeof err === 'object' && 'response' in err
           ? // axios error
-            (err as { response?: { status?: number; data?: { message?: string } } })
-              .response?.status === 409
-            ? 'Un compte existe déjà avec cet email.'
-            : (err as { response?: { data?: { message?: string } } })
-                .response?.data?.message ?? 'Création impossible.'
+            (err as { response?: { data?: { message?: string } } }).response?.data
+              ?.message ?? 'Création impossible.'
           : 'Création impossible.';
       setFormError(message);
     } finally {
