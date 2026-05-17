@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import BottomNav from '../../components/BottomNav';
+import { resourcesApi, type PedagogicalResource, type ResourceType } from '../../api/resourcesApi';
 
 const navItems = [
   { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
@@ -10,79 +11,65 @@ const navItems = [
 
 type Tab = 'Études' | 'Vidéos' | 'Fiches' | 'Guides EPS';
 
-const PDF_RESOURCES = [
-  {
-    id: 1,
-    title: 'Impact du jonglage sur la plasticité cérébrale',
-    authors: 'Draganski et al., 2004 · Nature',
-    pages: '4 pages',
-    tags: ['Neurosciences', 'Cycle 2-3'],
-    url: '#',
-  },
-  {
-    id: 2,
-    title: 'Jonglage et développement de la coordination bilatérale',
-    authors: 'INSERM, 2019 · Rapport de recherche',
-    pages: '12 pages',
-    tags: ['Motricité', 'Cycle 1-2'],
-    url: '#',
-  },
-  {
-    id: 3,
-    title: "Concentration et activités d'adresse en école primaire",
-    authors: 'MEN DGESCO, 2021 · Guide officiel',
-    pages: '8 pages',
-    tags: ['Concentration', 'EPS'],
-    url: '#',
-  },
-];
-
-const VIDEO_RESOURCES = [
-  { id: 1, title: 'Formation enseignant — Enseigner la cascade', duration: '12 min', level: 'Débutant' },
-  { id: 2, title: 'Gestion de classe en EPS jonglage', duration: '8 min',  level: 'Tous niveaux' },
-];
-
-const GUIDE_RESOURCES = [
-  { id: 1, title: 'Guide pédagogique cycle 2 — Jonglage',     pages: '20 pages' },
-  { id: 2, title: 'Progressions EPS — Manipulation d\'objets', pages: '15 pages' },
-];
+const TAB_TO_TYPE: Record<Tab, ResourceType | null> = {
+  'Études': 'STUDY_PDF',
+  'Vidéos': 'TEACHER_VIDEO',
+  'Fiches': null,
+  'Guides EPS': 'TEACHER_GUIDE',
+};
 
 export default function ResourcesTeacherPage() {
   const [tab, setTab] = useState<Tab>('Études');
   const [search, setSearch] = useState('');
+  const [resources, setResources] = useState<PedagogicalResource[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    resourcesApi
+      .list('TEACHER')
+      .then((list) => {
+        if (!cancelled) setResources(list);
+      })
+      .catch(() => {
+        if (!cancelled) setError('Impossible de charger les ressources.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const normalizedSearch = search.trim().toLowerCase();
+  const typeFilter = TAB_TO_TYPE[tab];
 
-  const filteredPdfs = useMemo(() => {
-    if (normalizedSearch === '') return PDF_RESOURCES;
-    return PDF_RESOURCES.filter((r) => (
-      `${r.title} ${r.authors} ${r.pages} ${r.tags.join(' ')}`.toLowerCase().includes(normalizedSearch)
+  const filtered = useMemo(() => {
+    let list = resources;
+    if (typeFilter) {
+      list = list.filter((r) => r.resourceType === typeFilter);
+    }
+    if (normalizedSearch === '') return list;
+    return list.filter((r) => (
+      `${r.title} ${r.subtitle ?? ''} ${r.metaLabel ?? ''} ${r.tags.join(' ')}`
+        .toLowerCase()
+        .includes(normalizedSearch)
     ));
-  }, [normalizedSearch]);
+  }, [resources, typeFilter, normalizedSearch]);
 
-  const filteredVideos = useMemo(() => {
-    if (normalizedSearch === '') return VIDEO_RESOURCES;
-    return VIDEO_RESOURCES.filter((v) => (
-      `${v.title} ${v.duration} ${v.level}`.toLowerCase().includes(normalizedSearch)
-    ));
-  }, [normalizedSearch]);
-
-  const filteredGuides = useMemo(() => {
-    if (normalizedSearch === '') return GUIDE_RESOURCES;
-    return GUIDE_RESOURCES.filter((g) => (
-      `${g.title} ${g.pages}`.toLowerCase().includes(normalizedSearch)
-    ));
-  }, [normalizedSearch]);
+  const pdfs = filtered.filter((r) => r.resourceType === 'STUDY_PDF');
+  const videos = filtered.filter((r) => r.resourceType === 'TEACHER_VIDEO');
+  const guides = filtered.filter((r) => r.resourceType === 'TEACHER_GUIDE');
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
 
-      {/* Header */}
       <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
         <h1 className="font-display font-bold text-text-primary text-2xl mb-4">Ressources</h1>
         <p className="text-xs text-text-secondary mb-4">Contenus pédagogiques et scientifiques</p>
 
-        {/* Tab bar */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {(['Études', 'Vidéos', 'Fiches', 'Guides EPS'] as Tab[]).map((t) => (
             <button
@@ -103,7 +90,6 @@ export default function ResourcesTeacherPage() {
 
       <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
 
-        {/* Search */}
         <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-bg-card border border-border">
           <span role="img" aria-label="recherche" className="text-sm">🔍</span>
           <input
@@ -125,114 +111,138 @@ export default function ResourcesTeacherPage() {
           )}
         </div>
 
-        {/* ── Études ── */}
-        {tab === 'Études' && (
+        {loading && (
+          <p className="text-sm text-text-muted text-center py-8">Chargement…</p>
+        )}
+        {error && !loading && (
+          <p className="text-sm text-alert text-center py-4">{error}</p>
+        )}
+
+        {tab === 'Études' && !loading && (
           <>
             <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
               Études scientifiques — PDF téléchargeables
             </h2>
             <div className="flex flex-col gap-3">
-              {filteredPdfs.length === 0 ? (
-                <div className="p-6 rounded-2xl text-center bg-bg-card border border-border text-sm text-text-muted">
-                  Aucune ressource ne correspond à cette recherche.
-                </div>
-              ) : filteredPdfs.map((res) => (
-                <div key={res.id} className="p-4 rounded-2xl bg-bg-card border border-border">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#2A1020] border border-alert/30 shrink-0">
-                      <span role="img" aria-label="PDF" className="text-lg">📄</span>
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-text-primary text-sm leading-tight mb-1">{res.title}</p>
-                      <p className="text-xs text-text-muted">{res.authors}</p>
-                      <p className="text-xs text-text-muted">{res.pages}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-1.5 flex-wrap">
-                      {res.tags.map((tag) => (
-                        <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-border text-text-muted">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    <a
-                      href={res.url}
-                      aria-label={`Télécharger ${res.title}`}
-                      className="jf-btn-secondary jf-btn-secondary-sm inline-flex gap-1"
-                    >
-                      <span role="img" aria-label="télécharger">↓</span>
-                      PDF
-                    </a>
-                  </div>
-                </div>
+              {pdfs.length === 0 ? (
+                <EmptySearch />
+              ) : pdfs.map((res) => (
+                <PdfCard key={res.id} res={res} />
               ))}
             </div>
-
             <p className="text-xs text-text-muted text-center px-4">
-              Les ressources sont hébergées sur les serveurs JuggleFlow. Aucune donnée élève n'est transmise lors du téléchargement.
+              Les ressources sont hébergées sur les serveurs JuggleFlow.
+              Aucune donnée élève n&apos;est transmise lors du téléchargement.
             </p>
           </>
         )}
 
-        {/* ── Vidéos ── */}
-        {tab === 'Vidéos' && (
+        {tab === 'Vidéos' && !loading && (
           <div className="flex flex-col gap-3">
-            {filteredVideos.length === 0 ? (
-              <div className="p-6 rounded-2xl text-center bg-bg-card border border-border text-sm text-text-muted">
-                Aucune ressource ne correspond à cette recherche.
-              </div>
-            ) : filteredVideos.map((v) => (
-              <div key={v.id} className="p-4 rounded-2xl bg-bg-card border border-border flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand/20 border border-brand/40 shrink-0">
-                  <span role="img" aria-label="vidéo" className="text-lg">▶️</span>
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-text-primary text-sm">{v.title}</p>
-                  <p className="text-xs text-text-muted">{v.duration} · {v.level}</p>
-                </div>
-              </div>
+            {videos.length === 0 ? <EmptySearch /> : videos.map((v) => (
+              <VideoRow key={v.id} res={v} />
             ))}
           </div>
         )}
 
-        {/* ── Fiches ── */}
-        {tab === 'Fiches' && (
+        {tab === 'Fiches' && !loading && (
           <div className="p-4 rounded-2xl bg-bg-card border border-border text-sm text-text-muted text-center">
             Bientôt disponible — fiches pédagogiques par figure.
           </div>
         )}
 
-        {/* ── Guides EPS ── */}
-        {tab === 'Guides EPS' && (
+        {tab === 'Guides EPS' && !loading && (
           <div className="flex flex-col gap-3">
-            {filteredGuides.length === 0 ? (
-              <div className="p-6 rounded-2xl text-center bg-bg-card border border-border text-sm text-text-muted">
-                Aucune ressource ne correspond à cette recherche.
-              </div>
-            ) : filteredGuides.map((g) => (
-              <div key={g.id} className="p-4 rounded-2xl bg-bg-card border border-border flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-success/10 border border-success/30 shrink-0">
-                  <span role="img" aria-label="guide" className="text-lg">📗</span>
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-text-primary text-sm">{g.title}</p>
-                  <p className="text-xs text-text-muted">{g.pages}</p>
-                </div>
-                <button
-                  type="button"
-                  aria-label={`Télécharger ${g.title}`}
-                  className="text-xs px-2 py-1.5 rounded-lg bg-success/10 border border-success/30 text-success font-semibold hover:opacity-80 transition-opacity"
-                >
-                  ↓
-                </button>
-              </div>
+            {guides.length === 0 ? <EmptySearch /> : guides.map((g) => (
+              <GuideRow key={g.id} res={g} />
             ))}
           </div>
         )}
       </main>
 
       <BottomNav items={navItems} />
+    </div>
+  );
+}
+
+function EmptySearch() {
+  return (
+    <div className="p-6 rounded-2xl text-center bg-bg-card border border-border text-sm text-text-muted">
+      Aucune ressource ne correspond à cette recherche.
+    </div>
+  );
+}
+
+function PdfCard({ res }: { res: PedagogicalResource }) {
+  const href = res.resourceUrl ?? '#';
+  return (
+    <div className="p-4 rounded-2xl bg-bg-card border border-border">
+      <div className="flex items-start gap-3 mb-3">
+        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#2A1020] border border-alert/30 shrink-0">
+          <span role="img" aria-label="PDF" className="text-lg">📄</span>
+        </div>
+        <div className="flex-1">
+          <p className="font-bold text-text-primary text-sm leading-tight mb-1">{res.title}</p>
+          {res.subtitle && <p className="text-xs text-text-muted">{res.subtitle}</p>}
+          {res.metaLabel && <p className="text-xs text-text-muted">{res.metaLabel}</p>}
+        </div>
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="flex gap-1.5 flex-wrap">
+          {res.tags.map((tag) => (
+            <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-border text-text-muted">
+              {tag}
+            </span>
+          ))}
+        </div>
+        <a
+          href={href}
+          aria-label={`Télécharger ${res.title}`}
+          className="jf-btn-secondary jf-btn-secondary-sm inline-flex gap-1"
+        >
+          <span role="img" aria-label="télécharger">↓</span>
+          PDF
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function VideoRow({ res }: { res: PedagogicalResource }) {
+  const level = res.tags[0] ?? '';
+  return (
+    <div className="p-4 rounded-2xl bg-bg-card border border-border flex items-center gap-3">
+      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand/20 border border-brand/40 shrink-0">
+        <span role="img" aria-label="vidéo" className="text-lg">▶️</span>
+      </div>
+      <div className="flex-1">
+        <p className="font-bold text-text-primary text-sm">{res.title}</p>
+        <p className="text-xs text-text-muted">
+          {res.metaLabel}{level ? ` · ${level}` : ''}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function GuideRow({ res }: { res: PedagogicalResource }) {
+  const href = res.resourceUrl ?? '#';
+  return (
+    <div className="p-4 rounded-2xl bg-bg-card border border-border flex items-center gap-3">
+      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-success/10 border border-success/30 shrink-0">
+        <span role="img" aria-label="guide" className="text-lg">📗</span>
+      </div>
+      <div className="flex-1">
+        <p className="font-bold text-text-primary text-sm">{res.title}</p>
+        {res.metaLabel && <p className="text-xs text-text-muted">{res.metaLabel}</p>}
+      </div>
+      <a
+        href={href}
+        aria-label={`Télécharger ${res.title}`}
+        className="text-xs px-2 py-1.5 rounded-lg bg-success/10 border border-success/30 text-success font-semibold hover:opacity-80 transition-opacity"
+      >
+        ↓
+      </a>
     </div>
   );
 }

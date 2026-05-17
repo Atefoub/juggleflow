@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../api/authApi';
-import { isOnboardingCompleted } from '../utils/onboarding';
+import { isStudentOnboardingDone } from '../utils/onboarding';
 import type { Role } from '../types/auth';
 
 const schema = z.object({
@@ -39,7 +39,7 @@ export default function LoginPage() {
     try {
       const response = await authApi.login(data);
       const profile = await login(response.accessToken);
-      if (profile.role === 'ROLE_ELEVE' && !isOnboardingCompleted(profile.id)) {
+      if (profile.role === 'ROLE_ELEVE' && !isStudentOnboardingDone(profile)) {
         navigate('/onboarding', { replace: true });
       } else {
         const redirect = roleRedirect[profile.role] ?? '/login';

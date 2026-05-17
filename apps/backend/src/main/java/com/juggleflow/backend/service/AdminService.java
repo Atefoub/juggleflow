@@ -12,7 +12,9 @@ import com.juggleflow.backend.model.SchoolClass;
 import com.juggleflow.backend.model.Student;
 import com.juggleflow.backend.model.Teacher;
 import com.juggleflow.backend.model.User;
+import com.juggleflow.backend.model.EstablishmentSettings;
 import com.juggleflow.backend.repository.AdministratorRepository;
+import com.juggleflow.backend.repository.EstablishmentSettingsRepository;
 import com.juggleflow.backend.repository.SchoolClassRepository;
 import com.juggleflow.backend.repository.StudentRepository;
 import com.juggleflow.backend.repository.TeacherRepository;
@@ -60,6 +62,7 @@ public class AdminService {
     private final UserProgressRepository userProgressRepository;
     private final TeacherRepository teacherRepository;
     private final AdministratorRepository administratorRepository;
+    private final EstablishmentSettingsRepository establishmentSettingsRepository;
     private final GdprService gdprService;
     private final PasswordEncoder passwordEncoder;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -68,13 +71,17 @@ public class AdminService {
      * Agrégats établissement pour le tableau de bord admin.
      */
     public AdminEstablishmentStatsResponse getEstablishmentStats() {
+        Integer seatCap = establishmentSettingsRepository.findById(1L)
+            .map(EstablishmentSettings::getLicenseSeatCap)
+            .orElse(null);
+
         return AdminEstablishmentStatsResponse.builder()
             .classCount(schoolClassRepository.count())
             .studentCount(studentRepository.count())
             .teacherAccountCount(teacherRepository.count())
             .administratorAccountCount(administratorRepository.count())
             .activeUserCount(userRepository.countByEnabledTrue())
-            .licenseSeatCap(null)
+            .licenseSeatCap(seatCap)
             .build();
     }
 
