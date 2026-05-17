@@ -31,6 +31,7 @@ const AdminUsersPage     = lazy(() => import('../pages/admin/AdminUsersPage'));
 const AdminClassesPage   = lazy(() => import('../pages/admin/AdminClassesPage'));
 const AdminRgpdPage      = lazy(() => import('../pages/admin/AdminRgpdPage'));
 const AdminAuditPage     = lazy(() => import('../pages/admin/AdminAuditPage'));
+const AdminResourcesPage = lazy(() => import('../pages/admin/AdminResourcesPage'));
 
 function AppFallback() {
   return (
@@ -136,6 +137,7 @@ export default function AppRouter() {
           <Route path="/admin/dashboard" element={admin(<AdminDashboardPage />)} />
           <Route path="/admin/users"     element={admin(<AdminUsersPage />)} />
           <Route path="/admin/classes"   element={admin(<AdminClassesPage />)} />
+          <Route path="/admin/resources" element={admin(<AdminResourcesPage />)} />
           <Route path="/admin/rgpd"      element={admin(<AdminRgpdPage />)} />
           <Route path="/admin/audit"     element={admin(<AdminAuditPage />)} />
 
