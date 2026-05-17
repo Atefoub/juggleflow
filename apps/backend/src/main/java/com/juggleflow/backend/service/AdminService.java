@@ -63,6 +63,7 @@ public class AdminService {
     private final TeacherRepository teacherRepository;
     private final AdministratorRepository administratorRepository;
     private final EstablishmentSettingsRepository establishmentSettingsRepository;
+    private final EstablishmentLicenseService establishmentLicenseService;
     private final GdprService gdprService;
     private final PasswordEncoder passwordEncoder;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -71,8 +72,11 @@ public class AdminService {
      * Agrégats établissement pour le tableau de bord admin.
      */
     public AdminEstablishmentStatsResponse getEstablishmentStats() {
-        Integer seatCap = establishmentSettingsRepository.findById(1L)
-            .map(EstablishmentSettings::getLicenseSeatCap)
+        var settingsOpt = establishmentSettingsRepository.findById(1L);
+        Integer seatCap = settingsOpt.map(EstablishmentSettings::getLicenseSeatCap).orElse(null);
+        String expiresAt = settingsOpt
+            .map(EstablishmentSettings::getLicenseExpiresAt)
+            .map(LocalDate::toString)
             .orElse(null);
 
         return AdminEstablishmentStatsResponse.builder()
@@ -82,6 +86,8 @@ public class AdminService {
             .administratorAccountCount(administratorRepository.count())
             .activeUserCount(userRepository.countByEnabledTrue())
             .licenseSeatCap(seatCap)
+            .licenseUsedCount(establishmentLicenseService.countLicensedSeatsUsed())
+            .licenseExpiresAt(expiresAt)
             .build();
     }
 
@@ -119,6 +125,10 @@ public class AdminService {
             throw new ResponseStatusException(
                 HttpStatus.CONFLICT,
                 "Un utilisateur avec cet email existe deja.");
+        }
+
+        if ("ROLE_ELEVE".equals(request.getRole()) || "ROLE_ENSEIGNANT".equals(request.getRole())) {
+            establishmentLicenseService.assertSeatAvailableForNewAccount();
         }
 
         boolean generated = request.getPassword() == null || request.getPassword().isBlank();
