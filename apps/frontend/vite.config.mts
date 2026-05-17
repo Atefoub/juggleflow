@@ -1,9 +1,15 @@
 /// <reference types='vitest' />
+import path from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
+
+const pwaRegisterMock = path.resolve(
+  import.meta.dirname,
+  'src/test/mocks/pwa-register.ts',
+);
 
 export default defineConfig(({ mode }) => {
   const isDev = mode === 'development';
@@ -166,6 +172,9 @@ export default defineConfig(({ mode }) => {
     globals: true,
     environment: 'jsdom',
     include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    alias: {
+      'virtual:pwa-register': pwaRegisterMock,
+    },
     reporters: ['default'],
     coverage: {
       reportsDirectory: './test-output/vitest/coverage',

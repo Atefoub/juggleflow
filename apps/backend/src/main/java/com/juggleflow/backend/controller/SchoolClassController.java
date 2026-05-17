@@ -4,6 +4,7 @@ package com.juggleflow.backend.controller;
 import com.juggleflow.backend.dto.SchoolClassRequest;
 import com.juggleflow.backend.dto.SchoolClassResponse;
 import com.juggleflow.backend.dto.StudentSummaryResponse;
+import com.juggleflow.backend.dto.UpdateStudentGroupRequest;
 import com.juggleflow.backend.service.SchoolClassService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -16,6 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -73,6 +75,23 @@ public class SchoolClassController {
 
         return ResponseEntity.ok(
                 schoolClassService.getClassStudents(classId, userDetails.getUsername()));
+    }
+
+    /**
+     * PATCH /api/enseignant/classes/{classId}/students/{studentId}/group
+     * Assigne un groupe (VERT/ORANGE/ROUGE) ou repasse en calcul automatique ({@code groupColor: null}).
+     */
+    @PatchMapping("/{classId}/students/{studentId}/group")
+    @Operation(summary = "Modifier le groupe pédagogique d'un élève")
+    public ResponseEntity<StudentSummaryResponse> updateStudentGroup(
+            @PathVariable Long classId,
+            @PathVariable Long studentId,
+            @RequestBody UpdateStudentGroupRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        return ResponseEntity.ok(
+                schoolClassService.updateStudentGroup(
+                        classId, studentId, request, userDetails.getUsername()));
     }
 
     /**
