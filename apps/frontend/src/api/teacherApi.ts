@@ -20,6 +20,10 @@ export interface StudentSummary {
   groupColor: StudentGroupColor;
   groupColorAuto: StudentGroupColor;
   groupColorManual: boolean;
+  blocked: boolean;
+  blockedTrickId: number | null;
+  blockedTrickName: string | null;
+  blockedAttemptCount: number | null;
 }
 
 export interface StudentPathProgress {
@@ -33,6 +37,9 @@ export interface StudentPathProgress {
     trickId: number;
     trickName: string;
     status: 'MASTERED' | 'IN_PROGRESS' | 'NOT_STARTED' | string;
+    attemptCount: number;
+    masteryPercentage: number | null;
+    blocked: boolean;
   }>;
 }
 

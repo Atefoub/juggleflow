@@ -22,6 +22,12 @@ public class StudentSummaryResponse {
     /** {@code true} si l'enseignant a fixé le groupe manuellement. */
     private boolean groupColorManual;
 
+    /** Bloqué sur la figure courante du parcours assigné (≥ 3 tentatives). */
+    private boolean blocked;
+    private Long blockedTrickId;
+    private String blockedTrickName;
+    private Integer blockedAttemptCount;
+
     /**
      * Couleur de groupe calculée selon la progression :
      * >= 70% → VERT, >= 40% → ORANGE, < 40% → ROUGE.

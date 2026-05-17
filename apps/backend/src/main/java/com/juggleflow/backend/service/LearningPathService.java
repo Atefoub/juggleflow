@@ -221,19 +221,9 @@ public class LearningPathService {
                     ));
 
             List<StudentPathProgressResponse.TrickProgressDetail> details =
-                    steps.stream().map(step -> {
-                        Long trickId = step.getTrick().getId();
-                        UserProgress progress = progressByTrickId.get(trickId);
-                        String status = progress != null
-                                ? progress.getStatus().name()
-                                : UserProgress.ProgressStatus.NOT_STARTED.name();
-
-                        return StudentPathProgressResponse.TrickProgressDetail.builder()
-                                .trickId(trickId)
-                                .trickName(step.getTrick().getName())
-                                .status(status)
-                                .build();
-                    }).toList();
+                    steps.stream()
+                            .map(step -> toTrickProgressDetail(step, progressByTrickId.get(step.getTrick().getId())))
+                            .toList();
 
             long masteredCount = details.stream()
                     .filter(d -> UserProgress.ProgressStatus.MASTERED.name().equals(d.getStatus()))
@@ -286,19 +276,9 @@ public class LearningPathService {
                 ));
 
         List<StudentPathProgressResponse.TrickProgressDetail> details =
-                steps.stream().map(step -> {
-                    Long trickId = step.getTrick().getId();
-                    UserProgress progress = progressByTrickId.get(trickId);
-                    String status = progress != null
-                            ? progress.getStatus().name()
-                            : UserProgress.ProgressStatus.NOT_STARTED.name();
-
-                    return StudentPathProgressResponse.TrickProgressDetail.builder()
-                            .trickId(trickId)
-                            .trickName(step.getTrick().getName())
-                            .status(status)
-                            .build();
-                }).toList();
+                steps.stream()
+                        .map(step -> toTrickProgressDetail(step, progressByTrickId.get(step.getTrick().getId())))
+                        .toList();
 
         long masteredCount = details.stream()
                 .filter(d -> UserProgress.ProgressStatus.MASTERED.name().equals(d.getStatus()))
@@ -319,6 +299,23 @@ public class LearningPathService {
     }
 
     // ── Helpers privés ───────────────────────────────────────────
+
+    private static StudentPathProgressResponse.TrickProgressDetail toTrickProgressDetail(
+            LearningPathStep step,
+            UserProgress progress) {
+        String status = progress != null
+                ? progress.getStatus().name()
+                : UserProgress.ProgressStatus.NOT_STARTED.name();
+
+        return StudentPathProgressResponse.TrickProgressDetail.builder()
+                .trickId(step.getTrick().getId())
+                .trickName(step.getTrick().getName())
+                .status(status)
+                .attemptCount(progress != null ? progress.getAttemptCount() : 0)
+                .masteryPercentage(progress != null ? progress.getMasteryPercentage() : null)
+                .blocked(StudentBlockageService.isBlocked(progress))
+                .build();
+    }
 
     private Teacher findTeacherByEmail(String email) {
         return teacherRepository.findByEmail(email)
