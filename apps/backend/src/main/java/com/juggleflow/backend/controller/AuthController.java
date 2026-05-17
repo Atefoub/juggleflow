@@ -6,6 +6,7 @@ import com.juggleflow.backend.dto.RegisterRequest;
 import com.juggleflow.backend.dto.UserProfileResponse;
 import com.juggleflow.backend.exception.ResourceNotFoundException;
 import com.juggleflow.backend.model.User;
+import com.juggleflow.backend.repository.StudentRepository;
 import com.juggleflow.backend.repository.UserRepository;
 import com.juggleflow.backend.security.CookieUtils;
 import com.juggleflow.backend.service.AuthService;
@@ -43,8 +44,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
   private final AuthService    authService;
-  private final UserRepository userRepository;
-  private final CookieUtils    cookieUtils;
+  private final UserRepository    userRepository;
+  private final StudentRepository studentRepository;
+  private final CookieUtils       cookieUtils;
 
   /**
    * POST /api/auth/login
@@ -124,9 +126,18 @@ public class AuthController {
   public ResponseEntity<UserProfileResponse> me(
     @AuthenticationPrincipal UserDetails userDetails) {
 
-    User user = userRepository.findByEmail(userDetails.getUsername())
+    String email = userDetails.getUsername();
+    User user = userRepository.findByEmail(email)
       .orElseThrow(() -> new ResourceNotFoundException(
-        "Utilisateur introuvable : " + userDetails.getUsername()));
+        "Utilisateur introuvable : " + email));
+
+    if ("ROLE_ELEVE".equals(user.getRole())) {
+      return studentRepository.findByEmail(email)
+        .map(UserProfileResponse::from)
+        .map(ResponseEntity::ok)
+        .orElseThrow(() -> new ResourceNotFoundException(
+          "Élève introuvable : " + email));
+    }
 
     return ResponseEntity.ok(UserProfileResponse.from(user));
   }

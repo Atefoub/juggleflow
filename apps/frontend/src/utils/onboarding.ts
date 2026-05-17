@@ -12,7 +12,37 @@
  *           3. Pas de token ni de données personnelles stockées ici.
  */
 
+import type { UserProfile } from '../types/auth';
+
 export type OnboardingLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+
+/** Profil serveur prioritaire, localStorage en secours (offline / migration). */
+export function isStudentOnboardingDone(
+  user: Pick<UserProfile, 'id' | 'onboardingCompleted'> | null | undefined,
+): boolean {
+  if (!user?.id) return false;
+  if (user.onboardingCompleted === true) return true;
+  return isOnboardingCompleted(user.id);
+}
+
+/** Aligne le cache local avec le profil API après login ou /me. */
+export function applyProfileOnboarding(profile: UserProfile): void {
+  if (profile.role !== 'ROLE_ELEVE' || profile.id == null) return;
+  if (profile.jugglingLevel) {
+    try {
+      localStorage.setItem(levelKey(profile.id), profile.jugglingLevel);
+    } catch {
+      // ignore
+    }
+  }
+  if (profile.onboardingCompleted) {
+    try {
+      localStorage.setItem(completedKey(profile.id), 'true');
+    } catch {
+      // ignore
+    }
+  }
+}
 
 function completedKey(userId?: number | string | null): string {
   return userId != null ? `onboarding_completed:${userId}` : 'onboarding_completed';
