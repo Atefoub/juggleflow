@@ -34,6 +34,7 @@ public class SchoolClassService {
     private final StudentRepository studentRepository;
     private final TeacherRepository teacherRepository;
     private final UserProgressRepository userProgressRepository;
+    private final StudentBlockageService studentBlockageService;
 
     /**
      * Crée une nouvelle classe scolaire et la rattache à l'enseignant connecté.
@@ -113,16 +114,16 @@ public class SchoolClassService {
                 studentId, classId,
                 request.getGroupColor() != null ? request.getGroupColor() : "AUTO");
 
-        return toStudentSummary(student);
+        return toStudentSummary(student, classId);
     }
 
     private List<StudentSummaryResponse> buildStudentSummariesForClass(Long classId) {
         return studentRepository.findBySchoolClass_Id(classId).stream()
-                .map(this::toStudentSummary)
+                .map(student -> toStudentSummary(student, classId))
                 .toList();
     }
 
-    private StudentSummaryResponse toStudentSummary(Student student) {
+    private StudentSummaryResponse toStudentSummary(Student student, Long classId) {
         List<UserProgress> progressList =
                 userProgressRepository.findByUser_Id(student.getId());
 
@@ -143,7 +144,7 @@ public class SchoolClassService {
                 StudentSummaryResponse.resolveGroupColor(percent);
         StudentSummaryResponse.GroupColor effective = resolveEffectiveGroupColor(student, auto);
 
-        return StudentSummaryResponse.builder()
+        StudentSummaryResponse.StudentSummaryResponseBuilder builder = StudentSummaryResponse.builder()
                 .id(student.getId())
                 .firstName(student.getFirstName())
                 .lastName(student.getLastName())
@@ -152,7 +153,16 @@ public class SchoolClassService {
                 .groupColor(effective)
                 .groupColorAuto(auto)
                 .groupColorManual(student.getAssignedGroupColor() != null)
-                .build();
+                .blocked(false);
+
+        studentBlockageService.findBlockageForStudentInClass(student.getId(), classId)
+                .ifPresent(blockage -> builder
+                        .blocked(true)
+                        .blockedTrickId(blockage.trickId())
+                        .blockedTrickName(blockage.trickName())
+                        .blockedAttemptCount(blockage.attemptCount()));
+
+        return builder.build();
     }
 
     private static StudentSummaryResponse.GroupColor resolveEffectiveGroupColor(

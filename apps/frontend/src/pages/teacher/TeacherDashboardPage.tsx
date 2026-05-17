@@ -96,6 +96,7 @@ export default function TeacherDashboardPage() {
   const groups          = groupStudents(students);
   const avgProgress     = averageProgress(students);
   const blockedStudents = students.filter((s) => s.groupColor === 'ROUGE');
+  const exerciseBlockedStudents = students.filter((s) => s.blocked);
   const sortedAssignedPaths = useMemo(
     () => assignedPaths.slice().sort((a, b) => a.pathName.localeCompare(b.pathName, 'fr')),
     [assignedPaths]
@@ -251,7 +252,37 @@ export default function TeacherDashboardPage() {
               </div>
             )}
 
-            {/* Alerte élèves bloqués */}
+            {/* Alerte blocage sur figure (parcours) */}
+            {exerciseBlockedStudents.length > 0 && selectedClass && (
+              <div className="flex items-start gap-3 rounded-2xl border border-[#2A1A10] border-l-[3px] border-l-brand-end bg-[#1A1020] p-4">
+                <span role="img" aria-label="attention" className="text-lg shrink-0">⚠️</span>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-white mb-1">
+                    {exerciseBlockedStudents.length} élève{exerciseBlockedStudents.length > 1 ? 's' : ''}{' '}
+                    bloqué{exerciseBlockedStudents.length > 1 ? 's' : ''} sur une figure
+                  </p>
+                  <p className="text-xs text-text-secondary">
+                    {exerciseBlockedStudents
+                      .slice(0, 3)
+                      .map((s) =>
+                        `${s.firstName} ${s.lastName[0]}. (${s.blockedTrickName ?? 'figure'})`,
+                      )
+                      .join(', ')}
+                    {exerciseBlockedStudents.length > 3 &&
+                      ` +${exerciseBlockedStudents.length - 3} autres`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/teacher/eleves?classId=${selectedClass.id}`)}
+                  className="shrink-0 text-xs font-semibold text-brand-end underline underline-offset-2"
+                >
+                  Voir les élèves →
+                </button>
+              </div>
+            )}
+
+            {/* Alerte élèves en difficulté (groupe rouge) */}
             {blockedStudents.length > 0 && (
               <div className="flex items-start gap-3 rounded-2xl border border-[#2A1A10] border-l-[3px] border-l-brand-end bg-[#1A1020] p-4">
                 <span role="img" aria-label="attention" className="text-lg shrink-0">⚠️</span>
@@ -458,3 +489,5 @@ export default function TeacherDashboardPage() {
     </div>
   );
 }
+
+

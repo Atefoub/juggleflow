@@ -24,5 +24,8 @@ public class StudentPathProgressResponse {
         private Long trickId;
         private String trickName;
         private String status;
+        private int attemptCount;
+        private Integer masteryPercentage;
+        private boolean blocked;
     }
 }

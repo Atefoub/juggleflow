@@ -10,6 +10,7 @@ import {
   type LearningPathSummary,
   type StudentPathProgress,
 } from '../../api/teacherApi';
+import { catalogueApi } from '../../api/catalogueApi';
 
 const navItems = [
   { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
@@ -47,11 +48,42 @@ export default function StudentDetailPage() {
   const [pathProgress, setPathProgress] = useState<StudentPathProgress | null>(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
+  const [blockagePrerequisites, setBlockagePrerequisites] = useState<string[]>([]);
 
   // Groupe de couleur
   const groupColor  = student?.groupColor ?? 'VERT';
   const chipColor   = GROUP_COLOR_MAP[groupColor];
   const progressPct = student?.progressionPercent ?? 0;
+
+  const blockage = useMemo(() => {
+    if (student?.blocked && student.blockedTrickName) {
+      return {
+        trickId: student.blockedTrickId,
+        trickName: student.blockedTrickName,
+        attemptCount: student.blockedAttemptCount ?? 0,
+      };
+    }
+    const fromPath = pathProgress?.trickDetails.find((t) => t.blocked);
+    if (fromPath) {
+      return {
+        trickId: fromPath.trickId,
+        trickName: fromPath.trickName,
+        attemptCount: fromPath.attemptCount,
+      };
+    }
+    return null;
+  }, [student, pathProgress]);
+
+  useEffect(() => {
+    if (!blockage?.trickId) {
+      setBlockagePrerequisites([]);
+      return;
+    }
+    catalogueApi
+      .getTrickById(blockage.trickId)
+      .then((t) => setBlockagePrerequisites(t.prerequisiteNames))
+      .catch(() => setBlockagePrerequisites([]));
+  }, [blockage?.trickId]);
 
   useEffect(() => {
     const load = async () => {
@@ -208,6 +240,56 @@ export default function StudentDetailPage() {
 
         {!loading && !error && student && (
           <>
+            {blockage && (
+              <section className="rounded-2xl border border-[#2A1A10] border-l-[3px] border-l-brand-end bg-[#1A1020] p-4">
+                <p className="text-sm font-bold text-white mb-1">
+                  Blocage détecté sur « {blockage.trickName} »
+                </p>
+                <p className="text-xs text-text-secondary mb-3">
+                  {blockage.attemptCount} tentative{blockage.attemptCount > 1 ? 's' : ''} sans
+                  progression sur la figure courante du parcours.
+                </p>
+                {blockagePrerequisites.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs font-semibold text-text-primary mb-1">
+                      Figures prérequises suggérées
+                    </p>
+                    <ul className="text-xs text-text-secondary list-disc pl-4 space-y-0.5">
+                      {blockagePrerequisites.map((name) => (
+                        <li key={name}>{name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {effectiveClassId != null && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate(`/teacher/groupes?classId=${effectiveClassId}`)
+                      }
+                      className="text-xs font-semibold text-brand-end underline underline-offset-2"
+                    >
+                      Changer de groupe →
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const params = new URLSearchParams();
+                      if (effectiveClassId) params.set('classId', String(effectiveClassId));
+                      if (student.id) params.set('studentId', String(student.id));
+                      if (selectedPathId) params.set('pathId', String(selectedPathId));
+                      navigate(`/teacher/parcours/assigner?${params.toString()}`);
+                    }}
+                    className="text-xs font-semibold text-brand-end underline underline-offset-2"
+                  >
+                    Modifier le parcours assigné →
+                  </button>
+                </div>
+              </section>
+            )}
+
             {/* KPIs */}
             <section>
               <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
@@ -357,12 +439,23 @@ export default function StudentDetailPage() {
                       return (
                         <div
                           key={t.trickId}
-                          className="p-3 rounded-2xl bg-bg-card border border-border flex items-center justify-between gap-3"
+                          className={[
+                            'p-3 rounded-2xl bg-bg-card border flex items-center justify-between gap-3',
+                            t.blocked
+                              ? 'border-brand-end/60 border-l-[3px] border-l-brand-end'
+                              : 'border-border',
+                          ].join(' ')}
                         >
                           <div className="min-w-0">
                             <p className="text-sm font-semibold text-text-primary truncate">{t.trickName}</p>
                             <p className={`text-xs ${cfg.textClass}`}>
                               <span role="img" aria-label={cfg.label}>{cfg.icon}</span> {cfg.label}
+                              {t.attemptCount > 0 && (
+                                <span className="text-text-muted">
+                                  {' '}
+                                  · {t.attemptCount} tentative{t.attemptCount > 1 ? 's' : ''}
+                                </span>
+                              )}
                             </p>
                           </div>
                           <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${cfg.bgClass}`}>
@@ -407,3 +500,4 @@ export default function StudentDetailPage() {
     </div>
   );
 }
+
