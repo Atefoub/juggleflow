@@ -212,9 +212,16 @@ export default function TeacherDashboardPage() {
                       const group = groups[color];
                       const avg = averageProgress(group);
                       return (
-                        <div
+                        <button
                           key={color}
-                          className="flex items-center gap-3 p-4 bg-bg-card"
+                          type="button"
+                          onClick={() =>
+                            selectedClass &&
+                            navigate(
+                              `/teacher/groupes?classId=${selectedClass.id}&group=${color}`,
+                            )
+                          }
+                          className="flex w-full items-center gap-3 p-4 bg-bg-card text-left transition-colors hover:bg-[#121830]"
                           style={{ borderBottom: index < arr.length - 1 ? '1px solid #1E2847' : 'none' }}
                         >
                           <div
@@ -237,7 +244,7 @@ export default function TeacherDashboardPage() {
                               {avg}%
                             </span>
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                 </div>
@@ -263,7 +270,9 @@ export default function TeacherDashboardPage() {
                 {selectedClass && (
                   <button
                     type="button"
-                    onClick={() => navigate(`/teacher/eleves?classId=${selectedClass.id}&group=ROUGE`)}
+                    onClick={() =>
+                      navigate(`/teacher/groupes?classId=${selectedClass.id}&group=ROUGE`)
+                    }
                     className="shrink-0 text-xs font-semibold text-brand-end underline underline-offset-2"
                   >
                     Voir le détail →
