@@ -165,7 +165,19 @@ export default function StudentDetailPage() {
                   style={{ backgroundColor: chipColor }}
                 >
                   {GROUP_LABEL_MAP[groupColor]}
+                  {student.groupColorManual ? ' · manuel' : ''}
                 </span>
+                {effectiveClassId != null && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate(`/teacher/groupes?classId=${effectiveClassId}`)
+                    }
+                    className="text-xs text-brand-end underline underline-offset-2"
+                  >
+                    Changer de groupe
+                  </button>
+                )}
               </div>
               <p className="text-xs text-text-muted mt-1">
                 {student.lastActivityAt

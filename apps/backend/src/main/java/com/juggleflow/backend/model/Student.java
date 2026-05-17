@@ -40,6 +40,13 @@ public class Student extends User {
     @Column(name = "onboarding_completed_at")
     private Instant onboardingCompletedAt;
 
+    /**
+     * Groupe assigné manuellement par l'enseignant (VERT, ORANGE, ROUGE).
+     * {@code null} : dérivé automatiquement de la progression.
+     */
+    @Column(name = "assigned_group_color", length = 10)
+    private String assignedGroupColor;
+
     @Override
     public String getRole() {
         return "ROLE_ELEVE";

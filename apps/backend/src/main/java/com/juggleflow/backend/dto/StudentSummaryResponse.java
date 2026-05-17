@@ -15,7 +15,12 @@ public class StudentSummaryResponse {
     private String lastName;
     private int progressionPercent;
     private Instant lastActivityAt;
+    /** Groupe effectif (manuel ou automatique). */
     private GroupColor groupColor;
+    /** Groupe suggéré par la progression, sans override enseignant. */
+    private GroupColor groupColorAuto;
+    /** {@code true} si l'enseignant a fixé le groupe manuellement. */
+    private boolean groupColorManual;
 
     /**
      * Couleur de groupe calculée selon la progression :

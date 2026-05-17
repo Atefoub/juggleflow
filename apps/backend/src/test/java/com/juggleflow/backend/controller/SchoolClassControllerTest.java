@@ -3,6 +3,8 @@ package com.juggleflow.backend.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.juggleflow.backend.dto.RegisterRequest;
 import com.juggleflow.backend.dto.SchoolClassRequest;
+import com.juggleflow.backend.dto.UpdateStudentGroupRequest;
+import com.juggleflow.backend.dto.StudentSummaryResponse;
 import com.juggleflow.backend.repository.SchoolClassRepository;
 import com.juggleflow.backend.repository.StudentRepository;
 import com.juggleflow.backend.repository.UserRepository;
@@ -21,6 +23,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -127,6 +130,51 @@ class SchoolClassControllerTest {
                         .header("Authorization", "Bearer " + teacherToken))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").exists());
+    }
+
+    @Test
+    @DisplayName("updateStudentGroup → assigne VERT puis réinitialise en AUTO")
+    void updateStudentGroup_shouldAssignAndReset() throws Exception {
+        String teacherToken = registerAndGetToken("teacher_grp@test.fr", "teacher");
+        String studentToken = registerAndGetToken("student_grp@test.fr", "student");
+
+        MvcResult classResult = mockMvc.perform(post("/api/enseignant/classes")
+                        .header("Authorization", "Bearer " + teacherToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(buildClassRequest())))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        Long classId = objectMapper.readTree(
+                classResult.getResponse().getContentAsString()).get("id").asLong();
+        Long studentId = getStudentId(studentToken);
+
+        mockMvc.perform(post("/api/enseignant/classes/" + classId + "/students/" + studentId)
+                        .header("Authorization", "Bearer " + teacherToken))
+                .andExpect(status().isCreated());
+
+        UpdateStudentGroupRequest assign = new UpdateStudentGroupRequest();
+        assign.setGroupColor(StudentSummaryResponse.GroupColor.VERT);
+
+        mockMvc.perform(patch("/api/enseignant/classes/" + classId
+                        + "/students/" + studentId + "/group")
+                        .header("Authorization", "Bearer " + teacherToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(assign)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.groupColor").value("VERT"))
+                .andExpect(jsonPath("$.groupColorManual").value(true));
+
+        UpdateStudentGroupRequest reset = new UpdateStudentGroupRequest();
+        reset.setGroupColor(null);
+
+        mockMvc.perform(patch("/api/enseignant/classes/" + classId
+                        + "/students/" + studentId + "/group")
+                        .header("Authorization", "Bearer " + teacherToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reset)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.groupColorManual").value(false));
     }
 
     @Test

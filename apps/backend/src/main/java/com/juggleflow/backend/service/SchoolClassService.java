@@ -6,6 +6,7 @@ import com.juggleflow.backend.dto.AdminUpdateSchoolClassRequest;
 import com.juggleflow.backend.dto.SchoolClassRequest;
 import com.juggleflow.backend.dto.SchoolClassResponse;
 import com.juggleflow.backend.dto.StudentSummaryResponse;
+import com.juggleflow.backend.dto.UpdateStudentGroupRequest;
 import com.juggleflow.backend.exception.ResourceNotFoundException;
 import com.juggleflow.backend.model.SchoolClass;
 import com.juggleflow.backend.model.Student;
@@ -86,35 +87,86 @@ public class SchoolClassService {
         return buildStudentSummariesForClass(classId);
     }
 
+    /**
+     * Assigne ou réinitialise le groupe pédagogique d'un élève (wireframe 11).
+     */
+    @Transactional
+    public StudentSummaryResponse updateStudentGroup(
+            Long classId,
+            Long studentId,
+            UpdateStudentGroupRequest request,
+            String teacherEmail) {
+        assertClassOwnership(classId, teacherEmail);
+
+        Student student = studentRepository.findByIdAndSchoolClass_Id(studentId, classId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                    "Élève introuvable dans la classe " + classId));
+
+        if (request.getGroupColor() == null) {
+            student.setAssignedGroupColor(null);
+        } else {
+            student.setAssignedGroupColor(request.getGroupColor().name());
+        }
+        studentRepository.save(student);
+
+        log.info("Groupe élève {} en classe {} → {}",
+                studentId, classId,
+                request.getGroupColor() != null ? request.getGroupColor() : "AUTO");
+
+        return toStudentSummary(student);
+    }
+
     private List<StudentSummaryResponse> buildStudentSummariesForClass(Long classId) {
-        List<Student> students = studentRepository.findBySchoolClass_Id(classId);
+        return studentRepository.findBySchoolClass_Id(classId).stream()
+                .map(this::toStudentSummary)
+                .toList();
+    }
 
-        return students.stream().map(student -> {
-            List<UserProgress> progressList =
-                    userProgressRepository.findByUser_Id(student.getId());
+    private StudentSummaryResponse toStudentSummary(Student student) {
+        List<UserProgress> progressList =
+                userProgressRepository.findByUser_Id(student.getId());
 
-            int total = progressList.size();
-            long mastered = progressList.stream()
-                    .filter(p -> p.getStatus() == UserProgress.ProgressStatus.MASTERED)
-                    .count();
+        int total = progressList.size();
+        long mastered = progressList.stream()
+                .filter(p -> p.getStatus() == UserProgress.ProgressStatus.MASTERED)
+                .count();
 
-            int percent = total == 0 ? 0 : (int) ((mastered * 100L) / total);
+        int percent = total == 0 ? 0 : (int) ((mastered * 100L) / total);
 
-            var lastActivity = progressList.stream()
-                    .map(UserProgress::getLastPractice)
-                    .filter(java.util.Objects::nonNull)
-                    .max(java.util.Comparator.naturalOrder())
-                    .orElse(null);
+        var lastActivity = progressList.stream()
+                .map(UserProgress::getLastPractice)
+                .filter(java.util.Objects::nonNull)
+                .max(java.util.Comparator.naturalOrder())
+                .orElse(null);
 
-            return StudentSummaryResponse.builder()
-                    .id(student.getId())
-                    .firstName(student.getFirstName())
-                    .lastName(student.getLastName())
-                    .progressionPercent(percent)
-                    .lastActivityAt(lastActivity)
-                    .groupColor(StudentSummaryResponse.resolveGroupColor(percent))
-                    .build();
-        }).toList();
+        StudentSummaryResponse.GroupColor auto =
+                StudentSummaryResponse.resolveGroupColor(percent);
+        StudentSummaryResponse.GroupColor effective = resolveEffectiveGroupColor(student, auto);
+
+        return StudentSummaryResponse.builder()
+                .id(student.getId())
+                .firstName(student.getFirstName())
+                .lastName(student.getLastName())
+                .progressionPercent(percent)
+                .lastActivityAt(lastActivity)
+                .groupColor(effective)
+                .groupColorAuto(auto)
+                .groupColorManual(student.getAssignedGroupColor() != null)
+                .build();
+    }
+
+    private static StudentSummaryResponse.GroupColor resolveEffectiveGroupColor(
+            Student student,
+            StudentSummaryResponse.GroupColor auto) {
+        String assigned = student.getAssignedGroupColor();
+        if (assigned == null) {
+            return auto;
+        }
+        try {
+            return StudentSummaryResponse.GroupColor.valueOf(assigned);
+        } catch (IllegalArgumentException ex) {
+            return auto;
+        }
     }
 
     /**
