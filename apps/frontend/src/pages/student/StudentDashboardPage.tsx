@@ -187,7 +187,6 @@ export default function StudentDashboardPage() {
 
         {!loading && !error && (
           <>
-            {/* ── Défi du jour (wireframes) ── */}
             {challenge ? (
               <section>
                 <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
@@ -326,7 +325,6 @@ export default function StudentDashboardPage() {
               )}
             </section>
 
-            {/* ── À explorer (wireframes) ── */}
             <section>
               <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
                 À explorer

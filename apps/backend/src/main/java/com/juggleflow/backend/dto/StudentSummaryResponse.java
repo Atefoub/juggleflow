@@ -1,4 +1,3 @@
-// filename: backend/src/main/java/com/juggleflow/backend/dto/StudentSummaryResponse.java
 package com.juggleflow.backend.dto;
 
 import lombok.Builder;
@@ -28,11 +27,7 @@ public class StudentSummaryResponse {
     private String blockedTrickName;
     private Integer blockedAttemptCount;
 
-    /**
-     * Couleur de groupe calculée selon la progression :
-     * >= 70% → VERT, >= 40% → ORANGE, < 40% → ROUGE.
-     * Cohérence avec les wireframes 07 et 12.
-     */
+    /** Couleur de groupe : >= 70% VERT, >= 40% ORANGE, sinon ROUGE. */
     public enum GroupColor {
         VERT,
         ORANGE,

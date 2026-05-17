@@ -1,4 +1,3 @@
-// filename: backend/src/main/java/com/juggleflow/backend/repository/ClassLearningPathRepository.java
 package com.juggleflow.backend.repository;
 
 import com.juggleflow.backend.model.ClassLearningPath;

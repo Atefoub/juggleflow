@@ -303,7 +303,6 @@ export default function StudentProfilePage() {
           </h2>
           <div className="rounded-2xl overflow-hidden border border-border divide-y divide-border">
 
-            {/* Niveau (wireframes: modifiable) */}
             <div className="p-4 bg-bg-card">
               <div className="flex items-center gap-3 mb-3">
                 <span role="img" aria-label="niveau" className="text-lg">⭐</span>
@@ -397,7 +396,6 @@ export default function StudentProfilePage() {
               </button>
             </div>
 
-            {/* Offline mode (wireframes) */}
             <div className="flex items-center justify-between p-4 bg-bg-card">
               <div className="flex items-center gap-3">
                 <span role="img" aria-label="mode hors-ligne" className="text-lg">📴</span>

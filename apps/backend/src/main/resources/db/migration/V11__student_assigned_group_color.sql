@@ -1,4 +1,4 @@
--- Groupe pédagogique assigné manuellement par l'enseignant (wireframe 11).
+-- Groupe pédagogique assigné manuellement par l'enseignant.
 -- NULL = calcul automatique selon la progression (>= 70 % VERT, >= 40 % ORANGE, sinon ROUGE).
 
 ALTER TABLE student

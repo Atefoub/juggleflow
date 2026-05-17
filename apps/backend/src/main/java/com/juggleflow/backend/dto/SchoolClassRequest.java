@@ -1,4 +1,3 @@
-// filename: backend/src/main/java/com/juggleflow/backend/dto/SchoolClassRequest.java
 package com.juggleflow.backend.dto;
 
 import jakarta.validation.constraints.Max;
