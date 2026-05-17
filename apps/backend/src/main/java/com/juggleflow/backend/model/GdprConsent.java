@@ -1,4 +1,3 @@
-// filename: backend/src/main/java/com/juggleflow/backend/model/GdprConsent.java
 package com.juggleflow.backend.model;
 
 import jakarta.persistence.Column;

@@ -42,7 +42,7 @@ CREATE TABLE pedagogical_resource (
 
 CREATE INDEX idx_pedagogical_resource_audience ON pedagogical_resource (audience, active);
 
--- Enseignant — études PDF (wireframes)
+-- Enseignant — études PDF
 INSERT INTO pedagogical_resource
     (audience, resource_type, title, subtitle, meta_label, resource_url, tags, sort_order)
 VALUES

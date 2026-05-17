@@ -243,7 +243,6 @@ class LearningPathControllerTest {
       .andExpect(status().isForbidden());
   }
 
-  // ── Helpers ──────────────────────────────────────────────────
 
   private String registerAndGetToken(String email, String role) throws Exception {
     RegisterRequest req = new RegisterRequest();

@@ -1,4 +1,3 @@
-// filename: backend/src/main/java/com/juggleflow/backend/dto/LearningPathResponse.java
 package com.juggleflow.backend.dto;
 
 import com.juggleflow.backend.model.LearningPath;

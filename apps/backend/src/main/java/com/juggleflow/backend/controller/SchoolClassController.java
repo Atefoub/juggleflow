@@ -1,4 +1,3 @@
-// filename: backend/src/main/java/com/juggleflow/backend/controller/SchoolClassController.java
 package com.juggleflow.backend.controller;
 
 import com.juggleflow.backend.dto.SchoolClassRequest;

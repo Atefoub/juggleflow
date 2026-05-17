@@ -44,7 +44,6 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-  // ── Validation (@Valid) ───────────────────────────────────────
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ErrorResponse> handleValidation(
@@ -71,7 +70,6 @@ public class GlobalExceptionHandler {
     return ResponseEntity.badRequest().body(body);
   }
 
-  // ── Authentification ──────────────────────────────────────────
 
   /**
    * [VULN-25] Message identique pour BadCredentials et UsernameNotFound.
@@ -147,7 +145,6 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(body);
   }
 
-  // ── Règles métier ──────────────────────────────────────────────
 
   /**
    * [VULN-24] IllegalArgumentException : on retourne le message uniquement
@@ -222,7 +219,6 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(status).body(body);
   }
 
-  // ── Fallback ───────────────────────────────────────────────────
 
   /**
    * [VULN-26] Fallback avec errorId traçable — pas de stacktrace côté client.
@@ -246,7 +242,6 @@ public class GlobalExceptionHandler {
     return ResponseEntity.internalServerError().body(body);
   }
 
-  // ── Helpers ────────────────────────────────────────────────────
 
   /**
    * Allowlist de messages métier sûrs à retourner au client.
@@ -261,7 +256,6 @@ public class GlobalExceptionHandler {
       !message.toLowerCase().contains("null");
   }
 
-  // ── DTO de réponse d'erreur ────────────────────────────────────
 
   @lombok.Builder
   @lombok.Data
