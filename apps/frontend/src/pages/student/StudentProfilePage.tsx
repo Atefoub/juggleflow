@@ -14,7 +14,14 @@ import {
 import { mergePendingIntoProgress } from '../../utils/offlineQueue';
 import { PROGRESS_UPDATED_EVENT } from '../../lib/progressEvents';
 import { computePathCompletionPercent } from '../../utils/pathProgress';
-import { getOnboardingLevel, setOnboardingLevel, type OnboardingLevel } from '../../utils/onboarding';
+import { getAccessToken } from '../../api/authApi';
+import { studentOnboardingApi } from '../../api/studentOnboardingApi';
+import {
+  applyProfileOnboarding,
+  getOnboardingLevel,
+  setOnboardingLevel,
+  type OnboardingLevel,
+} from '../../utils/onboarding';
 import { getOfflineMode, setOfflineMode } from '../../utils/preferences';
 import { prefetchOfflineContent } from '../../utils/prefetchOfflineContent';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
@@ -32,7 +39,7 @@ const XP_PER_TRICK = 100;
 const XP_MAX = 500;
 
 export default function StudentProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, logout, login } = useAuth();
   const navigate = useNavigate();
   const isOnline = useOnlineStatus();
 
@@ -312,7 +319,18 @@ export default function StudentProfilePage() {
                     <button
                       key={lvl}
                       type="button"
-                      onClick={() => user?.id && setOnboardingLevel(lvl, user.id)}
+                      onClick={async () => {
+                        if (!user?.id) return;
+                        setOnboardingLevel(lvl, user.id);
+                        try {
+                          const profile = await studentOnboardingApi.updateLevel(lvl);
+                          applyProfileOnboarding(profile);
+                          const token = getAccessToken();
+                          if (token) await login(token, profile);
+                        } catch {
+                          // garde le niveau local si hors-ligne
+                        }
+                      }}
                       className={[
                         'px-3 py-2 rounded-xl text-xs font-semibold border min-h-10',
                         active
