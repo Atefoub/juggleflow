@@ -189,9 +189,22 @@ export default function TeacherDashboardPage() {
             {/* Groupes d'élèves */}
             {students.length > 0 && (
               <div>
-                <h2 className="font-display font-bold text-white text-sm uppercase tracking-wider mb-3">
-                  Groupes d'élèves
-                </h2>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-display font-bold text-white text-sm uppercase tracking-wider">
+                    Groupes d'élèves
+                  </h2>
+                  {selectedClass && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate(`/teacher/groupes?classId=${selectedClass.id}`)
+                      }
+                      className="text-xs font-semibold text-brand-end underline underline-offset-2"
+                    >
+                      Modifier →
+                    </button>
+                  )}
+                </div>
                 <div className="rounded-2xl overflow-hidden border border-border">
                   {(['VERT', 'ORANGE', 'ROUGE'] as const)
                     .filter((color) => groups[color].length > 0)

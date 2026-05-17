@@ -124,13 +124,26 @@ export default function StudentListPage() {
               {loading ? '…' : `${students.length} élève${students.length !== 1 ? 's' : ''}`}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate('/teacher/parcours/assigner')}
-            className="jf-btn-secondary jf-btn-secondary-sm min-h-11 shrink-0 rounded-xl px-3 py-2 text-xs"
-          >
-            + Assigner
-          </button>
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                selectedClass
+                  ? navigate(`/teacher/groupes?classId=${selectedClass.id}`)
+                  : navigate('/teacher/groupes')
+              }
+              className="jf-btn-secondary jf-btn-secondary-sm min-h-11 rounded-xl px-3 py-2 text-xs"
+            >
+              Groupes
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/teacher/parcours/assigner')}
+              className="jf-btn-secondary jf-btn-secondary-sm min-h-11 rounded-xl px-3 py-2 text-xs"
+            >
+              + Assigner
+            </button>
+          </div>
         </div>
 
         {/* Ajouter un élève (par ID) */}
@@ -151,10 +164,6 @@ export default function StudentListPage() {
             {addingStudent ? 'Ajout…' : '+ Ajouter'}
           </button>
         </div>
-
-        <p className="text-xs text-text-secondary mb-4">
-          {loading ? '…' : `${students.length} élève${students.length !== 1 ? 's' : ''}`}
-        </p>
 
         {/* Class selector */}
         {classes.length > 1 && (
