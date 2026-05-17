@@ -1,4 +1,3 @@
-// filename: backend/src/main/java/com/juggleflow/backend/controller/LearningPathController.java
 package com.juggleflow.backend.controller;
 
 import com.juggleflow.backend.dto.AssignPathRequest;
@@ -56,7 +55,6 @@ public class LearningPathController {
 
     private final LearningPathService learningPathService;
 
-    // ── Endpoints lecture des parcours (/api/learning-paths) ────────────────
 
     /**
      * GET /api/learning-paths?level=BEGINNER
@@ -103,7 +101,6 @@ public class LearningPathController {
         return ResponseEntity.ok(learningPathService.getPathById(id));
     }
 
-    // ── Endpoints enseignant (/api/enseignant/classes/{classId}/paths) ───────
 
     /**
      * GET /api/enseignant/classes/{classId}/paths
@@ -212,7 +209,6 @@ public class LearningPathController {
                         classId, pathId, studentId, userDetails.getUsername()));
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private String csvEscape(String value) {
         if (value == null) return "";

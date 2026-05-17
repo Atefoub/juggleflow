@@ -158,7 +158,6 @@ class GdprControllerTest {
                 .andExpect(status().isForbidden());
     }
 
-    // ── Statut EXPIRED / VALID (P2.11) ───────────────────────────
 
     @Test
     @DisplayName("status=VALID quand le consentement utilise la policy_version courante")
@@ -267,7 +266,6 @@ class GdprControllerTest {
                 .andExpect(jsonPath("$.status").value("EXPIRED"));
     }
 
-    // ── Export PDF du registre (P2.10) ───────────────────────────
 
     @Test
     @DisplayName("exportRegisterPdf → 200, content-type application/pdf et body commençant par %PDF-")
@@ -311,7 +309,6 @@ class GdprControllerTest {
                 .andExpect(status().isForbidden());
     }
 
-    // ── Helpers ──────────────────────────────────────────────────
 
     private String registerAndGetToken(String email, String role) throws Exception {
         RegisterRequest req = new RegisterRequest();

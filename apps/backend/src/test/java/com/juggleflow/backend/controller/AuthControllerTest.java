@@ -40,7 +40,6 @@ class AuthControllerTest {
         userRepository.deleteAll();
     }
 
-    // ── REGISTER ────────────────────────────────────────────────
 
     @Test
     @DisplayName("Register → 200 avec token JWT valide")
@@ -102,7 +101,6 @@ class AuthControllerTest {
             .andExpect(jsonPath("$.fieldErrors.email").exists());
     }
 
-    // ── LOGIN ───────────────────────────────────────────────────
 
     @Test
     @DisplayName("Login → 200 avec token JWT")
@@ -156,7 +154,6 @@ class AuthControllerTest {
             .andExpect(status().isUnauthorized());
     }
 
-    // ── /ME ─────────────────────────────────────────────────────
 
     @Test
     @DisplayName("/api/auth/me → 403 sans token")
@@ -194,7 +191,6 @@ class AuthControllerTest {
             .andExpect(status().isForbidden());
     }
 
-    // ── Helper ───────────────────────────────────────────────────
 
     private RegisterRequest buildRegister(String email) {
         RegisterRequest req = new RegisterRequest();

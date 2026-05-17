@@ -1,4 +1,3 @@
-// filename: backend/src/main/java/com/juggleflow/backend/dto/ConsentRequest.java
 package com.juggleflow.backend.dto;
 
 import com.juggleflow.backend.model.GdprConsent.ConsentType;

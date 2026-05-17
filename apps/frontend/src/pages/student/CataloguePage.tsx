@@ -12,7 +12,6 @@ import type { TrickProgress } from '../../api/studentApi';
 import { resolveTrickAnimation } from '../../utils/jugglingLab';
 import { PROGRESS_UPDATED_EVENT } from '../../lib/progressEvents';
 
-// ── Config ────────────────────────────────────────────────────
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -33,7 +32,6 @@ const FILTERS: { value: FilterLevel; label: string }[] = [
 
 const PAGE_SIZE = 10;
 
-// ── Classes Tailwind statiques par état — aucun style dynamique ──
 
 const LEVEL_CHIP_CLASS: Record<string, string> = {
   Beginner:     'text-[#22C55E] bg-[rgba(34,197,94,0.12)]',
@@ -50,7 +48,6 @@ const FILTER_ACTIVE_CLASS: Record<FilterLevel, string> = {
   Expert:       'bg-[rgba(255,77,77,0.12)] text-[#FF4D4D] border-[#FF4D4D]',
 };
 
-// ── Sous-composants ───────────────────────────────────────────
 
 function StarRating({ score }: { score: number }) {
   const stars = scoreToStars(score);
@@ -191,7 +188,6 @@ function TrickCardSkeleton() {
   );
 }
 
-// ── Page principale ────────────────────────────────────────────
 
 export default function CataloguePage() {
   const navigate = useNavigate();
@@ -326,7 +322,6 @@ export default function CataloguePage() {
           })}
         </div>
 
-        {/* Indicateur "filtre(s) actif(s)" — wireframes */}
         {activeFiltersCount > 0 && (
           <div className="flex items-center justify-between mt-3">
             <span className="text-xs text-text-muted">

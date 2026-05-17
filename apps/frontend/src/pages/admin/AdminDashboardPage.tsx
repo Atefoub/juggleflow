@@ -4,7 +4,6 @@ import { adminApi, type AdminEstablishmentStats, type AdminSchoolClass } from '.
 import { adminGdprApi, type ConsentStatusRow } from '../../api/adminGdprApi';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 
-// ─── Sous-composants ──────────────────────────────────────────────────────────
 
 interface KpiCardProps {
   label: string;
@@ -71,7 +70,6 @@ function downloadText(filename: string, content: string, mime: string) {
   URL.revokeObjectURL(url);
 }
 
-// ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();

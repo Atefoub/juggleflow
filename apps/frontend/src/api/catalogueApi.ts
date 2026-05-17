@@ -65,7 +65,6 @@ export const catalogueApi = {
   },
 };
 
-// ── Helpers ────────────────────────────────────────────────────
 
 export const LEVEL_LABELS: Record<string, string> = {
   Beginner:     'Débutant',

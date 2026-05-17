@@ -56,7 +56,6 @@ public class AuthService {
   private final UserDetailsService           userDetailsService;
   private final EstablishmentLicenseService establishmentLicenseService;
 
-  // ── Connexion ──────────────────────────────────────────────────
 
   /**
    * [VULN-19] authenticate() est appelé EN PREMIER — garantit un timing
@@ -78,7 +77,6 @@ public class AuthService {
     return buildLoginResponse(user, userDetails);
   }
 
-  // ── Inscription ───────────────────────────────────────────────
 
   @Transactional
   public LoginResponse register(RegisterRequest request) {
@@ -97,7 +95,6 @@ public class AuthService {
     return buildLoginResponse(user, userDetails);
   }
 
-  // ── Refresh token ──────────────────────────────────────────────
 
   /**
    * [VULN-22] Échange un refresh token valide contre un nouvel access token.
@@ -127,7 +124,6 @@ public class AuthService {
     return buildLoginResponse(user, userDetails);
   }
 
-  // ── Logout / Révocation ───────────────────────────────────────
 
   /**
    * [VULN-R3] Révoque un refresh token lors du logout.
@@ -141,7 +137,6 @@ public class AuthService {
     }
   }
 
-  // ── Helpers ───────────────────────────────────────────────────
 
   /**
    * [VULN-20] Seuls ROLE_ELEVE et ROLE_ENSEIGNANT sont autorisés.

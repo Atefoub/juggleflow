@@ -1,4 +1,3 @@
-// filename: backend/src/main/java/com/juggleflow/backend/model/LearningPathStep.java
 package com.juggleflow.backend.model;
 
 import jakarta.persistence.Column;

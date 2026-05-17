@@ -205,7 +205,6 @@ class SchoolClassControllerTest {
                 .andExpect(jsonPath("$.message").exists());
     }
 
-    // ── Helpers ──────────────────────────────────────────────────
 
     private String registerAndGetToken(String email, String role) throws Exception {
         RegisterRequest req = new RegisterRequest();

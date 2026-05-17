@@ -80,7 +80,6 @@ public class CookieUtils {
     response.addCookie(cookie);
   }
 
-  // ── Helper ───────────────────────────────────────────────────
 
   private Cookie buildCookie(String value, int maxAgeSeconds) {
     Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE, value);
