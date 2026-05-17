@@ -5,7 +5,9 @@ import com.juggleflow.backend.dto.AdminCreateUserRequest;
 import com.juggleflow.backend.dto.RegisterRequest;
 import com.juggleflow.backend.dto.SchoolClassRequest;
 import com.juggleflow.backend.model.Administrator;
+import com.juggleflow.backend.model.EstablishmentSettings;
 import com.juggleflow.backend.repository.AdminAuditEventRepository;
+import com.juggleflow.backend.repository.EstablishmentSettingsRepository;
 import com.juggleflow.backend.repository.GdprConsentRepository;
 import com.juggleflow.backend.repository.SchoolClassRepository;
 import com.juggleflow.backend.repository.StudentRepository;
@@ -44,6 +46,7 @@ class AdminControllerTest {
     @Autowired private UserProgressRepository userProgressRepository;
     @Autowired private GdprConsentRepository gdprConsentRepository;
     @Autowired private AdminAuditEventRepository adminAuditEventRepository;
+    @Autowired private EstablishmentSettingsRepository establishmentSettingsRepository;
     @Autowired private PasswordEncoder passwordEncoder;
 
     private MockMvc mockMvc;
@@ -211,6 +214,41 @@ class AdminControllerTest {
                 .content(objectMapper.writeValueAsString(body)))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.generatedPassword").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("POST /api/admin/users → 409 si la capacité licence est atteinte")
+    void createUser_shouldReturn409_whenLicenseCapacityReached() throws Exception {
+        String adminToken = createAdminAndLogin("admin-license@create.fr");
+
+        EstablishmentSettings settings = establishmentSettingsRepository.findById(1L).orElseThrow();
+        settings.setLicenseSeatCap(1);
+        establishmentSettingsRepository.save(settings);
+
+        AdminCreateUserRequest first = new AdminCreateUserRequest();
+        first.setEmail("seat1@create.fr");
+        first.setFirstName("A");
+        first.setLastName("One");
+        first.setRole("ROLE_ELEVE");
+
+        mockMvc.perform(post("/api/admin/users")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(first)))
+            .andExpect(status().isCreated());
+
+        AdminCreateUserRequest second = new AdminCreateUserRequest();
+        second.setEmail("seat2@create.fr");
+        second.setFirstName("B");
+        second.setLastName("Two");
+        second.setRole("ROLE_ELEVE");
+
+        mockMvc.perform(post("/api/admin/users")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(second)))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Capacité licence")));
     }
 
     @Test

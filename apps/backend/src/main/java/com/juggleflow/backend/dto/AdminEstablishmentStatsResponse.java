@@ -17,4 +17,7 @@ public class AdminEstablishmentStatsResponse {
     long administratorAccountCount;
     long activeUserCount;
     Integer licenseSeatCap;
+    long licenseUsedCount;
+    /** ISO-8601 date ou null. */
+    String licenseExpiresAt;
 }
