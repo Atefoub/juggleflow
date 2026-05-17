@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 /**
@@ -31,6 +32,13 @@ public class Student extends User {
 
     @Column(name = "enrollment_date")
     private LocalDate enrollmentDate;
+
+    /** BEGINNER, INTERMEDIATE ou ADVANCED — déclaré à l'onboarding. */
+    @Column(name = "juggling_level", length = 20)
+    private String jugglingLevel;
+
+    @Column(name = "onboarding_completed_at")
+    private Instant onboardingCompletedAt;
 
     @Override
     public String getRole() {

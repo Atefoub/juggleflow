@@ -40,4 +40,6 @@ export interface UserProfile {
   lastName: string;
   role: Role;
   createdAt: string;
+  jugglingLevel?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | null;
+  onboardingCompleted?: boolean;
 }

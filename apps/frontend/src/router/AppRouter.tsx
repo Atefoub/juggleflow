@@ -2,7 +2,7 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Role } from '../types/auth';
-import { isOnboardingCompleted } from '../utils/onboarding';
+import { isStudentOnboardingDone } from '../utils/onboarding';
 import AdminLayout from '../components/admin/AdminLayout';
 
 // Lazy pages (code-splitting)
@@ -44,9 +44,10 @@ function AppFallback() {
   );
 }
 
-function redirectForRole(role: Role, userId?: number): string {
+function redirectForRole(role: Role, user?: { id: number; onboardingCompleted?: boolean } | null): string {
   switch (role) {
-    case 'ROLE_ELEVE':          return isOnboardingCompleted(userId) ? '/student/dashboard' : '/onboarding';
+    case 'ROLE_ELEVE':
+      return user && !isStudentOnboardingDone(user) ? '/onboarding' : '/student/dashboard';
     case 'ROLE_ENSEIGNANT':     return '/teacher/dashboard';
     case 'ROLE_ADMINISTRATEUR': return '/admin/dashboard';
     default:                    return '/login';
@@ -65,11 +66,11 @@ function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   if (!user) return <Navigate to="/login" replace />;
 
   if (requiredRole !== undefined && user.role !== requiredRole)
-    return <Navigate to={redirectForRole(user.role, user.id)} replace />;
+    return <Navigate to={redirectForRole(user.role, user)} replace />;
 
   if (
     user.role === 'ROLE_ELEVE' &&
-    !isOnboardingCompleted(user.id) &&
+    !isStudentOnboardingDone(user) &&
     location.pathname !== '/onboarding'
   ) return <Navigate to="/onboarding" replace />;
 
@@ -79,14 +80,14 @@ function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
 function DefaultRedirect() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  return <Navigate to={redirectForRole(user.role, user.id)} replace />;
+  return <Navigate to={redirectForRole(user.role, user)} replace />;
 }
 
 function OnboardingRoute() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== 'ROLE_ELEVE') return <Navigate to={redirectForRole(user.role, user.id)} replace />;
-  if (isOnboardingCompleted(user.id)) return <Navigate to="/student/dashboard" replace />;
+  if (user.role !== 'ROLE_ELEVE') return <Navigate to={redirectForRole(user.role, user)} replace />;
+  if (isStudentOnboardingDone(user)) return <Navigate to="/student/dashboard" replace />;
   return <OnboardingPage />;
 }
 

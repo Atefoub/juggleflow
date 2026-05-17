@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import BottomNav from '../../components/BottomNav';
 import OfflineBanner from '../../components/OfflineBanner';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { resourcesApi, type PedagogicalResource } from '../../api/resourcesApi';
 import { getBrainModuleStarted, setBrainModuleStarted } from '../../utils/resourcesLocalState';
 
 const navItems = [
@@ -14,41 +15,34 @@ const navItems = [
 
 type Tab = 'Vidéos' | 'Exercices' | 'Mon cerveau';
 
-const VIDEO_TUTORIALS = [
-  {
-    id: 1,
-    title: 'Cascade 3 balles — Tutoriel complet',
-    duration: '3 min 20 s',
-    level: 'Débutant',
-    tags: ['Ralenti x0.5', 'Face + profil'],
-    thumbColor: '#8B2BE2',
-    trickEmoji: '🎪',
-  },
-  {
-    id: 2,
-    title: 'La Douche — Étape par étape',
-    duration: '2 min 45 s',
-    level: 'Débutant',
-    tags: ['Ralenti x0.25'],
-    thumbColor: '#4068D8',
-    trickEmoji: '🤹',
-  },
-];
-
-const EXERCISES = [
-  { id: 1, title: 'Échauffement poignets',        duration: '5 min', icon: '🖐️' },
-  { id: 2, title: 'Lancer d\'une balle — Précision', duration: '10 min', icon: '🎯' },
-  { id: 3, title: 'Échange 2 balles',              duration: '8 min',  icon: '🔄' },
-];
+const THUMB_COLORS = ['#8B2BE2', '#4068D8', '#C724B1'];
+const VIDEO_EMOJIS = ['🎪', '🤹', '🎯'];
+const EXERCISE_ICONS = ['🖐️', '🎯', '🔄'];
 
 export default function ResourcesStudentPage() {
   const { user } = useAuth();
   const isOnline = useOnlineStatus();
   const [tab, setTab] = useState<Tab>('Vidéos');
+  const [resources, setResources] = useState<PedagogicalResource[]>([]);
+  const [loading, setLoading] = useState(true);
   const [moduleStarted, setModuleStarted] = useState(() =>
     user?.id ? getBrainModuleStarted(user.id) : false,
   );
   const [offlineVideoHint, setOfflineVideoHint] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    resourcesApi
+      .list('STUDENT')
+      .then((list) => { if (!cancelled) setResources(list); })
+      .catch(() => { if (!cancelled) setResources([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const videos = resources.filter((r) => r.resourceType === 'STUDENT_VIDEO');
+  const exercises = resources.filter((r) => r.resourceType === 'STUDENT_EXERCISE');
+  const brainModule = resources.find((r) => r.resourceType === 'BRAIN_MODULE');
 
   function handlePlayVideo() {
     if (isOnline) return;
@@ -97,16 +91,22 @@ export default function ResourcesStudentPage() {
             <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
               Vidéos tutoriels
             </h2>
+            {loading && <p className="text-sm text-text-muted">Chargement…</p>}
             <div className="flex flex-col gap-4">
-              {VIDEO_TUTORIALS.map((video) => (
+              {videos.map((video, index) => {
+                const level = video.tags[0] ?? 'Débutant';
+                const extraTags = video.tags.slice(1);
+                const thumbColor = THUMB_COLORS[index % THUMB_COLORS.length];
+                const trickEmoji = VIDEO_EMOJIS[index % VIDEO_EMOJIS.length];
+                return (
                 <div key={video.id} className="rounded-2xl overflow-hidden bg-bg-card border border-border">
                   {/* Thumbnail */}
                   {/* style intentional — dynamic gradient from data (no Tailwind equivalent) */}
                   <div
                     className="relative h-40 flex items-center justify-center"
-                    style={{ background: `linear-gradient(135deg, ${video.thumbColor}40, #111638)` }}
+                    style={{ background: `linear-gradient(135deg, ${thumbColor}40, #111638)` }}
                   >
-                    <span role="img" aria-label={video.title} className="text-6xl">{video.trickEmoji}</span>
+                    <span role="img" aria-label={video.title} className="text-6xl">{trickEmoji}</span>
                     <button
                       type="button"
                       aria-label={`Lire ${video.title}`}
@@ -123,11 +123,11 @@ export default function ResourcesStudentPage() {
                   <div className="p-3">
                     <p className="font-bold text-text-primary text-sm mb-1">{video.title}</p>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-text-muted">{video.duration}</span>
+                      <span className="text-xs text-text-muted">{video.metaLabel}</span>
                       <span className="text-xs px-2 py-0.5 rounded-full text-success bg-success/10 border border-success/30">
-                        {video.level}
+                        {level}
                       </span>
-                      {video.tags.map((tag) => (
+                      {extraTags.map((tag) => (
                         <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-border text-text-muted">
                           {tag}
                         </span>
@@ -135,7 +135,7 @@ export default function ResourcesStudentPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+              );})}
             </div>
           </>
         )}
@@ -147,14 +147,16 @@ export default function ResourcesStudentPage() {
               Exercices guidés
             </h2>
             <div className="flex flex-col gap-3">
-              {EXERCISES.map((ex) => (
+              {exercises.map((ex, index) => (
                 <div key={ex.id} className="flex items-center gap-3 p-4 rounded-2xl bg-bg-card border border-border">
                   <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-brand/10 border border-brand/30 shrink-0">
-                    <span role="img" aria-label={ex.title} className="text-xl">{ex.icon}</span>
+                    <span role="img" aria-label={ex.title} className="text-xl">
+                      {EXERCISE_ICONS[index % EXERCISE_ICONS.length]}
+                    </span>
                   </div>
                   <div className="flex-1">
                     <p className="font-bold text-text-primary text-sm">{ex.title}</p>
-                    <p className="text-xs text-text-muted">{ex.duration}</p>
+                    <p className="text-xs text-text-muted">{ex.metaLabel}</p>
                   </div>
                   <button
                     aria-label={`Commencer ${ex.title}`}
@@ -183,17 +185,15 @@ export default function ResourcesStudentPage() {
               </div>
               <div className="p-4">
                 <p className="font-bold text-text-primary text-sm mb-1">
-                  Comment ton cerveau apprend à jongler ?
+                  {brainModule?.title ?? 'Comment ton cerveau apprend à jongler ?'}
                 </p>
                 <p className="text-xs text-text-secondary mb-3">
-                  Découvre ce qui se passe dans ta tête quand tu t'entraînes.
+                  {brainModule?.subtitle ?? "Découvre ce qui se passe dans ta tête quand tu t'entraînes."}
                 </p>
 
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex gap-3 text-xs text-text-muted">
-                    <span>3 chapitres</span>
-                    <span>·</span>
-                    <span>8 min</span>
+                    <span>{brainModule?.metaLabel ?? '3 chapitres · 8 min'}</span>
                   </div>
                   {!moduleStarted && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-border text-text-muted">
@@ -244,3 +244,5 @@ export default function ResourcesStudentPage() {
     </div>
   );
 }
+
+

@@ -21,7 +21,7 @@ import {
 import type { UserProfile, Role } from '../types/auth';
 import { api, authApi, setAccessToken, clearAccessToken, getAccessToken } from '../api/authApi';
 import type { LoginResponse } from '../types/auth';
-import { resetOnboarding } from '../utils/onboarding';
+import { applyProfileOnboarding, resetOnboarding } from '../utils/onboarding';
 import { resetPreferences } from '../utils/preferences';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { flushProgressUpdates, getPendingProgressUpdatesCount } from '../utils/offlineQueue';
@@ -73,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const profile = await authApi.me();
         if (!cancelled) {
+          applyProfileOnboarding(profile);
           setUser(profile);
         }
       } catch {
@@ -193,6 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (token: string, profile?: UserProfile): Promise<UserProfile> => {
     setAccessToken(token);
     const resolvedProfile = profile ?? await authApi.me();
+    applyProfileOnboarding(resolvedProfile);
     setUser(resolvedProfile);
     // met à jour le compteur dès le login
     if (resolvedProfile.id != null) {

@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getAccessToken } from '../../api/authApi';
+import { studentOnboardingApi } from '../../api/studentOnboardingApi';
 import {
+  applyProfileOnboarding,
   completeOnboarding,
   getOnboardingLevel,
   type OnboardingLevel,
@@ -40,6 +43,9 @@ export default function OnboardingPage() {
     return getOnboardingLevel(user?.id) ?? 'BEGINNER';
   }, [user?.id]);
   const [selected, setSelected] = useState<OnboardingLevel>(initial);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { login } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col px-6 py-10 bg-bg-primary font-body">
@@ -111,17 +117,33 @@ export default function OnboardingPage() {
         Tu pourras le modifier à tout moment dans ton profil.
       </div>
 
+      {error && (
+        <p className="text-xs text-alert text-center mb-3">{error}</p>
+      )}
+
       {/* CTA */}
       <button
-        onClick={() => {
+        onClick={async () => {
           if (!user?.id) return;
-          completeOnboarding(selected, user?.id);
-          navigate('/student/dashboard', { replace: true });
+          setSubmitting(true);
+          setError(null);
+          try {
+            const profile = await studentOnboardingApi.complete(selected);
+            completeOnboarding(selected, user.id);
+            applyProfileOnboarding(profile);
+            await login(getAccessToken() ?? '', profile);
+            navigate('/student/dashboard', { replace: true });
+          } catch {
+            completeOnboarding(selected, user.id);
+            navigate('/student/dashboard', { replace: true });
+          } finally {
+            setSubmitting(false);
+          }
         }}
-        disabled={!user?.id}
+        disabled={!user?.id || submitting}
         className="jf-btn-primary w-full rounded-xl text-sm mt-auto min-h-12 disabled:opacity-60"
       >
-        C'est parti →
+        {submitting ? 'Enregistrement…' : "C'est parti →"}
       </button>
     </div>
   );
