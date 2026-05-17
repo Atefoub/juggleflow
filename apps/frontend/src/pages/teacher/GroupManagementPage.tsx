@@ -47,11 +47,19 @@ export default function GroupManagementPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const preselectClassId = useMemo(() => {
-    const raw = new URLSearchParams(location.search).get('classId');
-    if (!raw) return null;
-    const n = Number(raw);
-    return Number.isFinite(n) ? n : null;
+  const preselect = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const classIdRaw = params.get('classId');
+    const groupRaw = params.get('group');
+    const classId = classIdRaw ? Number(classIdRaw) : null;
+    const group =
+      groupRaw === 'VERT' || groupRaw === 'ORANGE' || groupRaw === 'ROUGE'
+        ? groupRaw
+        : null;
+    return {
+      classId: classId != null && Number.isFinite(classId) ? classId : null,
+      group,
+    };
   }, [location.search]);
 
   const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -76,14 +84,18 @@ export default function GroupManagementPage() {
       .then((cls) => {
         setClasses(cls);
         if (cls.length === 0) return;
-        const found = preselectClassId
-          ? cls.find((c) => c.id === preselectClassId) ?? cls[0]
+        const found = preselect.classId
+          ? cls.find((c) => c.id === preselect.classId) ?? cls[0]
           : cls[0];
         setSelectedClass(found);
       })
       .catch(() => setError('Impossible de charger vos classes.'))
       .finally(() => setLoading(false));
-  }, [preselectClassId]);
+  }, [preselect.classId]);
+
+  useEffect(() => {
+    if (preselect.group) setGroupFilter(preselect.group);
+  }, [preselect.group]);
 
   useEffect(() => {
     if (!selectedClass) return;
