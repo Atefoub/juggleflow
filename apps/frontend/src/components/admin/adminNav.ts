@@ -3,6 +3,7 @@ import {
   IconAudit,
   IconClasses,
   IconDashboard,
+  IconResources,
   IconShield,
   IconUsers,
 } from './AdminIcons';
@@ -31,6 +32,7 @@ export const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
   { label: 'Tableau de bord', path: '/admin/dashboard', icon: IconDashboard },
   { label: 'Utilisateurs',    path: '/admin/users',     icon: IconUsers     },
   { label: 'Classes',         path: '/admin/classes',   icon: IconClasses   },
+  { label: 'Ressources',      path: '/admin/resources', icon: IconResources },
   { label: 'RGPD',            path: '/admin/rgpd',      icon: IconShield    },
   { label: 'Journal d\u2019audit', path: '/admin/audit', icon: IconAudit    },
 ] as const;
