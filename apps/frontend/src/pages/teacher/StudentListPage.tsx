@@ -293,6 +293,9 @@ export default function StudentListPage() {
                       </p>
                       <p className="text-xs text-text-muted">
                         {GROUP_LABEL_MAP[student.groupColor]}
+                        {student.blocked && student.blockedTrickName && (
+                          <span className="text-brand-end"> · Bloqué</span>
+                        )}
                       </p>
                     </div>
 
@@ -314,3 +317,4 @@ export default function StudentListPage() {
     </div>
   );
 }
+
