@@ -1,6 +1,7 @@
 package com.juggleflow.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.juggleflow.backend.dto.ForgotPasswordRequest;
 import com.juggleflow.backend.dto.LoginRequest;
 import com.juggleflow.backend.dto.RegisterRequest;
 import com.juggleflow.backend.repository.UserRepository;
@@ -181,6 +182,33 @@ class AuthControllerTest {
             .andExpect(jsonPath("$.firstName").value("Prénom"))
             .andExpect(jsonPath("$.role").value("ROLE_ELEVE"))
             .andExpect(jsonPath("$.id").exists());
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/forgot-password → 202 avec message générique")
+    void forgotPassword_shouldReturn202_always() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(buildRegister("forgot@test.fr"))))
+            .andExpect(status().isOk());
+
+        ForgotPasswordRequest req = new ForgotPasswordRequest();
+        req.setEmail("forgot@test.fr");
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+            .andExpect(status().isAccepted())
+            .andExpect(jsonPath("$.message").exists());
+
+        ForgotPasswordRequest unknown = new ForgotPasswordRequest();
+        unknown.setEmail("inconnu@test.fr");
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(unknown)))
+            .andExpect(status().isAccepted())
+            .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
