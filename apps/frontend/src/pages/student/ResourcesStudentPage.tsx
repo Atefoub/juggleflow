@@ -4,7 +4,18 @@ import BottomNav from '../../components/BottomNav';
 import OfflineBanner from '../../components/OfflineBanner';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { resourcesApi, type PedagogicalResource } from '../../api/resourcesApi';
-import { getBrainModuleStarted, setBrainModuleStarted } from '../../utils/resourcesLocalState';
+import { studentBrainApi } from '../../api/studentBrainApi';
+import {
+  getBrainChaptersCompleted,
+  setBrainChaptersCompleted,
+  setBrainModuleStarted,
+} from '../../utils/resourcesLocalState';
+
+const BRAIN_CHAPTERS = [
+  { n: 1, title: 'La plasticité cérébrale' },
+  { n: 2, title: 'Mémoire motrice et répétition' },
+  { n: 3, title: 'Le rôle de la concentration' },
+] as const;
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -25,10 +36,12 @@ export default function ResourcesStudentPage() {
   const [tab, setTab] = useState<Tab>('Vidéos');
   const [resources, setResources] = useState<PedagogicalResource[]>([]);
   const [loading, setLoading] = useState(true);
-  const [moduleStarted, setModuleStarted] = useState(() =>
-    user?.id ? getBrainModuleStarted(user.id) : false,
-  );
+  const [completedChapters, setCompletedChapters] = useState<number[]>([]);
+  const [brainBusy, setBrainBusy] = useState(false);
+  const [brainError, setBrainError] = useState<string | null>(null);
   const [offlineVideoHint, setOfflineVideoHint] = useState(false);
+
+  const moduleStarted = completedChapters.length > 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -39,6 +52,62 @@ export default function ResourcesStudentPage() {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+
+    const loadBrain = async () => {
+      if (isOnline) {
+        try {
+          const progress = await studentBrainApi.getProgress();
+          if (cancelled) return;
+          setCompletedChapters(progress.completedChapters);
+          setBrainChaptersCompleted(user.id, progress.completedChapters);
+        } catch {
+          if (!cancelled) {
+            setCompletedChapters(getBrainChaptersCompleted(user.id));
+          }
+        }
+      } else {
+        setCompletedChapters(getBrainChaptersCompleted(user.id));
+      }
+    };
+
+    void loadBrain();
+    return () => { cancelled = true; };
+  }, [user?.id, isOnline]);
+
+  async function completeBrainChapter(chapterNumber: number) {
+    if (!user?.id || brainBusy) return;
+    const previousDone =
+      chapterNumber === 1 || completedChapters.includes(chapterNumber - 1);
+    if (!previousDone) {
+      setBrainError(`Termine d'abord le chapitre ${chapterNumber - 1}.`);
+      return;
+    }
+    if (completedChapters.includes(chapterNumber)) return;
+
+    setBrainBusy(true);
+    setBrainError(null);
+    try {
+      if (isOnline) {
+        const progress = await studentBrainApi.completeChapter(chapterNumber);
+        setCompletedChapters(progress.completedChapters);
+        setBrainChaptersCompleted(user.id, progress.completedChapters);
+        setBrainModuleStarted(user.id, true);
+      } else {
+        const next = [...completedChapters, chapterNumber].sort((a, b) => a - b);
+        setCompletedChapters(next);
+        setBrainChaptersCompleted(user.id, next);
+        setBrainModuleStarted(user.id, true);
+      }
+    } catch {
+      setBrainError('Impossible d\'enregistrer ta progression. Réessaie en ligne.');
+    } finally {
+      setBrainBusy(false);
+    }
+  }
 
   const videos = resources.filter((r) => r.resourceType === 'STUDENT_VIDEO');
   const exercises = resources.filter((r) => r.resourceType === 'STUDENT_EXERCISE');
@@ -202,39 +271,56 @@ export default function ResourcesStudentPage() {
                   )}
                 </div>
 
+                {brainError && (
+                  <p className="text-xs text-alert mb-2">{brainError}</p>
+                )}
+
                 <button
                   type="button"
-                  onClick={() => {
-                    setModuleStarted(true);
-                    if (user?.id) setBrainModuleStarted(user.id, true);
-                  }}
-                  className="w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-linear-to-br from-brand to-brand-end min-h-11 hover:opacity-90 transition-opacity"
+                  disabled={brainBusy}
+                  onClick={() => void completeBrainChapter(1)}
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-linear-to-br from-brand to-brand-end min-h-11 hover:opacity-90 transition-opacity disabled:opacity-60"
                 >
                   {moduleStarted ? '▶ Continuer le module' : 'Commencer le module →'}
                 </button>
               </div>
             </div>
 
-            {/* Chapter list */}
             <div className="flex flex-col gap-2">
-              {[
-                { n: 1, title: 'La plasticité cérébrale',     done: moduleStarted },
-                { n: 2, title: 'Mémoire motrice et répétition', done: false         },
-                { n: 3, title: 'Le rôle de la concentration',  done: false         },
-              ].map((ch) => (
-                <div key={ch.n} className="flex items-center gap-3 p-3 rounded-xl bg-bg-card border border-border">
-                  <div className={[
-                    'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
-                    ch.done ? 'bg-success text-white' : 'bg-border text-text-muted',
-                  ].join(' ')}>
-                    {ch.done ? '✓' : ch.n}
-                  </div>
-                  <p className={`text-sm flex-1 ${ch.done ? 'text-text-primary' : 'text-text-muted'}`}>
-                    {ch.title}
-                  </p>
-                  {ch.done && <span className="text-xs text-success">Terminé</span>}
-                </div>
-              ))}
+              {BRAIN_CHAPTERS.map((ch) => {
+                const done = completedChapters.includes(ch.n);
+                const unlocked =
+                  ch.n === 1 || completedChapters.includes(ch.n - 1);
+                return (
+                  <button
+                    key={ch.n}
+                    type="button"
+                    disabled={brainBusy || done || !unlocked}
+                    onClick={() => void completeBrainChapter(ch.n)}
+                    className={[
+                      'flex items-center gap-3 p-3 rounded-xl bg-bg-card border border-border text-left w-full',
+                      !unlocked && !done ? 'opacity-50' : 'hover:opacity-90',
+                    ].join(' ')}
+                  >
+                    <div
+                      className={[
+                        'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
+                        done ? 'bg-success text-white' : 'bg-border text-text-muted',
+                      ].join(' ')}
+                    >
+                      {done ? '✓' : ch.n}
+                    </div>
+                    <p className={`text-sm flex-1 ${done ? 'text-text-primary' : 'text-text-muted'}`}>
+                      {ch.title}
+                    </p>
+                    {done ? (
+                      <span className="text-xs text-success">Terminé</span>
+                    ) : unlocked ? (
+                      <span className="text-xs text-brand-end">Marquer fait</span>
+                    ) : null}
+                  </button>
+                );
+              })}
             </div>
           </>
         )}
@@ -244,5 +330,3 @@ export default function ResourcesStudentPage() {
     </div>
   );
 }
-
-

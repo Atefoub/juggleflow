@@ -22,7 +22,13 @@ import {
   setOnboardingLevel,
   type OnboardingLevel,
 } from '../../utils/onboarding';
-import { getOfflineMode, setOfflineMode } from '../../utils/preferences';
+import {
+  getOfflineMode,
+  getPracticeRemindersEnabled,
+  setOfflineMode,
+  setPracticeRemindersEnabled,
+} from '../../utils/preferences';
+import { studentPreferencesApi } from '../../api/studentPreferencesApi';
 import { prefetchOfflineContent } from '../../utils/prefetchOfflineContent';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import OfflineBanner from '../../components/OfflineBanner';
@@ -51,7 +57,11 @@ export default function StudentProfilePage() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
 
-  const [notificationsOn, setNotificationsOn] = useState(true);
+  const [notificationsOn, setNotificationsOn] = useState(() =>
+    getPracticeRemindersEnabled(user?.id),
+  );
+  const [notificationsBusy, setNotificationsBusy] = useState(false);
+  const [notificationsHint, setNotificationsHint] = useState<string | null>(null);
   const [darkMode, setDarkMode]               = useState(true);
   const [offlineMode, setOfflineModeState]    = useState(() => getOfflineMode(user?.id));
   const [offlinePrefetching, setOfflinePrefetching] = useState(false);
@@ -93,6 +103,31 @@ export default function StudentProfilePage() {
   useEffect(() => {
     setOfflineModeState(getOfflineMode(user?.id));
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+
+    const loadPreferences = async () => {
+      if (isOnline) {
+        try {
+          const prefs = await studentPreferencesApi.get();
+          if (cancelled) return;
+          setNotificationsOn(prefs.practiceRemindersEnabled);
+          setPracticeRemindersEnabled(prefs.practiceRemindersEnabled, user.id);
+        } catch {
+          if (!cancelled) {
+            setNotificationsOn(getPracticeRemindersEnabled(user.id));
+          }
+        }
+      } else {
+        setNotificationsOn(getPracticeRemindersEnabled(user.id));
+      }
+    };
+
+    void loadPreferences();
+    return () => { cancelled = true; };
+  }, [user?.id, isOnline]);
 
   useEffect(() => {
     if (!user?.id || !offlineMode) {
@@ -354,10 +389,34 @@ export default function StudentProfilePage() {
                 </div>
               </div>
               <button
-                onClick={() => setNotificationsOn((v) => !v)}
+                type="button"
+                disabled={notificationsBusy}
+                onClick={async () => {
+                  if (!user?.id || notificationsBusy) return;
+                  const next = !notificationsOn;
+                  setNotificationsBusy(true);
+                  setNotificationsHint(null);
+                  setNotificationsOn(next);
+                  setPracticeRemindersEnabled(next, user.id);
+                  try {
+                    if (isOnline) {
+                      const prefs = await studentPreferencesApi.update(next);
+                      setNotificationsOn(prefs.practiceRemindersEnabled);
+                      setPracticeRemindersEnabled(prefs.practiceRemindersEnabled, user.id);
+                    }
+                  } catch {
+                    setNotificationsOn(!next);
+                    setPracticeRemindersEnabled(!next, user.id);
+                    setNotificationsHint(
+                      'Impossible de sauvegarder ce réglage. Réessaie en ligne.',
+                    );
+                  } finally {
+                    setNotificationsBusy(false);
+                  }
+                }}
                 aria-label={notificationsOn ? 'Désactiver les notifications' : 'Activer les notifications'}
                 className={[
-                  'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0',
+                  'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 disabled:opacity-60',
                   notificationsOn ? 'bg-linear-to-br from-brand to-brand-end' : 'bg-border',
                 ].join(' ')}
               >
@@ -369,6 +428,9 @@ export default function StudentProfilePage() {
                 />
               </button>
             </div>
+            {notificationsHint && (
+              <p className="px-4 pb-3 text-xs text-alert bg-bg-card">{notificationsHint}</p>
+            )}
 
             {/* Dark mode */}
             <div className="flex items-center justify-between p-4 bg-bg-card">
