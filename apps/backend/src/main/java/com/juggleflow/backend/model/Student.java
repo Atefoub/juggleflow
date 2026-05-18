@@ -47,6 +47,10 @@ public class Student extends User {
     @Column(name = "assigned_group_color", length = 10)
     private String assignedGroupColor;
 
+    @Column(name = "practice_reminders_enabled", nullable = false)
+    @Builder.Default
+    private boolean practiceRemindersEnabled = true;
+
     @Override
     public String getRole() {
         return "ROLE_ELEVE";

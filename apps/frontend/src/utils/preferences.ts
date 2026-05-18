@@ -12,6 +12,10 @@ function offlineKey(userId?: number | string | null): string {
   return userId != null ? `pref_offline_mode:${userId}` : 'pref_offline_mode';
 }
 
+function practiceRemindersKey(userId?: number | string | null): string {
+  return userId != null ? `pref_practice_reminders:${userId}` : 'pref_practice_reminders';
+}
+
 export function getOfflineMode(userId?: number | string | null): boolean {
   try {
     return localStorage.getItem(offlineKey(userId)) === 'true';
@@ -28,10 +32,33 @@ export function setOfflineMode(enabled: boolean, userId?: number | string | null
   }
 }
 
+export function getPracticeRemindersEnabled(userId?: number | string | null): boolean {
+  try {
+    const raw = localStorage.getItem(practiceRemindersKey(userId));
+    if (raw == null) return true;
+    return raw === 'true';
+  } catch {
+    return true;
+  }
+}
+
+export function setPracticeRemindersEnabled(
+  enabled: boolean,
+  userId?: number | string | null,
+): void {
+  try {
+    localStorage.setItem(practiceRemindersKey(userId), enabled ? 'true' : 'false');
+  } catch {
+    // Silently ignore
+  }
+}
+
 export function resetPreferences(userId?: number | string | null): void {
   try {
     localStorage.removeItem(offlineKey(userId));
     localStorage.removeItem('pref_offline_mode');
+    localStorage.removeItem(practiceRemindersKey(userId));
+    localStorage.removeItem('pref_practice_reminders');
   } catch {
     // Silently ignore
   }
