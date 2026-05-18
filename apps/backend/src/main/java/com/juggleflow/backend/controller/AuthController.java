@@ -1,5 +1,7 @@
 package com.juggleflow.backend.controller;
 
+import com.juggleflow.backend.dto.ForgotPasswordRequest;
+import com.juggleflow.backend.dto.ForgotPasswordResponse;
 import com.juggleflow.backend.dto.LoginRequest;
 import com.juggleflow.backend.dto.LoginResponse;
 import com.juggleflow.backend.dto.RegisterRequest;
@@ -77,6 +79,17 @@ public class AuthController {
     LoginResponse loginResponse = authService.register(request);
     cookieUtils.addRefreshTokenCookie(response, loginResponse.getRefreshToken());
     return ResponseEntity.ok(loginResponse.withoutRefreshToken());
+  }
+
+  /**
+   * POST /api/auth/forgot-password
+   * Demande de réinitialisation (traitement manuel par l'administrateur).
+   */
+  @PostMapping("/forgot-password")
+  public ResponseEntity<ForgotPasswordResponse> forgotPassword(
+    @Valid @RequestBody ForgotPasswordRequest request) {
+    return ResponseEntity.accepted()
+      .body(authService.requestPasswordReset(request.getEmail()));
   }
 
   /**

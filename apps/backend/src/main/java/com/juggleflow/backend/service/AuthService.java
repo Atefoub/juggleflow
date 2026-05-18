@@ -1,5 +1,6 @@
 package com.juggleflow.backend.service;
 
+import com.juggleflow.backend.dto.ForgotPasswordResponse;
 import com.juggleflow.backend.dto.LoginRequest;
 import com.juggleflow.backend.dto.LoginResponse;
 import com.juggleflow.backend.dto.RegisterRequest;
@@ -55,7 +56,11 @@ public class AuthService {
   private final AuthenticationManager authenticationManager;
   private final UserDetailsService           userDetailsService;
   private final EstablishmentLicenseService establishmentLicenseService;
+  private final AdminAuditService adminAuditService;
 
+  private static final String FORGOT_PASSWORD_GENERIC_MESSAGE =
+    "Si un compte est associé à cette adresse, votre établissement a été informé. "
+      + "Contactez votre administrateur ou enseignant référent pour obtenir un nouveau mot de passe.";
 
   /**
    * [VULN-19] authenticate() est appelé EN PREMIER — garantit un timing
@@ -124,6 +129,29 @@ public class AuthService {
     return buildLoginResponse(user, userDetails);
   }
 
+
+  /**
+   * Demande de réinitialisation de mot de passe (établissement scolaire).
+   * Réponse toujours identique ; si le compte existe et est actif, une entrée
+   * d'audit est créée pour l'administrateur (sans révéler l'existence du compte).
+   */
+  @Transactional
+  public ForgotPasswordResponse requestPasswordReset(String email) {
+    String normalized = email != null ? email.trim().toLowerCase() : "";
+
+    userRepository.findByEmail(normalized).ifPresent(user -> {
+      if (user.isEnabled()) {
+        adminAuditService.record(
+          "password-reset@juggleflow",
+          "PASSWORD_RESET_REQUESTED",
+          "userId=" + user.getId());
+      }
+    });
+
+    return ForgotPasswordResponse.builder()
+      .message(FORGOT_PASSWORD_GENERIC_MESSAGE)
+      .build();
+  }
 
   /**
    * [VULN-R3] Révoque un refresh token lors du logout.

@@ -100,6 +100,7 @@ public class SecurityConfig {
   private static final String[] PUBLIC_ROUTES = {
     "/api/auth/login",
     "/api/auth/register",
+    "/api/auth/forgot-password",
     "/api/auth/refresh",
     "/api/auth/logout",
     "/actuator/health"

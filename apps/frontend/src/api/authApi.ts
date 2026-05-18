@@ -106,4 +106,9 @@ export const authApi = {
       clearAccessToken();
     }
   },
+
+  requestPasswordReset: async (email: string): Promise<{ message: string }> => {
+    const response = await api.post<{ message: string }>('/auth/forgot-password', { email });
+    return response.data;
+  },
 };
