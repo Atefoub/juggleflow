@@ -185,8 +185,8 @@ SET active = true,
     title = 'Comment ton cerveau apprend à jongler ?',
     subtitle = 'Découvre ce qui se passe dans ta tête quand tu t''entraînes — sources scientifiques vérifiables.',
     meta_label = '3 chapitres · ~10 min'
-WHERE id = (
-    SELECT MIN(id) FROM pedagogical_resource
+WHERE resource_id = (
+    SELECT MIN(resource_id) FROM pedagogical_resource
     WHERE audience = 'STUDENT' AND resource_type = 'BRAIN_MODULE'
 );
 
