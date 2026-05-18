@@ -178,6 +178,47 @@ class SchoolClassControllerTest {
     }
 
     @Test
+    @DisplayName("removeStudent → retire l'élève et met à jour le compteur")
+    void removeStudent_shouldRemoveAndDecrementCount() throws Exception {
+        String teacherToken = registerAndGetToken("teacher_rm@test.fr", "teacher");
+        String studentToken = registerAndGetToken("student_rm@test.fr", "student");
+
+        MvcResult classResult = mockMvc.perform(post("/api/enseignant/classes")
+                        .header("Authorization", "Bearer " + teacherToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(buildClassRequest())))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        Long classId = objectMapper.readTree(
+                classResult.getResponse().getContentAsString()).get("id").asLong();
+        Long studentId = getStudentId(studentToken);
+
+        mockMvc.perform(post("/api/enseignant/classes/" + classId + "/students/" + studentId)
+                        .header("Authorization", "Bearer " + teacherToken))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/enseignant/classes/" + classId + "/students")
+                        .header("Authorization", "Bearer " + teacherToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+
+        mockMvc.perform(delete("/api/enseignant/classes/" + classId + "/students/" + studentId)
+                        .header("Authorization", "Bearer " + teacherToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/enseignant/classes/" + classId + "/students")
+                        .header("Authorization", "Bearer " + teacherToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+
+        mockMvc.perform(get("/api/enseignant/classes")
+                        .header("Authorization", "Bearer " + teacherToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].studentCount").value(0));
+    }
+
+    @Test
     @DisplayName("deleteClass → 400 si la classe contient des élèves")
     void deleteClass_shouldReturn400_whenClassHasStudents() throws Exception {
         String teacherToken = registerAndGetToken("teacher_del@test.fr", "teacher");

@@ -11,6 +11,7 @@ import {
   type StudentPathProgress,
 } from '../../api/teacherApi';
 import { catalogueApi } from '../../api/catalogueApi';
+import { apiErrorMessage } from '../../utils/apiErrorMessage';
 
 const navItems = [
   { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
@@ -49,6 +50,7 @@ export default function StudentDetailPage() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
   const [blockagePrerequisites, setBlockagePrerequisites] = useState<string[]>([]);
+  const [removing, setRemoving] = useState(false);
 
   // Groupe de couleur
   const groupColor  = student?.groupColor ?? 'VERT';
@@ -163,6 +165,27 @@ export default function StudentDetailPage() {
         ?? paths.find((p) => p.id === selectedPathId)
         ?? null)
     : null;
+
+  async function handleRemoveFromClass() {
+    if (!student || effectiveClassId == null || removing) return;
+    const confirmed = window.confirm(
+      `Retirer ${student.firstName} ${student.lastName} de cette classe ?\n\n`
+        + 'La progression de l\'élève est conservée ; il pourra être réinscrit plus tard.',
+    );
+    if (!confirmed) return;
+
+    setRemoving(true);
+    setError(null);
+    try {
+      await teacherApi.removeStudentFromClass(effectiveClassId, student.id);
+      const qs = `?classId=${effectiveClassId}`;
+      navigate(`/teacher/eleves${qs}`);
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Impossible de retirer cet élève de la classe.'));
+    } finally {
+      setRemoving(false);
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -486,11 +509,24 @@ export default function StudentDetailPage() {
               </button>
               <button
                 type="button"
-                onClick={() => navigate('/teacher/eleves')}
+                onClick={() => {
+                  const qs = effectiveClassId ? `?classId=${effectiveClassId}` : '';
+                  navigate(`/teacher/eleves${qs}`);
+                }}
                 className="jf-btn-secondary w-full min-h-11 rounded-2xl py-3 text-sm"
               >
                 Voir la liste des élèves
               </button>
+              {effectiveClassId != null && (
+                <button
+                  type="button"
+                  disabled={removing}
+                  onClick={() => void handleRemoveFromClass()}
+                  className="w-full min-h-11 rounded-2xl py-3 text-sm font-semibold text-alert border border-alert bg-[#2A1020] hover:opacity-80 transition-opacity disabled:opacity-60"
+                >
+                  {removing ? 'Retrait…' : 'Retirer de la classe'}
+                </button>
+              )}
             </section>
           </>
         )}

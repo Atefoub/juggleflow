@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { isAxiosError } from 'axios';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import {
@@ -11,14 +10,7 @@ import {
   type StudentLookup,
   type StudentSummary,
 } from '../../api/teacherApi';
-
-function apiErrorMessage(err: unknown, fallback: string): string {
-  if (isAxiosError(err) && err.response?.data && typeof err.response.data === 'object') {
-    const message = (err.response.data as { message?: string }).message;
-    if (message) return message;
-  }
-  return fallback;
-}
+import { apiErrorMessage } from '../../utils/apiErrorMessage';
 
 const navItems = [
   { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
