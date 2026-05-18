@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { isAxiosError } from 'axios';
 import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import {
@@ -7,8 +8,17 @@ import {
   GROUP_COLOR_MAP,
   GROUP_LABEL_MAP,
   type SchoolClass,
+  type StudentLookup,
   type StudentSummary,
 } from '../../api/teacherApi';
+
+function apiErrorMessage(err: unknown, fallback: string): string {
+  if (isAxiosError(err) && err.response?.data && typeof err.response.data === 'object') {
+    const message = (err.response.data as { message?: string }).message;
+    if (message) return message;
+  }
+  return fallback;
+}
 
 const navItems = [
   { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
@@ -45,7 +55,9 @@ export default function StudentListPage() {
   const [selectedClass, setSelectedClass] = useState<SchoolClass | null>(null);
   const [groupFilter, setGroupFilter]   = useState<GroupFilter>('Tous');
   const [search, setSearch]             = useState('');
-  const [addStudentId, setAddStudentId] = useState('');
+  const [addQuery, setAddQuery] = useState('');
+  const [lookupPreview, setLookupPreview] = useState<StudentLookup | null>(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
   const [addingStudent, setAddingStudent] = useState(false);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState<string | null>(null);
@@ -82,6 +94,13 @@ export default function StudentListPage() {
       .catch(() => setError('Impossible de charger les élèves de cette classe.'));
   }, [selectedClass]);
 
+  useEffect(() => {
+    setLookupPreview(null);
+    setLookupLoading(false);
+  }, [addQuery, selectedClass?.id]);
+
+  const looksLikeEmail = addQuery.includes('@');
+
   const filteredStudents = useMemo(() => students.filter((s) => {
     const matchesGroup  = groupFilter === 'Tous' || s.groupColor === groupFilter;
     const normalizedSearch = search.trim().toLowerCase();
@@ -90,23 +109,56 @@ export default function StudentListPage() {
     return matchesGroup && matchesSearch;
   }), [students, groupFilter, search]);
 
+  async function handleLookupStudent() {
+    if (!selectedClass || !looksLikeEmail) return;
+    setLookupLoading(true);
+    setError(null);
+    setLookupPreview(null);
+    try {
+      const result = await teacherApi.lookupStudent(addQuery, selectedClass.id);
+      setLookupPreview(result);
+      if (result.alreadyInClass) {
+        setError('Cet élève est déjà inscrit dans cette classe.');
+      }
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Aucun compte élève trouvé pour cet e-mail.'));
+    } finally {
+      setLookupLoading(false);
+    }
+  }
+
   async function handleAddStudent() {
     if (!selectedClass) return;
-    const parsed = Number(addStudentId.trim());
-    if (!Number.isFinite(parsed) || parsed <= 0) {
-      setError("ID élève invalide. Utilise un nombre (ex: 12).");
+
+    let studentId: number | null = lookupPreview?.id ?? null;
+    if (studentId == null) {
+      const parsed = Number(addQuery.trim());
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        setError(
+          looksLikeEmail
+            ? 'Recherche d\'abord l\'élève par e-mail, puis confirme l\'ajout.'
+            : 'ID élève invalide. Utilise un nombre (ex. 12) ou un e-mail.',
+        );
+        return;
+      }
+      studentId = parsed;
+    }
+
+    if (lookupPreview?.alreadyInClass) {
+      setError('Cet élève est déjà inscrit dans cette classe.');
       return;
     }
 
     setAddingStudent(true);
     setError(null);
     try {
-      await teacherApi.addStudentToClass(selectedClass.id, parsed);
+      await teacherApi.addStudentToClass(selectedClass.id, studentId);
       const updated = await teacherApi.getClassStudents(selectedClass.id);
       setStudents(updated);
-      setAddStudentId('');
-    } catch {
-      setError("Impossible d'ajouter cet élève (vérifie l'ID et les droits).");
+      setAddQuery('');
+      setLookupPreview(null);
+    } catch (err) {
+      setError(apiErrorMessage(err, "Impossible d'ajouter cet élève."));
     } finally {
       setAddingStudent(false);
     }
@@ -146,23 +198,67 @@ export default function StudentListPage() {
           </div>
         </div>
 
-        {/* Ajouter un élève (par ID) */}
-        <div className="flex items-center gap-2 mb-4">
-          <input
-            value={addStudentId}
-            onChange={(e) => setAddStudentId(e.target.value)}
-            placeholder="ID élève (ex: 12)"
-            inputMode="numeric"
-            className="flex-1 px-4 py-3 rounded-xl outline-none text-sm min-h-12 bg-bg-input text-text-primary border-[1.5px] border-border"
-          />
-          <button
-            type="button"
-            disabled={addingStudent || !selectedClass}
-            onClick={handleAddStudent}
-            className="jf-btn-primary min-h-12 shrink-0 rounded-xl px-4 py-3 text-sm disabled:opacity-50"
-          >
-            {addingStudent ? 'Ajout…' : '+ Ajouter'}
-          </button>
+        {/* Ajouter un élève */}
+        <div className="mb-4 flex flex-col gap-2">
+          <label className="text-xs font-semibold text-text-secondary" htmlFor="add-student-query">
+            Ajouter un élève
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              id="add-student-query"
+              value={addQuery}
+              onChange={(e) => setAddQuery(e.target.value)}
+              placeholder="E-mail ou ID (ex. lucas.martin@ecole.fr)"
+              autoComplete="off"
+              className="flex-1 px-4 py-3 rounded-xl outline-none text-sm min-h-12 bg-bg-input text-text-primary border-[1.5px] border-border"
+            />
+            {looksLikeEmail && !lookupPreview ? (
+              <button
+                type="button"
+                disabled={lookupLoading || !selectedClass || !addQuery.trim()}
+                onClick={() => void handleLookupStudent()}
+                className="jf-btn-secondary min-h-12 shrink-0 rounded-xl px-4 py-3 text-sm disabled:opacity-50"
+              >
+                {lookupLoading ? '…' : 'Rechercher'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={addingStudent || !selectedClass || !addQuery.trim()}
+                onClick={() => void handleAddStudent()}
+                className="jf-btn-primary min-h-12 shrink-0 rounded-xl px-4 py-3 text-sm disabled:opacity-50"
+              >
+                {addingStudent ? 'Ajout…' : '+ Ajouter'}
+              </button>
+            )}
+          </div>
+
+          {lookupPreview && !lookupPreview.alreadyInClass && (
+            <div className="rounded-xl border border-brand/40 bg-bg-card p-3 flex flex-col gap-2">
+              <p className="text-sm font-semibold text-text-primary">
+                {lookupPreview.firstName} {lookupPreview.lastName}
+              </p>
+              <p className="text-xs text-text-muted">{lookupPreview.email}</p>
+              {lookupPreview.currentClassName ? (
+                <p className="text-xs text-brand-end">
+                  Actuellement dans : {lookupPreview.currentClassName} — sera déplacé vers{' '}
+                  {selectedClass?.name ?? 'cette classe'}.
+                </p>
+              ) : (
+                <p className="text-xs text-text-muted">
+                  Aucune classe assignée — sera ajouté à {selectedClass?.name ?? 'cette classe'}.
+                </p>
+              )}
+              <button
+                type="button"
+                disabled={addingStudent || !selectedClass}
+                onClick={() => void handleAddStudent()}
+                className="jf-btn-primary w-full min-h-11 rounded-xl text-sm disabled:opacity-50"
+              >
+                {addingStudent ? 'Ajout…' : `Ajouter à ${selectedClass?.name ?? 'la classe'}`}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Class selector */}

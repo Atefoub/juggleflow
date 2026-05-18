@@ -430,7 +430,11 @@ export default function TeacherDashboardPage() {
 
                 <button
                   type="button"
-                  onClick={() => navigate('/teacher/eleves')}
+                  onClick={() =>
+                    selectedClass
+                      ? navigate(`/teacher/eleves?classId=${selectedClass.id}`)
+                      : navigate('/teacher/eleves')
+                  }
                   className="jf-btn-secondary jf-btn-secondary-sm min-h-11 rounded-xl px-4 py-2 text-xs"
                 >
                   + Ajouter un élève
