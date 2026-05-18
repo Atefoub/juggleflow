@@ -4,6 +4,7 @@ import com.juggleflow.backend.dto.AdminCreateSchoolClassRequest;
 import com.juggleflow.backend.dto.AdminUpdateSchoolClassRequest;
 import com.juggleflow.backend.dto.SchoolClassRequest;
 import com.juggleflow.backend.dto.SchoolClassResponse;
+import com.juggleflow.backend.dto.StudentLookupResponse;
 import com.juggleflow.backend.dto.StudentSummaryResponse;
 import com.juggleflow.backend.dto.UpdateStudentGroupRequest;
 import com.juggleflow.backend.exception.ResourceNotFoundException;
@@ -179,8 +180,48 @@ public class SchoolClassService {
     }
 
     /**
+     * Recherche un élève par e-mail pour l'ajout à une classe.
+     *
+     * @param email        e-mail du compte élève
+     * @param classId      classe cible (optionnelle) pour indiquer si l'élève y est déjà
+     * @param teacherEmail l'email de l'enseignant authentifié
+     */
+    public StudentLookupResponse lookupStudentByEmail(
+            String email, Long classId, String teacherEmail) {
+
+        if (!StringUtils.hasText(email)) {
+            throw new IllegalArgumentException("L'e-mail est obligatoire.");
+        }
+
+        if (classId != null) {
+            assertClassOwnership(classId, teacherEmail);
+        }
+
+        String normalized = email.trim().toLowerCase();
+        Student student = studentRepository.findByEmail(normalized)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                    "Aucun compte élève trouvé pour cet e-mail."));
+
+        SchoolClass current = student.getSchoolClass();
+        boolean alreadyInClass = classId != null
+                && current != null
+                && classId.equals(current.getId());
+
+        return StudentLookupResponse.builder()
+                .id(student.getId())
+                .firstName(student.getFirstName())
+                .lastName(student.getLastName())
+                .email(student.getEmail())
+                .currentClassId(current != null ? current.getId() : null)
+                .currentClassName(current != null ? current.getName() : null)
+                .alreadyInClass(alreadyInClass)
+                .build();
+    }
+
+    /**
      * Ajoute un élève à une classe. Vérifie que l'enseignant est titulaire
      * et que l'élève n'est pas déjà inscrit dans cette classe.
+     * Si l'élève était dans une autre classe, il y est retiré (compteur mis à jour).
      *
      * @param classId      l'identifiant de la classe cible
      * @param studentId    l'identifiant de l'élève à ajouter
@@ -195,10 +236,16 @@ public class SchoolClassService {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Élève", studentId));
 
-        if (student.getSchoolClass() != null
-                && student.getSchoolClass().getId().equals(classId)) {
+        SchoolClass previousClass = student.getSchoolClass();
+        if (previousClass != null && previousClass.getId().equals(classId)) {
             throw new IllegalArgumentException(
                 "L'élève est déjà inscrit dans cette classe");
+        }
+
+        if (previousClass != null) {
+            int prevCount = Math.max(0, previousClass.getStudentCount() - 1);
+            previousClass.setStudentCount(prevCount);
+            schoolClassRepository.save(previousClass);
         }
 
         student.setSchoolClass(schoolClass);
