@@ -11,6 +11,16 @@ export interface SchoolClass {
 
 export type StudentGroupColor = 'VERT' | 'ORANGE' | 'ROUGE';
 
+export interface StudentLookup {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  currentClassId: number | null;
+  currentClassName: string | null;
+  alreadyInClass: boolean;
+}
+
 export interface StudentSummary {
   id: number;
   firstName: string;
@@ -145,6 +155,13 @@ export const teacherApi = {
 
   unassignPathFromClass: async (classId: number, pathId: number): Promise<void> => {
     await api.delete(`/enseignant/classes/${classId}/paths/${pathId}`);
+  },
+
+  lookupStudent: async (email: string, classId?: number): Promise<StudentLookup> => {
+    const params: Record<string, string> = { email: email.trim() };
+    if (classId != null) params.classId = String(classId);
+    const res = await api.get<StudentLookup>('/enseignant/students/lookup', { params });
+    return res.data;
   },
 
   addStudentToClass: async (classId: number, studentId: number): Promise<void> => {
