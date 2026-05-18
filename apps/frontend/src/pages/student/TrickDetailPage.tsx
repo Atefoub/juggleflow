@@ -13,6 +13,11 @@ import { useAuth } from '../../context/AuthContext';
 import { enqueueProgressUpdate } from '../../utils/offlineQueue';
 import OfflineBanner from '../../components/OfflineBanner';
 import { resolveTrickAnimation } from '../../utils/jugglingLab';
+import { favoritesApi } from '../../api/favoritesApi';
+import {
+  getCachedFavoriteIds,
+  setCachedFavoriteIds,
+} from '../../utils/favoritesStore';
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -60,6 +65,8 @@ export default function TrickDetailPage() {
   const [status, setStatus]           = useState<ProgressStatus>('NOT_STARTED');
   const [savingStatus, setSavingStatus] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -97,6 +104,55 @@ export default function TrickDetailPage() {
         // silencieux : la page reste fonctionnelle même si la progression ne charge pas
       });
   }, [id, isOnline, user?.id]);
+
+  useEffect(() => {
+    if (!id || !user?.id) return;
+    const trickId = Number(id);
+    if (Number.isNaN(trickId)) return;
+
+    const cached = getCachedFavoriteIds(user.id);
+    if (cached.includes(trickId)) {
+      setIsFavorite(true);
+    }
+
+    if (!isOnline) return;
+
+    favoritesApi
+      .listIds()
+      .then((ids) => {
+        setCachedFavoriteIds(user.id, ids);
+        setIsFavorite(ids.includes(trickId));
+      })
+      .catch(() => { /* silent */ });
+  }, [id, isOnline, user?.id]);
+
+  async function toggleFavorite() {
+    if (!trick || !user?.id || favoriteBusy) return;
+    if (!isOnline) {
+      setStatusError('Les favoris nécessitent une connexion internet.');
+      return;
+    }
+    setFavoriteBusy(true);
+    setStatusError(null);
+    const next = !isFavorite;
+    try {
+      if (next) {
+        await favoritesApi.add(trick.id);
+      } else {
+        await favoritesApi.remove(trick.id);
+      }
+      setIsFavorite(next);
+      const ids = getCachedFavoriteIds(user.id);
+      const updated = next
+        ? [...new Set([...ids, trick.id])]
+        : ids.filter((x) => x !== trick.id);
+      setCachedFavoriteIds(user.id, updated);
+    } catch {
+      setStatusError('Impossible de mettre à jour les favoris.');
+    } finally {
+      setFavoriteBusy(false);
+    }
+  }
 
   const level      = trick?.levelName ?? 'Beginner';
   const xp         = XP_BY_LEVEL[level] ?? 100;
@@ -161,11 +217,29 @@ export default function TrickDetailPage() {
                 <StarRating score={trick.difficultyScore} />
               </div>
             </div>
-            {trick.siteswap && (
-              <span className="text-xs px-2 py-1 rounded-lg bg-bg-card border border-border text-text-muted shrink-0">
-                {trick.siteswap}
-              </span>
-            )}
+            <div className="flex flex-col items-end gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => void toggleFavorite()}
+                disabled={favoriteBusy}
+                aria-pressed={isFavorite}
+                aria-label={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                className={[
+                  'w-10 h-10 rounded-xl border flex items-center justify-center text-lg transition-colors',
+                  isFavorite
+                    ? 'border-[#FBBF24] bg-[rgba(251,191,36,0.15)] text-[#FBBF24]'
+                    : 'border-border bg-bg-card text-text-muted hover:text-[#FBBF24]',
+                  favoriteBusy ? 'opacity-50' : '',
+                ].join(' ')}
+              >
+                {isFavorite ? '★' : '☆'}
+              </button>
+              {trick.siteswap && (
+                <span className="text-xs px-2 py-1 rounded-lg bg-bg-card border border-border text-text-muted">
+                  {trick.siteswap}
+                </span>
+              )}
+            </div>
           </div>
         ) : null}
       </header>

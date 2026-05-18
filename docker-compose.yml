@@ -1,0 +1,65 @@
+# Stack locale JuggleFlow (PostgreSQL + API Spring Boot).
+# Usage :
+#   cp apps/backend/.env.example apps/backend/.env
+#   docker compose up -d postgres
+#   docker compose up backend
+#
+# Frontend (hors compose) : npm ci && npx nx serve frontend
+# Puis CORS_ALLOWED_ORIGINS=http://localhost:4200 dans apps/backend/.env
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: juggleflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-juggleflow_db}
+      POSTGRES_USER: ${POSTGRES_USER:-juggleflow_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-juggleflow_dev}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - juggleflow_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-juggleflow_user} -d ${POSTGRES_DB:-juggleflow_db}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: eclipse-temurin:21-jdk-jammy
+    container_name: juggleflow-backend
+    working_dir: /app
+    volumes:
+      - ./apps/backend:/app
+      - maven_cache:/root/.m2
+    command: ./mvnw -q spring-boot:run -DskipTests
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    env_file:
+      - path: apps/backend/.env
+        required: false
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-juggleflow_db}
+      POSTGRES_USER: ${POSTGRES_USER:-juggleflow_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-juggleflow_dev}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-juggleflow_db}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-use-32-chars-minimum!!}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4200}
+      COOKIE_SECURE: "false"
+      SWAGGER_PUBLIC: "true"
+      DEMO_BOOTSTRAP_ENABLED: ${DEMO_BOOTSTRAP_ENABLED:-true}
+      DEMO_BOOTSTRAP_PASSWORD: ${DEMO_BOOTSTRAP_PASSWORD:-Demo2026!}
+      ADMIN_BOOTSTRAP_EMAIL: ${ADMIN_BOOTSTRAP_EMAIL:-admin@juggleflow.local}
+      ADMIN_BOOTSTRAP_PASSWORD: ${ADMIN_BOOTSTRAP_PASSWORD:-Admin2026!}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  juggleflow_pgdata:
+  maven_cache:
