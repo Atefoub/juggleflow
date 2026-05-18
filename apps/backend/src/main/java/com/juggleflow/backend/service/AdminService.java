@@ -3,6 +3,7 @@ package com.juggleflow.backend.service;
 import com.juggleflow.backend.dto.AdminCreateUserRequest;
 import com.juggleflow.backend.dto.AdminCreateUserResponse;
 import com.juggleflow.backend.dto.AdminEstablishmentStatsResponse;
+import com.juggleflow.backend.dto.AdminResetPasswordResponse;
 import com.juggleflow.backend.dto.AdminUserResponse;
 import com.juggleflow.backend.dto.SchoolClassResponse;
 import com.juggleflow.backend.exception.ResourceNotFoundException;
@@ -202,6 +203,29 @@ public class AdminService {
             .lastName(req.getLastName())
             .enabled(true)
             .adminRole("school_admin")
+            .build();
+    }
+
+    /**
+     * Réinitialise le mot de passe d'un utilisateur et renvoie le mot de passe temporaire
+     * (à transmettre une seule fois à l'administrateur).
+     */
+    @Transactional
+    public AdminResetPasswordResponse resetUserPassword(long targetUserId, String actingAdminEmail) {
+        userRepository.findByEmail(actingAdminEmail)
+            .orElseThrow(() -> new ResourceNotFoundException("Administrateur introuvable pour cette session."));
+
+        User target = userRepository.findById(targetUserId)
+            .orElseThrow(() -> new ResourceNotFoundException("Utilisateur", targetUserId));
+
+        String raw = generateTemporaryPassword();
+        target.setPassword(passwordEncoder.encode(raw));
+        userRepository.save(target);
+
+        return AdminResetPasswordResponse.builder()
+            .userId(target.getId())
+            .email(target.getEmail())
+            .generatedPassword(raw)
             .build();
     }
 
