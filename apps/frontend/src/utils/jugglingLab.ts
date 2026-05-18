@@ -1,21 +1,20 @@
 import type { TrickResponse } from '../api/catalogueApi';
 
-/** Base du serveur GIF documenté : https://jugglinglab.org/html/animinfo.html */
-export const JUGGLING_LAB_ANIM_BASE = 'https://jugglinglab.org/anim';
+/**
+ * Proxy API (redirection 302 vers le GIF réel).
+ * Le serveur public jugglinglab.org/anim renvoie du HTML, pas une image directe.
+ * @see https://jugglinglab.org/html/animinfo.html
+ */
+export const JUGGLING_LAB_ANIM_BASE = '/api/juggling-lab/anim';
 
 export type JugglingLabGifOptions = {
   width?: number;
   height?: number;
   slowdown?: number;
-  /**
-   * Si true (défaut), le serveur redirige vers le fichier GIF — adapté aux balises <img>.
-   * @see https://jugglinglab.org/html/animinfo.html (variable redirect)
-   */
-  redirect?: boolean;
 };
 
 /**
- * Construit l’URL du GIF Juggling Lab à partir d’un siteswap (notation généralisée JL).
+ * Construit l’URL du proxy GIF à partir d’un siteswap (notation généralisée JL).
  */
 export function buildJugglingLabGifUrl(
   pattern: string,
@@ -27,7 +26,6 @@ export function buildJugglingLabGifUrl(
   }
   const params = new URLSearchParams();
   params.set('pattern', p);
-  params.set('redirect', String(options.redirect ?? true));
   if (options.width != null) params.set('width', String(options.width));
   if (options.height != null) params.set('height', String(options.height));
   if (options.slowdown != null) params.set('slowdown', String(options.slowdown));

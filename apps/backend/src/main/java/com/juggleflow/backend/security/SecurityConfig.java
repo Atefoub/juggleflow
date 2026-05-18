@@ -103,6 +103,7 @@ public class SecurityConfig {
     "/api/auth/forgot-password",
     "/api/auth/refresh",
     "/api/auth/logout",
+    "/api/juggling-lab/**",
     "/actuator/health"
   };
 
