@@ -11,6 +11,12 @@ import { mergePendingIntoProgress } from '../../utils/offlineQueue';
 import type { TrickProgress } from '../../api/studentApi';
 import { resolveTrickAnimation } from '../../utils/jugglingLab';
 import { PROGRESS_UPDATED_EVENT } from '../../lib/progressEvents';
+import { favoritesApi } from '../../api/favoritesApi';
+import {
+  getCachedFavoriteTricks,
+  setCachedFavoriteIds,
+  setCachedFavoriteTricks,
+} from '../../utils/favoritesStore';
 
 
 const navItems = [
@@ -20,7 +26,7 @@ const navItems = [
   { label: 'Profil',      icon: '👤', path: '/student/profil' },
 ];
 
-type FilterLevel = 'Tous' | 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
+type FilterLevel = 'Tous' | 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert' | 'Favoris';
 
 const FILTERS: { value: FilterLevel; label: string }[] = [
   { value: 'Tous',         label: 'Tous' },
@@ -28,6 +34,7 @@ const FILTERS: { value: FilterLevel; label: string }[] = [
   { value: 'Intermediate', label: 'Intermédiaire' },
   { value: 'Advanced',     label: 'Avancé' },
   { value: 'Expert',       label: 'Expert' },
+  { value: 'Favoris',      label: 'Favoris' },
 ];
 
 const PAGE_SIZE = 10;
@@ -46,6 +53,7 @@ const FILTER_ACTIVE_CLASS: Record<FilterLevel, string> = {
   Intermediate: 'bg-[rgba(139,43,226,0.14)] text-[#C724B1] border-[#8B2BE2]',
   Advanced:     'bg-[rgba(139,43,226,0.12)] text-[#8B2BE2] border-[#8B2BE2]',
   Expert:       'bg-[rgba(255,77,77,0.12)] text-[#FF4D4D] border-[#FF4D4D]',
+  Favoris:      'bg-[rgba(255,193,7,0.15)] text-[#FBBF24] border-[#FBBF24]',
 };
 
 
@@ -245,6 +253,43 @@ export default function CataloguePage() {
   }, []);
 
   const fetchTricks = useCallback(async (pageNum: number, reset: boolean) => {
+    if (activeFilter === 'Favoris') {
+      if (!user?.id) return;
+      reset ? setLoading(true) : setLoadingMore(true);
+      setError(null);
+      try {
+        let list: TrickResponse[];
+        if (isOnline) {
+          list = await favoritesApi.list();
+          setCachedFavoriteTricks(user.id, list);
+        } else {
+          list = getCachedFavoriteTricks(user.id);
+          if (list.length === 0) {
+            throw new Error('OFFLINE_FAVORITES_EMPTY');
+          }
+        }
+        const q = debouncedSearch.trim().toLowerCase();
+        const filtered = q
+          ? list.filter((t) => t.name.toLowerCase().includes(q))
+          : list;
+        setTricks(filtered);
+        setHasMore(false);
+        setPage(0);
+      } catch (err) {
+        const code = err instanceof Error ? err.message : '';
+        setError(
+          code === 'OFFLINE_FAVORITES_EMPTY'
+            ? 'Aucun favori en cache. Consulte tes favoris une fois en ligne.'
+            : 'Impossible de charger tes favoris.',
+        );
+        if (reset) setTricks([]);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+      return;
+    }
+
     reset ? setLoading(true) : setLoadingMore(true);
     setError(null);
     try {
@@ -268,9 +313,17 @@ export default function CataloguePage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [activeFilter, debouncedSearch, isOnline]);
+  }, [activeFilter, debouncedSearch, isOnline, user?.id]);
 
   useEffect(() => { fetchTricks(0, true); }, [fetchTricks]);
+
+  useEffect(() => {
+    if (!user?.id || !isOnline) return;
+    favoritesApi
+      .listIds()
+      .then((ids) => setCachedFavoriteIds(user.id, ids))
+      .catch(() => { /* silent */ });
+  }, [user?.id, isOnline]);
 
   const activeFiltersCount =
     (activeFilter !== 'Tous' ? 1 : 0) + (debouncedSearch ? 1 : 0);
@@ -410,6 +463,8 @@ export default function CataloguePage() {
                 ? `Résultats pour "${debouncedSearch}"`
                 : activeFilter === 'Tous'
                 ? 'Toutes les figures'
+                : activeFilter === 'Favoris'
+                ? 'Mes favoris'
                 : `Niveau ${LEVEL_LABELS[activeFilter]}`}
             </h2>
             <span className="text-xs text-text-muted">
@@ -430,7 +485,11 @@ export default function CataloguePage() {
               <div className="p-8 rounded-2xl text-center bg-bg-card border border-border">
                 <div className="text-3xl mb-3" aria-hidden="true">🤷</div>
                 <p className="font-bold text-white text-sm mb-1">Aucune figure trouvée</p>
-                <p className="text-xs text-text-muted">Essaie un autre terme ou change de filtre.</p>
+                <p className="text-xs text-text-muted">
+                  {activeFilter === 'Favoris'
+                    ? 'Ajoute des figures en favori depuis leur fiche détail (étoile).'
+                    : 'Essaie un autre terme ou change de filtre.'}
+                </p>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
@@ -445,7 +504,7 @@ export default function CataloguePage() {
               </div>
             )}
 
-            {hasMore && tricks.length > 0 && (
+            {hasMore && tricks.length > 0 && activeFilter !== 'Favoris' && (
               <button
                 type="button"
                 onClick={() => !loadingMore && hasMore && fetchTricks(page + 1, false)}
