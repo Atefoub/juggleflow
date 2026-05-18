@@ -143,6 +143,14 @@ export default defineConfig(({ mode }) => {
             },
           },
           {
+            urlPattern: ({ url }) => url.pathname.startsWith('/api/juggling-lab/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'juggling-lab-proxy-cache',
+              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 7 },
+            },
+          },
+          {
             urlPattern: ({ request }) => request.destination === 'image',
             handler: 'CacheFirst',
             options: {
