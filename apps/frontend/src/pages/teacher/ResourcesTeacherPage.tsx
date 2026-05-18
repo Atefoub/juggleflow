@@ -5,6 +5,7 @@ import {
   type PedagogicalResource,
   type ResourceType,
 } from '../../api/resourcesApi';
+import { isExternalHttpUrl, openExternalResource } from '../../utils/externalResource';
 
 const navItems = [
   { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
@@ -130,7 +131,7 @@ export default function ResourcesTeacherPage() {
         {tab === 'Études' && !loading && (
           <>
             <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
-              Études scientifiques — PDF téléchargeables
+              Études scientifiques
             </h2>
             <div className="flex flex-col gap-3">
               {pdfs.length === 0 ? (
@@ -140,8 +141,7 @@ export default function ResourcesTeacherPage() {
               ))}
             </div>
             <p className="text-xs text-text-muted text-center px-4">
-              Les ressources sont hébergées sur les serveurs JuggleFlow.
-              Aucune donnée élève n&apos;est transmise lors du téléchargement.
+              Les articles s&apos;ouvrent sur les sites des éditeurs (PLOS, PMC, ScienceDirect).
             </p>
           </>
         )}
@@ -185,7 +185,8 @@ function EmptySearch() {
 }
 
 function PdfCard({ res }: { res: PedagogicalResource }) {
-  const canDownload = Boolean(res.resourceUrl);
+  const external = isExternalHttpUrl(res.resourceUrl);
+  const canOpen = Boolean(res.resourceUrl);
   return (
     <div className="p-4 rounded-2xl bg-bg-card border border-border">
       <div className="flex items-start gap-3 mb-3">
@@ -208,16 +209,22 @@ function PdfCard({ res }: { res: PedagogicalResource }) {
         </div>
         <button
           type="button"
-          disabled={!canDownload}
-          aria-label={`Télécharger ${res.title}`}
+          disabled={!canOpen}
+          aria-label={external ? `Ouvrir ${res.title}` : `Télécharger ${res.title}`}
           onClick={() => {
-            if (!canDownload) return;
+            if (!canOpen || !res.resourceUrl) return;
+            if (external) {
+              openExternalResource(res.resourceUrl);
+              return;
+            }
             void resourcesApi.download(res.id, res.title);
           }}
           className="jf-btn-secondary jf-btn-secondary-sm inline-flex gap-1 disabled:opacity-50"
         >
-          <span role="img" aria-label="télécharger">↓</span>
-          PDF
+          <span role="img" aria-label={external ? 'lien' : 'télécharger'}>
+            {external ? '↗' : '↓'}
+          </span>
+          {external ? 'Lire' : 'PDF'}
         </button>
       </div>
     </div>
@@ -227,7 +234,12 @@ function PdfCard({ res }: { res: PedagogicalResource }) {
 function VideoRow({ res }: { res: PedagogicalResource }) {
   const level = res.tags[0] ?? '';
   return (
-    <div className="p-4 rounded-2xl bg-bg-card border border-border flex items-center gap-3">
+    <button
+      type="button"
+      disabled={!res.resourceUrl}
+      onClick={() => openExternalResource(res.resourceUrl)}
+      className="p-4 rounded-2xl bg-bg-card border border-border flex items-center gap-3 w-full text-left hover:opacity-90 disabled:opacity-50"
+    >
       <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand/20 border border-brand/40 shrink-0">
         <span role="img" aria-label="vidéo" className="text-lg">▶️</span>
       </div>
@@ -236,13 +248,16 @@ function VideoRow({ res }: { res: PedagogicalResource }) {
         <p className="text-xs text-text-muted">
           {res.metaLabel}{level ? ` · ${level}` : ''}
         </p>
+        {res.subtitle && <p className="text-xs text-text-secondary mt-0.5">{res.subtitle}</p>}
       </div>
-    </div>
+      {res.resourceUrl && <span className="text-xs text-brand-end shrink-0">Regarder →</span>}
+    </button>
   );
 }
 
 function GuideRow({ res }: { res: PedagogicalResource }) {
-  const canDownload = Boolean(res.resourceUrl);
+  const external = isExternalHttpUrl(res.resourceUrl);
+  const canOpen = Boolean(res.resourceUrl);
   return (
     <div className="p-4 rounded-2xl bg-bg-card border border-border flex items-center gap-3">
       <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-success/10 border border-success/30 shrink-0">
@@ -250,19 +265,24 @@ function GuideRow({ res }: { res: PedagogicalResource }) {
       </div>
       <div className="flex-1">
         <p className="font-bold text-text-primary text-sm">{res.title}</p>
+        {res.subtitle && <p className="text-xs text-text-secondary">{res.subtitle}</p>}
         {res.metaLabel && <p className="text-xs text-text-muted">{res.metaLabel}</p>}
       </div>
       <button
         type="button"
-        disabled={!canDownload}
-        aria-label={`Télécharger ${res.title}`}
+        disabled={!canOpen}
+        aria-label={external ? `Ouvrir ${res.title}` : `Télécharger ${res.title}`}
         onClick={() => {
-          if (!canDownload) return;
+          if (!canOpen || !res.resourceUrl) return;
+          if (external) {
+            openExternalResource(res.resourceUrl);
+            return;
+          }
           void resourcesApi.download(res.id, res.title);
         }}
         className="text-xs px-2 py-1.5 rounded-lg bg-success/10 border border-success/30 text-success font-semibold hover:opacity-80 transition-opacity disabled:opacity-50"
       >
-        ↓
+        {external ? '↗' : '↓'}
       </button>
     </div>
   );

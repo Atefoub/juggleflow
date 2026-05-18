@@ -10,12 +10,43 @@ import {
   setBrainChaptersCompleted,
   setBrainModuleStarted,
 } from '../../utils/resourcesLocalState';
+import {
+  isYoutubeUrl,
+  openExternalResource,
+  youtubeEmbedUrl,
+} from '../../utils/externalResource';
 
 const BRAIN_CHAPTERS = [
-  { n: 1, title: 'La plasticité cérébrale' },
-  { n: 2, title: 'Mémoire motrice et répétition' },
-  { n: 3, title: 'Le rôle de la concentration' },
+  {
+    n: 1,
+    title: 'La plasticité cérébrale',
+    summary:
+      'Ton cerveau peut se modifier quand tu apprends : la pratique du jonglage augmente temporairement la matière grise dans les zones qui traitent le mouvement.',
+  },
+  {
+    n: 2,
+    title: 'Mémoire motrice et répétition',
+    summary:
+      'Chaque séance renforce des circuits moteurs : les progrès viennent de la répétition régulière, pas d’un seul coup de chance.',
+  },
+  {
+    n: 3,
+    title: 'Le rôle de la concentration',
+    summary:
+      'Jongler demande une attention soutenue : les deux hémisphères doivent coordonner le regard, les mains et le rythme en même temps.',
+  },
 ] as const;
+
+function isBrainChapterSource(resource: PedagogicalResource): boolean {
+  return resource.tags.some((t) => t.startsWith('brain-chapter:'));
+}
+
+function brainChapterNumber(resource: PedagogicalResource): number | null {
+  const tag = resource.tags.find((t) => t.startsWith('brain-chapter:'));
+  if (!tag) return null;
+  const n = Number.parseInt(tag.split(':')[1] ?? '', 10);
+  return Number.isFinite(n) ? n : null;
+}
 
 const navItems = [
   { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
@@ -40,6 +71,7 @@ export default function ResourcesStudentPage() {
   const [brainBusy, setBrainBusy] = useState(false);
   const [brainError, setBrainError] = useState<string | null>(null);
   const [offlineVideoHint, setOfflineVideoHint] = useState(false);
+  const [activeVideoId, setActiveVideoId] = useState<number | null>(null);
 
   const moduleStarted = completedChapters.length > 0;
 
@@ -110,12 +142,32 @@ export default function ResourcesStudentPage() {
   }
 
   const videos = resources.filter((r) => r.resourceType === 'STUDENT_VIDEO');
-  const exercises = resources.filter((r) => r.resourceType === 'STUDENT_EXERCISE');
+  const exercises = resources.filter(
+    (r) => r.resourceType === 'STUDENT_EXERCISE' && !isBrainChapterSource(r),
+  );
+  const brainSources = resources.filter(isBrainChapterSource);
   const brainModule = resources.find((r) => r.resourceType === 'BRAIN_MODULE');
 
-  function handlePlayVideo() {
-    if (isOnline) return;
-    setOfflineVideoHint(true);
+  function handlePlayVideo(video: PedagogicalResource) {
+    if (!isOnline) {
+      setOfflineVideoHint(true);
+      return;
+    }
+    setOfflineVideoHint(false);
+    if (!video.resourceUrl) return;
+    if (isYoutubeUrl(video.resourceUrl)) {
+      setActiveVideoId((current) => (current === video.id ? null : video.id));
+      return;
+    }
+    openExternalResource(video.resourceUrl);
+  }
+
+  function handleOpenExercise(ex: PedagogicalResource) {
+    if (!isOnline) {
+      setOfflineVideoHint(true);
+      return;
+    }
+    openExternalResource(ex.resourceUrl);
   }
 
   return (
@@ -167,10 +219,23 @@ export default function ResourcesStudentPage() {
                 const extraTags = video.tags.slice(1);
                 const thumbColor = THUMB_COLORS[index % THUMB_COLORS.length];
                 const trickEmoji = VIDEO_EMOJIS[index % VIDEO_EMOJIS.length];
+                const embedSrc =
+                  activeVideoId === video.id && video.resourceUrl
+                    ? youtubeEmbedUrl(video.resourceUrl)
+                    : null;
                 return (
                 <div key={video.id} className="rounded-2xl overflow-hidden bg-bg-card border border-border">
-                  {/* Thumbnail */}
-                  {/* style intentional — dynamic gradient from data (no Tailwind equivalent) */}
+                  {embedSrc ? (
+                    <div className="relative aspect-video bg-black">
+                      <iframe
+                        title={video.title}
+                        src={embedSrc}
+                        className="absolute inset-0 h-full w-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : (
                   <div
                     className="relative h-40 flex items-center justify-center"
                     style={{ background: `linear-gradient(135deg, ${thumbColor}40, #111638)` }}
@@ -179,16 +244,17 @@ export default function ResourcesStudentPage() {
                     <button
                       type="button"
                       aria-label={`Lire ${video.title}`}
-                      onClick={handlePlayVideo}
-                      className="absolute inset-0 flex items-center justify-center"
+                      disabled={!video.resourceUrl}
+                      onClick={() => handlePlayVideo(video)}
+                      className="absolute inset-0 flex items-center justify-center disabled:opacity-50"
                     >
                       <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
                         <span className="text-white text-2xl ml-1">▶</span>
                       </div>
                     </button>
                   </div>
+                  )}
 
-                  {/* Info */}
                   <div className="p-3">
                     <p className="font-bold text-text-primary text-sm mb-1">{video.title}</p>
                     <div className="flex items-center gap-2 flex-wrap">
@@ -225,11 +291,17 @@ export default function ResourcesStudentPage() {
                   </div>
                   <div className="flex-1">
                     <p className="font-bold text-text-primary text-sm">{ex.title}</p>
-                    <p className="text-xs text-text-muted">{ex.metaLabel}</p>
+                    {ex.subtitle && (
+                      <p className="text-xs text-text-secondary mt-0.5 line-clamp-2">{ex.subtitle}</p>
+                    )}
+                    <p className="text-xs text-text-muted mt-0.5">{ex.metaLabel}</p>
                   </div>
                   <button
+                    type="button"
+                    disabled={!ex.resourceUrl}
                     aria-label={`Commencer ${ex.title}`}
-                    className="jf-btn-primary jf-btn-primary-sm"
+                    onClick={() => handleOpenExercise(ex)}
+                    className="jf-btn-primary jf-btn-primary-sm disabled:opacity-50"
                   >
                     Lancer
                   </button>
@@ -286,39 +358,68 @@ export default function ResourcesStudentPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               {BRAIN_CHAPTERS.map((ch) => {
                 const done = completedChapters.includes(ch.n);
                 const unlocked =
                   ch.n === 1 || completedChapters.includes(ch.n - 1);
+                const sources = brainSources.filter(
+                  (s) => brainChapterNumber(s) === ch.n,
+                );
                 return (
-                  <button
+                  <div
                     key={ch.n}
-                    type="button"
-                    disabled={brainBusy || done || !unlocked}
-                    onClick={() => void completeBrainChapter(ch.n)}
                     className={[
-                      'flex items-center gap-3 p-3 rounded-xl bg-bg-card border border-border text-left w-full',
-                      !unlocked && !done ? 'opacity-50' : 'hover:opacity-90',
+                      'rounded-xl bg-bg-card border border-border overflow-hidden',
+                      !unlocked && !done ? 'opacity-60' : '',
                     ].join(' ')}
                   >
-                    <div
-                      className={[
-                        'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
-                        done ? 'bg-success text-white' : 'bg-border text-text-muted',
-                      ].join(' ')}
+                    <button
+                      type="button"
+                      disabled={brainBusy || done || !unlocked}
+                      onClick={() => void completeBrainChapter(ch.n)}
+                      className="flex items-center gap-3 p-3 text-left w-full hover:opacity-90 disabled:cursor-default"
                     >
-                      {done ? '✓' : ch.n}
-                    </div>
-                    <p className={`text-sm flex-1 ${done ? 'text-text-primary' : 'text-text-muted'}`}>
-                      {ch.title}
-                    </p>
-                    {done ? (
-                      <span className="text-xs text-success">Terminé</span>
-                    ) : unlocked ? (
-                      <span className="text-xs text-brand-end">Marquer fait</span>
-                    ) : null}
-                  </button>
+                      <div
+                        className={[
+                          'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
+                          done ? 'bg-success text-white' : 'bg-border text-text-muted',
+                        ].join(' ')}
+                      >
+                        {done ? '✓' : ch.n}
+                      </div>
+                      <p className={`text-sm flex-1 font-semibold ${done ? 'text-text-primary' : 'text-text-muted'}`}>
+                        {ch.title}
+                      </p>
+                      {done ? (
+                        <span className="text-xs text-success">Terminé</span>
+                      ) : unlocked ? (
+                        <span className="text-xs text-brand-end">Marquer fait</span>
+                      ) : null}
+                    </button>
+                    {unlocked && (
+                      <div className="px-3 pb-3 flex flex-col gap-2 border-t border-border/60 pt-2">
+                        <p className="text-xs text-text-secondary leading-relaxed">{ch.summary}</p>
+                        {sources.map((src) => (
+                          <button
+                            key={src.id}
+                            type="button"
+                            onClick={() => openExternalResource(src.resourceUrl)}
+                            disabled={!src.resourceUrl}
+                            className="flex items-center justify-between gap-2 rounded-lg border border-border bg-bg-primary/50 px-3 py-2 text-left hover:opacity-90 disabled:opacity-50"
+                          >
+                            <div>
+                              <p className="text-xs font-semibold text-text-primary">{src.title}</p>
+                              {src.subtitle && (
+                                <p className="text-xs text-text-muted mt-0.5 line-clamp-2">{src.subtitle}</p>
+                              )}
+                            </div>
+                            <span className="text-xs text-brand-end shrink-0">En savoir plus →</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
