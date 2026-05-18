@@ -41,6 +41,12 @@ export interface AdminCreateUserPayload {
   birthDate?: string;
 }
 
+export interface AdminResetPasswordResponse {
+  userId: number;
+  email: string;
+  generatedPassword: string;
+}
+
 export interface AdminCreateUserResponse {
   id: number;
   email: string;
@@ -164,6 +170,13 @@ export const adminApi = {
    */
   createUser: async (payload: AdminCreateUserPayload): Promise<AdminCreateUserResponse> => {
     const res = await api.post<AdminCreateUserResponse>('/admin/users', payload);
+    return res.data;
+  },
+
+  resetUserPassword: async (userId: number): Promise<AdminResetPasswordResponse> => {
+    const res = await api.post<AdminResetPasswordResponse>(
+      `/admin/users/${userId}/reset-password`,
+    );
     return res.data;
   },
 };

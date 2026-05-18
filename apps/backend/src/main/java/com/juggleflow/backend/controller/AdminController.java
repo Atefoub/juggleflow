@@ -4,6 +4,7 @@ import com.juggleflow.backend.dto.AdminAuditEventResponse;
 import com.juggleflow.backend.dto.AdminCreateSchoolClassRequest;
 import com.juggleflow.backend.dto.AdminCreateUserRequest;
 import com.juggleflow.backend.dto.AdminCreateUserResponse;
+import com.juggleflow.backend.dto.AdminResetPasswordResponse;
 import com.juggleflow.backend.dto.AdminEstablishmentStatsResponse;
 import com.juggleflow.backend.dto.AdminSetEnabledRequest;
 import com.juggleflow.backend.dto.AdminUpdateSchoolClassRequest;
@@ -192,6 +193,25 @@ public class AdminController {
             body.getEnabled() ? "USER_ENABLED" : "USER_DISABLED",
             "userId=" + id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * POST /api/admin/users/{id}/reset-password
+     * Génère un mot de passe temporaire pour l'utilisateur cible.
+     */
+    @PostMapping("/users/{id}/reset-password")
+    @Operation(summary = "Réinitialiser le mot de passe d'un utilisateur")
+    public ResponseEntity<AdminResetPasswordResponse> resetUserPassword(
+        @PathVariable long id,
+        @AuthenticationPrincipal UserDetails principal) {
+
+        AdminResetPasswordResponse result =
+            adminService.resetUserPassword(id, principal.getUsername());
+        adminAuditService.record(
+            principal.getUsername(),
+            "USER_PASSWORD_RESET",
+            "userId=" + id);
+        return ResponseEntity.ok(result);
     }
 
     /**

@@ -111,6 +111,26 @@ export default function AdminUsersPage() {
     [users]
   );
 
+  async function resetPasswordForUser(target: AppUser) {
+    if (!window.confirm(
+      `Générer un nouveau mot de passe temporaire pour ${target.firstName} ${target.lastName} ?`,
+    )) {
+      return;
+    }
+    setBusyId(target.id);
+    setFeedback(null);
+    try {
+      const res = await adminApi.resetUserPassword(target.id);
+      setFeedback(
+        `Mot de passe réinitialisé pour ${res.email} : ${res.generatedPassword} (à copier maintenant, non stocké).`,
+      );
+    } catch {
+      setFeedback('Impossible de réinitialiser le mot de passe.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function setEnabledForUser(target: AppUser, enabled: boolean) {
     if (!currentUser) return;
     if (!enabled && target.id === currentUser.id) {
@@ -287,6 +307,16 @@ export default function AdminUsersPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-2 sm:ml-auto">
+                  {u.role !== 'Admin' && (
+                    <button
+                      type="button"
+                      disabled={busyId === u.id}
+                      onClick={() => void resetPasswordForUser(u)}
+                      className="jf-admin-btn-secondary"
+                    >
+                      {busyId === u.id ? '…' : 'Réinit. MDP'}
+                    </button>
+                  )}
                   {u.id !== currentUser?.id && (
                     <button
                       type="button"

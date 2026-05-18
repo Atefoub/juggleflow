@@ -18,7 +18,7 @@ type Tab = 'Études' | 'Vidéos' | 'Fiches' | 'Guides EPS';
 const TAB_TO_TYPE: Record<Tab, ResourceType | null> = {
   'Études': 'STUDY_PDF',
   'Vidéos': 'TEACHER_VIDEO',
-  'Fiches': null,
+  'Fiches': 'TEACHER_GUIDE',
   'Guides EPS': 'TEACHER_GUIDE',
 };
 
@@ -65,7 +65,12 @@ export default function ResourcesTeacherPage() {
 
   const pdfs = filtered.filter((r) => r.resourceType === 'STUDY_PDF');
   const videos = filtered.filter((r) => r.resourceType === 'TEACHER_VIDEO');
-  const guides = filtered.filter((r) => r.resourceType === 'TEACHER_GUIDE');
+  const guides = filtered.filter(
+    (r) => r.resourceType === 'TEACHER_GUIDE' && !r.tags.some((t) => t.toLowerCase() === 'fiche'),
+  );
+  const sheets = filtered.filter(
+    (r) => r.resourceType === 'TEACHER_GUIDE' && r.tags.some((t) => t.toLowerCase() === 'fiche'),
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
@@ -150,8 +155,10 @@ export default function ResourcesTeacherPage() {
         )}
 
         {tab === 'Fiches' && !loading && (
-          <div className="p-4 rounded-2xl bg-bg-card border border-border text-sm text-text-muted text-center">
-            Bientôt disponible — fiches pédagogiques par figure.
+          <div className="flex flex-col gap-3">
+            {sheets.length === 0 ? <EmptySearch /> : sheets.map((g) => (
+              <GuideRow key={g.id} res={g} />
+            ))}
           </div>
         )}
 
