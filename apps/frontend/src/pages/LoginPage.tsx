@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -112,20 +112,13 @@ export default function LoginPage() {
             )}
           </div>
 
-          {/* Lien mot de passe oublié — bientôt disponible */}
           <div className="text-right">
-            <button
-              type="button"
-              disabled
-              aria-disabled="true"
-              title="Bientôt disponible — contactez votre établissement pour réinitialiser votre mot de passe."
-              className="text-sm text-text-muted opacity-60 cursor-not-allowed inline-flex items-center gap-1"
+            <Link
+              to="/login/forgot"
+              className="text-sm text-text-secondary hover:text-text-primary underline"
             >
-              <span className="underline">Mot de passe oublié ?</span>
-              <span className="text-[0.6rem] uppercase tracking-wider rounded-md px-1.5 py-0.5 border border-border bg-bg-input">
-                Bientôt
-              </span>
-            </button>
+              Mot de passe oublié ?
+            </Link>
           </div>
 
           {/* Erreur globale */}
