@@ -34,6 +34,18 @@ function toConsentCsv(rows: ConsentStatusRow[]): string {
   return `${header}\n${body}\n`;
 }
 
+function toRelanceCsv(rows: ConsentStatusRow[]): string {
+  const esc = (v: string) => `"${v.replaceAll('"', '""')}"`;
+  const header = ['userId', 'firstName', 'lastName', 'status'].join(',');
+  const body = rows.map((r) => ([
+    String(r.userId),
+    esc(r.firstName ?? ''),
+    esc(r.lastName ?? ''),
+    esc(r.status),
+  ].join(','))).join('\n');
+  return `${header}\n${body}\n`;
+}
+
 function downloadText(filename: string, content: string, mime: string) {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
@@ -294,6 +306,18 @@ export default function AdminRgpdPage() {
             className="jf-admin-btn-primary"
           >
             Gérer ({missingRows.length} à traiter)
+          </button>
+          <button
+            type="button"
+            disabled={isLoading || missingRows.length === 0}
+            className="jf-admin-btn-secondary"
+            onClick={() => {
+              const cls = classes.find((c) => c.id === selectedClassId);
+              const name = cls ? `relance_${cls.name.replace(/\s+/g, '_')}` : 'relance_consentements';
+              downloadText(`${name}.csv`, toRelanceCsv(missingRows), 'text/csv;charset=utf-8');
+            }}
+          >
+            Exporter relance (CSV)
           </button>
           <button
             type="button"

@@ -7,6 +7,7 @@ import AdminLayout from '../components/admin/AdminLayout';
 
 // Lazy pages (code-splitting)
 const LoginPage            = lazy(() => import('../pages/LoginPage'));
+const ForgotPasswordPage   = lazy(() => import('../pages/ForgotPasswordPage'));
 const OnboardingPage       = lazy(() => import('../pages/student/OnboardingPage'));
 
 const StudentDashboardPage = lazy(() => import('../pages/student/StudentDashboardPage'));
@@ -111,7 +112,8 @@ export default function AppRouter() {
       <Suspense fallback={<AppFallback />}>
         <Routes>
           {/* ── Public ── */}
-          <Route path="/login"      element={<LoginPage />} />
+          <Route path="/login"            element={<LoginPage />} />
+          <Route path="/login/forgot"     element={<ForgotPasswordPage />} />
           <Route path="/onboarding" element={<OnboardingRoute />} />
 
           {/* ── Élève ── */}

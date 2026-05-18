@@ -35,7 +35,7 @@ export default function AdminAuditPage() {
     <>
       <AdminPageHeader
         title="Journal d'audit"
-        description="Actions sensibles (comptes, classes, consentements RGPD) enregistrées côté serveur."
+        description="Comptes, classes, consentements RGPD et demandes de réinitialisation de mot de passe (PASSWORD_RESET_REQUESTED)."
         actions={
           <button
             type="button"
