@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
+import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
 import { getTrickDetail } from '../../api/catalogueOffline';
 import { LEVEL_LABELS, type TrickResponse } from '../../api/catalogueApi';
@@ -11,13 +12,6 @@ import { enqueueProgressUpdate } from '../../utils/offlineQueue';
 import { dispatchProgressUpdated } from '../../lib/progressEvents';
 import OfflineBanner from '../../components/OfflineBanner';
 import { resolveTrickAnimation } from '../../utils/jugglingLab';
-
-const navItems = [
-  { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
-  { label: 'Catalogue',   icon: '🎯', path: '/student/catalogue' },
-  { label: 'Progression', icon: '📊', path: '/student/progression' },
-  { label: 'Profil',      icon: '👤', path: '/student/profil' },
-];
 
 type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED';
 
@@ -246,7 +240,7 @@ export default function StudentSessionPage() {
         )}
       </main>
 
-      <BottomNav items={navItems} />
+      <BottomNav items={STUDENT_NAV_ITEMS} />
     </div>
   );
 }

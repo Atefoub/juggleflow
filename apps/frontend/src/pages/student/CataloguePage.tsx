@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
+import AppIcon from '../../components/icons/AppIcon';
+import ProgressStatusIcon from '../../components/icons/ProgressStatusIcon';
+import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import OfflineBanner from '../../components/OfflineBanner';
 import { getPopularTricks, getTricksPage } from '../../api/catalogueOffline';
@@ -18,13 +21,6 @@ import {
   setCachedFavoriteTricks,
 } from '../../utils/favoritesStore';
 
-
-const navItems = [
-  { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
-  { label: 'Catalogue',   icon: '🎯', path: '/student/catalogue' },
-  { label: 'Progression', icon: '📊', path: '/student/progression' },
-  { label: 'Profil',      icon: '👤', path: '/student/profil' },
-];
 
 type FilterLevel = 'Tous' | 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert' | 'Favoris';
 
@@ -120,12 +116,13 @@ type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED';
 function ProgressChip({ status }: { status: ProgressStatus }) {
   if (status === 'NOT_STARTED') return null;
   const cfg = status === 'MASTERED'
-    ? { icon: '✅', label: 'Maîtrisée', cls: 'bg-success/10 text-success border border-success/30' }
-    : { icon: '🔄', label: 'En cours',  cls: 'bg-brand/10 text-brand-end border border-brand/30' };
+    ? { label: 'Maîtrisée', cls: 'bg-success/10 text-success border border-success/30' }
+    : { label: 'En cours',  cls: 'bg-brand/10 text-brand-end border border-brand/30' };
 
   return (
-    <span className={`text-[0.55rem] font-bold px-2 py-0.5 rounded-full ${cfg.cls}`}>
-      <span aria-hidden="true">{cfg.icon}</span>{' '}{cfg.label}
+    <span className={`inline-flex items-center gap-1 text-[0.55rem] font-bold px-2 py-0.5 rounded-full ${cfg.cls}`}>
+      <ProgressStatusIcon status={status} size={12} className="shrink-0" />
+      {cfg.label}
     </span>
   );
 }
@@ -149,7 +146,8 @@ function TrickCard({
             <ProgressChip status={status} />
             {trick.popular && (
               <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full bg-[#1A1028] text-brand-end border border-brand/35">
-                <span role="img" aria-label="Populaire">🔥</span>{' '}Populaire
+                <AppIcon name="badge-streak-7" size={12} className="inline shrink-0" label="Populaire" />{' '}
+                Populaire
               </span>
             )}
           </div>
@@ -405,7 +403,8 @@ export default function CataloguePage() {
         {!loading && !error && activeFilter === 'Tous' && !debouncedSearch && popular.length > 0 && (
           <section>
             <h2 className="font-display font-bold text-white text-sm uppercase tracking-wider mb-3">
-              <span role="img" aria-label="Populaire">🔥</span>{' '}Figures populaires
+              <AppIcon name="badge-streak-7" size={14} className="inline shrink-0" label="Populaire" />{' '}
+              Figures populaires
             </h2>
             <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
               {popular.map((trick) => (
@@ -524,7 +523,7 @@ export default function CataloguePage() {
         )}
       </main>
 
-      <BottomNav items={navItems} />
+      <BottomNav items={STUDENT_NAV_ITEMS} />
     </div>
   );
 }

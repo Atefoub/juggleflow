@@ -1,12 +1,5 @@
 import type { ComponentType, SVGProps } from 'react';
-import {
-  IconAudit,
-  IconClasses,
-  IconDashboard,
-  IconResources,
-  IconShield,
-  IconUsers,
-} from './AdminIcons';
+import { createSizedIcon } from '../icons/iconRegistry';
 
 /**
  * Source unique de vérité pour la navigation admin.
@@ -29,10 +22,10 @@ export interface AdminNavItem {
 }
 
 export const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
-  { label: 'Tableau de bord', path: '/admin/dashboard', icon: IconDashboard },
-  { label: 'Utilisateurs',    path: '/admin/users',     icon: IconUsers     },
-  { label: 'Classes',         path: '/admin/classes',   icon: IconClasses   },
-  { label: 'Ressources',      path: '/admin/resources', icon: IconResources },
-  { label: 'RGPD',            path: '/admin/rgpd',      icon: IconShield    },
-  { label: 'Journal d\u2019audit', path: '/admin/audit', icon: IconAudit    },
+  { label: 'Tableau de bord', path: '/admin/dashboard', icon: createSizedIcon('admin-dashboard') },
+  { label: 'Utilisateurs',    path: '/admin/users',     icon: createSizedIcon('admin-users')     },
+  { label: 'Classes',         path: '/admin/classes',   icon: createSizedIcon('admin-classes')   },
+  { label: 'Ressources',      path: '/admin/resources', icon: createSizedIcon('admin-resources') },
+  { label: 'RGPD',            path: '/admin/rgpd',      icon: createSizedIcon('admin-shield')    },
+  { label: 'Journal d\u2019audit', path: '/admin/audit', icon: createSizedIcon('admin-audit')    },
 ] as const;

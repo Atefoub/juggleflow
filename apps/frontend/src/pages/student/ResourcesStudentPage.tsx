@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import BottomNav from '../../components/BottomNav';
+import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import OfflineBanner from '../../components/OfflineBanner';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { resourcesApi, type PedagogicalResource } from '../../api/resourcesApi';
@@ -47,13 +48,6 @@ function brainChapterNumber(resource: PedagogicalResource): number | null {
   const n = Number.parseInt(tag.split(':')[1] ?? '', 10);
   return Number.isFinite(n) ? n : null;
 }
-
-const navItems = [
-  { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
-  { label: 'Catalogue',   icon: '🎯', path: '/student/catalogue' },
-  { label: 'Progression', icon: '📊', path: '/student/progression' },
-  { label: 'Profil',      icon: '👤', path: '/student/profil' },
-];
 
 type Tab = 'Vidéos' | 'Exercices' | 'Mon cerveau';
 
@@ -427,7 +421,7 @@ export default function ResourcesStudentPage() {
         )}
       </main>
 
-      <BottomNav items={navItems} />
+      <BottomNav items={STUDENT_NAV_ITEMS} />
     </div>
   );
 }
