@@ -1,19 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import {
   teacherApi,
   type LearningPathSummary,
   type StudentPathProgress,
 } from '../../api/teacherApi';
-
-const navItems = [
-  { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
-  { label: 'Élèves',         icon: '👦', path: '/teacher/eleves' },
-  { label: 'Parcours',       icon: '📚', path: '/teacher/parcours/assigner' },
-  { label: 'Ressources',     icon: '📁', path: '/teacher/ressources' },
-];
 
 function pct(done: number, total: number): number {
   if (!total) return 0;
@@ -120,8 +112,8 @@ export default function TeacherPathDetailPage() {
   }, [progress]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
-      <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
+    <div className="flex flex-1 flex-col w-full min-h-0">
+      <header className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-[#0D1235] border-b border-border">
         <div className="flex items-center justify-between gap-3 mb-3">
           <button
             onClick={() => navigate(-1)}
@@ -182,7 +174,7 @@ export default function TeacherPathDetailPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
+      <main className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 flex flex-col gap-4">
         {error && (
           <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
             {error}
@@ -234,7 +226,6 @@ export default function TeacherPathDetailPage() {
         )}
       </main>
 
-      <BottomNav items={navItems} />
     </div>
   );
 }
