@@ -54,14 +54,14 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-bg-primary font-body">
-      <div className="w-full max-w-100">
+      <div className="w-full max-w-120">
 
         {/* Logo */}
         <div className="text-center mb-10">
           <img
             src="/logo1.png"
             alt="JuggleFlow"
-            className="w-70 h-auto object-contain block mx-auto"
+            className="w-full max-w-112 h-auto object-contain block mx-auto"
             style={{ mixBlendMode: 'screen' }}
           />
           <p className="text-text-secondary text-sm mt-2">
