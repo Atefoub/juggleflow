@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import {
   teacherApi,
@@ -11,13 +10,6 @@ import {
   type StudentSummary,
   type LearningPathSummary,
 } from '../../api/teacherApi';
-
-const navItems = [
-  { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
-  { label: 'Élèves',         icon: '👦', path: '/teacher/eleves' },
-  { label: 'Parcours',       icon: '📚', path: '/teacher/parcours/assigner' },
-  { label: 'Ressources',     icon: '📁', path: '/teacher/ressources' },
-];
 
 function groupStudents(students: StudentSummary[]) {
   const groups: Record<StudentSummary['groupColor'], StudentSummary[]> = {
@@ -103,10 +95,10 @@ export default function TeacherDashboardPage() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+    <div className="flex flex-1 flex-col w-full min-h-0">
 
       {/* Header */}
-      <div className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
+      <div className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-[#0D1235] border-b border-border">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-brand to-brand-end text-xs font-bold text-white">
             Prof
@@ -152,17 +144,17 @@ export default function TeacherDashboardPage() {
       </div>
 
       {/* Contenu */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
+      <div className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
 
         {/* Erreur */}
         {error && (
-          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
+          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert lg:col-span-2">
             {error}
           </div>
         )}
 
         {loading && (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 lg:col-span-2">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-20 rounded-2xl animate-pulse bg-bg-card" />
             ))}
@@ -172,7 +164,7 @@ export default function TeacherDashboardPage() {
         {!loading && !error && (
           <>
             {/* Progression moyenne */}
-            <div className="p-4 rounded-2xl flex items-center gap-4 bg-bg-card border border-border">
+            <div className="p-4 rounded-2xl flex items-center gap-4 bg-bg-card border border-border lg:col-span-1">
               <div className="flex-1">
                 <p className="text-xs uppercase tracking-widest mb-1 text-text-muted">
                   Progression moyenne
@@ -189,7 +181,7 @@ export default function TeacherDashboardPage() {
 
             {/* Groupes d'élèves */}
             {students.length > 0 && (
-              <div>
+              <div className="lg:col-span-1">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-display font-bold text-white text-sm uppercase tracking-wider">
                     Groupes d'élèves
@@ -254,7 +246,7 @@ export default function TeacherDashboardPage() {
 
             {/* Alerte blocage sur figure (parcours) */}
             {exerciseBlockedStudents.length > 0 && selectedClass && (
-              <div className="flex items-start gap-3 rounded-2xl border border-[#2A1A10] border-l-[3px] border-l-brand-end bg-[#1A1020] p-4">
+              <div className="flex items-start gap-3 rounded-2xl border border-[#2A1A10] border-l-[3px] border-l-brand-end bg-[#1A1020] p-4 lg:col-span-2">
                 <span role="img" aria-label="attention" className="text-lg shrink-0">⚠️</span>
                 <div className="flex-1">
                   <p className="text-sm font-bold text-white mb-1">
@@ -284,7 +276,7 @@ export default function TeacherDashboardPage() {
 
             {/* Alerte élèves en difficulté (groupe rouge) */}
             {blockedStudents.length > 0 && (
-              <div className="flex items-start gap-3 rounded-2xl border border-[#2A1A10] border-l-[3px] border-l-brand-end bg-[#1A1020] p-4">
+              <div className="flex items-start gap-3 rounded-2xl border border-[#2A1A10] border-l-[3px] border-l-brand-end bg-[#1A1020] p-4 lg:col-span-2">
                 <span role="img" aria-label="attention" className="text-lg shrink-0">⚠️</span>
                 <div className="flex-1">
                   <p className="text-sm font-bold text-white mb-1">
@@ -314,7 +306,7 @@ export default function TeacherDashboardPage() {
 
             {/* Parcours assignés */}
             {selectedClass && (
-              <section>
+              <section className="lg:col-span-2">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-display font-bold text-white text-sm uppercase tracking-wider">
                     Parcours assignés
@@ -345,7 +337,7 @@ export default function TeacherDashboardPage() {
                     Aucun parcours assigné pour l'instant.
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:gap-3">
                     {assignedPaths.map((p) => (
                       <div
                         key={p.id}
@@ -385,13 +377,13 @@ export default function TeacherDashboardPage() {
 
             {/* Aucune classe */}
             {classes.length === 0 && (
-              <div className="p-4 rounded-2xl text-sm bg-bg-card border border-border text-text-secondary">
+              <div className="p-4 rounded-2xl text-sm bg-bg-card border border-border text-text-secondary lg:col-span-2">
                 Vous n'avez pas encore de classe. Créez-en une pour commencer.
               </div>
             )}
 
             {/* Actions rapides */}
-            <div>
+            <div className="lg:col-span-2">
               <h2 className="font-display font-bold text-white text-sm uppercase tracking-wider mb-3">
                 Actions rapides
               </h2>
@@ -444,7 +436,7 @@ export default function TeacherDashboardPage() {
 
             {/* Sélection du parcours pour le rapport */}
             {reportPickerOpen && selectedClass && sortedAssignedPaths.length > 1 && (
-              <section className="p-4 rounded-2xl bg-bg-card border border-border">
+              <section className="p-4 rounded-2xl bg-bg-card border border-border lg:col-span-2">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
                     Choisir un parcours
@@ -488,8 +480,6 @@ export default function TeacherDashboardPage() {
           </>
         )}
       </div>
-
-      <BottomNav items={navItems} />
     </div>
   );
 }

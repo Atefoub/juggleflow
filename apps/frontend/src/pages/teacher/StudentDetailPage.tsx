@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import {
   teacherApi,
@@ -12,13 +11,6 @@ import {
 } from '../../api/teacherApi';
 import { catalogueApi } from '../../api/catalogueApi';
 import { apiErrorMessage } from '../../utils/apiErrorMessage';
-
-const navItems = [
-  { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
-  { label: 'Élèves',         icon: '👦', path: '/teacher/eleves' },
-  { label: 'Parcours',       icon: '📚', path: '/teacher/parcours/assigner' },
-  { label: 'Ressources',     icon: '📁', path: '/teacher/ressources' },
-];
 
 const STATUS_CONFIG = {
   MASTERED:    { icon: '✅', label: 'Maîtrisé',   textClass: 'text-success',    bgClass: 'bg-success/10  border border-success/30'  },
@@ -188,10 +180,10 @@ export default function StudentDetailPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+    <div className="flex flex-1 flex-col w-full min-h-0">
 
       {/* Header */}
-      <header className="px-5 pt-12 pb-5 bg-[#0D1235] border-b border-border">
+      <header className="px-5 pt-4 pb-5 lg:pt-6 lg:px-0 bg-[#0D1235] border-b border-border">
         <button
           onClick={() => navigate(-1)}
           aria-label="Retour"
@@ -245,7 +237,7 @@ export default function StudentDetailPage() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
+      <main className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
 
         {error && (
           <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
@@ -532,7 +524,6 @@ export default function StudentDetailPage() {
         )}
       </main>
 
-      <BottomNav items={navItems} />
     </div>
   );
 }
