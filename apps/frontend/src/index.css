@@ -324,6 +324,37 @@
     color: var(--color-admin);
   }
 
+  .jf-teacher-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .jf-teacher-nav-item:hover {
+    background: color-mix(in srgb, var(--color-teacher) 18%, var(--color-bg-card));
+    color: var(--color-text-primary);
+  }
+
+  .jf-teacher-nav-item:focus-visible {
+    outline: 2px solid var(--color-brand-end);
+    outline-offset: 2px;
+  }
+
+  .jf-teacher-nav-item-active {
+    background: color-mix(in srgb, var(--color-brand) 22%, var(--color-bg-card));
+    color: var(--color-text-primary);
+    font-weight: 600;
+    border: 1px solid color-mix(in srgb, var(--color-brand-end) 35%, transparent);
+  }
+
   .jf-admin-btn-primary {
     display: inline-flex;
     align-items: center;

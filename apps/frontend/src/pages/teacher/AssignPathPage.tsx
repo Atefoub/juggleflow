@@ -1,19 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import BottomNav from '../../components/BottomNav';
 import {
   teacherApi,
   type SchoolClass,
   type LearningPathSummary,
   type StudentSummary,
 } from '../../api/teacherApi';
-
-const navItems = [
-  { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
-  { label: 'Élèves',         icon: '👦', path: '/teacher/eleves' },
-  { label: 'Parcours',       icon: '📚', path: '/teacher/parcours/assigner' },
-  { label: 'Ressources',     icon: '📁', path: '/teacher/ressources' },
-];
 
 const LEVEL_CHIP: Record<string, string> = {
   Beginner:     'text-success  bg-success/10  border border-success/30',
@@ -140,9 +132,9 @@ export default function AssignPathPage() {
     : false;
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+    <div className="flex flex-1 flex-col w-full min-h-0 pb-28 lg:pb-24">
       {/* Header */}
-      <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
+      <header className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-[#0D1235] border-b border-border">
         <button
           onClick={() => navigate(-1)}
           aria-label="Retour"
@@ -186,7 +178,7 @@ export default function AssignPathPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
+      <main className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 flex flex-col gap-4 lg:max-w-3xl">
         {error && (
           <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
             {error}
@@ -363,7 +355,7 @@ export default function AssignPathPage() {
       </main>
 
       {/* Footer nav buttons */}
-      <div className="fixed bottom-18 left-0 right-0 max-w-107.5 mx-auto px-5 pb-2 flex gap-3 bg-bg-primary border-t border-border pt-3">
+      <div className="fixed bottom-18 left-0 right-0 z-20 max-w-[430px] mx-auto px-5 pb-2 flex gap-3 bg-bg-primary border-t border-border pt-3 lg:bottom-0 lg:left-60 lg:right-0 lg:max-w-none lg:px-8 lg:py-4">
         {step > 1 && (
           <button
             onClick={() => setStep((s) => (s - 1) as Step)}
@@ -390,8 +382,6 @@ export default function AssignPathPage() {
           </button>
         )}
       </div>
-
-      <BottomNav items={navItems} />
     </div>
   );
 }

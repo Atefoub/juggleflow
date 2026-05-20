@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import BottomNav from '../../components/BottomNav';
 import ProgressBar from '../../components/ProgressBar';
 import {
   teacherApi,
@@ -11,13 +10,6 @@ import {
   type StudentSummary,
 } from '../../api/teacherApi';
 import { apiErrorMessage } from '../../utils/apiErrorMessage';
-
-const navItems = [
-  { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
-  { label: 'Élèves',         icon: '👦', path: '/teacher/eleves'    },
-  { label: 'Parcours',       icon: '📚', path: '/teacher/parcours/assigner'  },
-  { label: 'Ressources',     icon: '📁', path: '/teacher/ressources'},
-];
 
 type GroupFilter = 'Tous' | 'VERT' | 'ORANGE' | 'ROUGE';
 
@@ -157,10 +149,10 @@ export default function StudentListPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+    <div className="flex flex-1 flex-col w-full min-h-0">
 
       {/* Header */}
-      <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
+      <header className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-[#0D1235] border-b border-border">
         <div className="flex items-start justify-between gap-3 mb-1">
           <div>
             <h1 className="font-display font-bold text-text-primary text-2xl">Élèves</h1>
@@ -292,7 +284,7 @@ export default function StudentListPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
+      <main className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 flex flex-col gap-4">
 
         {/* Search */}
         <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-bg-card border border-border">
@@ -353,7 +345,7 @@ export default function StudentListPage() {
 
         {/* Student list */}
         {!loading && !error && filteredStudents.length > 0 && (
-          <div className="flex flex-col gap-3">
+          <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
             {filteredStudents.map((student) => {
               const chipColor = GROUP_COLOR_MAP[student.groupColor];
               return (
@@ -400,8 +392,6 @@ export default function StudentListPage() {
           </div>
         )}
       </main>
-
-      <BottomNav items={navItems} />
     </div>
   );
 }
