@@ -1,13 +1,15 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import AppIcon from './icons/AppIcon';
+import type { IconName } from './icons/iconRegistry';
 
-interface NavItem {
+export interface BottomNavItem {
   label: string;
-  icon: string;
+  icon: IconName;
   path: string;
 }
 
 interface BottomNavProps {
-  items: NavItem[];
+  items: readonly BottomNavItem[];
 }
 
 export default function BottomNav({ items }: BottomNavProps) {
@@ -43,11 +45,15 @@ export default function BottomNav({ items }: BottomNavProps) {
           >
             <div
               className={[
-                'flex items-center justify-center w-8 h-8 rounded-lg text-lg text-white',
+                'flex items-center justify-center w-8 h-8 rounded-lg text-white',
                 isActive ? 'jf-nav-pill-active' : 'bg-transparent',
               ].join(' ')}
             >
-              {item.icon}
+              <AppIcon
+                name={item.icon}
+                size={22}
+                className={isActive ? 'text-white' : 'text-text-muted'}
+              />
             </div>
             <span>{item.label}</span>
           </button>

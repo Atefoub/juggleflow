@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
+import AppIcon from '../icons/AppIcon';
 import { TEACHER_NAV_ITEMS, isTeacherNavItemActive } from './teacherNav';
 
 interface TeacherSidebarProps {
@@ -37,9 +38,12 @@ export default function TeacherSidebar({ onItemClick }: TeacherSidebarProps) {
                     .join(' ')}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  <span className="text-lg shrink-0" aria-hidden>
-                    {item.icon}
-                  </span>
+                  <AppIcon
+                    name={item.icon}
+                    size={20}
+                    className="shrink-0 text-current"
+                    aria-hidden
+                  />
                   <span className="truncate">{item.label}</span>
                 </NavLink>
               </li>

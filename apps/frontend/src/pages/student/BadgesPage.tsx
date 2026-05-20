@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import BottomNav from '../../components/BottomNav';
+import AppIcon from '../../components/icons/AppIcon';
+import type { IconName } from '../../components/icons/iconRegistry';
+import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
 import OfflineBanner from '../../components/OfflineBanner';
 import { useAuth } from '../../context/AuthContext';
@@ -12,28 +15,21 @@ import {
 import type { BadgeData, StudentStats, TrickProgress } from '../../api/studentApi';
 import { mergePendingIntoProgress } from '../../utils/offlineQueue';
 
-const navItems = [
-  { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
-  { label: 'Catalogue',   icon: '🎯', path: '/student/catalogue' },
-  { label: 'Progression', icon: '📊', path: '/student/progression' },
-  { label: 'Profil',      icon: '👤', path: '/student/profil' },
-];
-
 const XP_PER_TRICK = 100;
 const XP_MAX       = 500;
 const RANK_LABEL   = 'Bronze';
 const RANK_NEXT    = 'Argent';
 
-const STREAK_BADGES = [
-  { id: 's1', icon: '🔥', label: '7 jours',   requirement: 7  },
-  { id: 's2', icon: '⚡', label: '30 jours',  requirement: 30 },
-  { id: 's3', icon: '💎', label: '100 jours', requirement: 100 },
+const STREAK_BADGES: { id: string; icon: IconName; label: string; requirement: number }[] = [
+  { id: 's1', icon: 'badge-streak-7', label: '7 jours', requirement: 7 },
+  { id: 's2', icon: 'badge-streak-30', label: '30 jours', requirement: 30 },
+  { id: 's3', icon: 'badge-streak-100', label: '100 jours', requirement: 100 },
 ];
 
-const MILESTONE_BADGES = [
-  { id: 'm1', icon: '🌱', label: '10 figures', requirement: 10 },
-  { id: 'm2', icon: '🌿', label: '25 figures', requirement: 25 },
-  { id: 'm3', icon: '🌳', label: '50 figures', requirement: 50 },
+const MILESTONE_BADGES: { id: string; icon: IconName; label: string; requirement: number }[] = [
+  { id: 'm1', icon: 'badge-mastery-10', label: '10 figures', requirement: 10 },
+  { id: 'm2', icon: 'badge-mastery-25', label: '25 figures', requirement: 25 },
+  { id: 'm3', icon: 'badge-mastery-50', label: '50 figures', requirement: 50 },
 ];
 
 function dayKey(d: Date): string {
@@ -70,17 +66,19 @@ function computeStreakFromProgress(progress: TrickProgress[]): number {
 }
 
 function BadgeItem({ icon, label, unlocked, iconLabel }: {
-  icon: string; label: string; unlocked: boolean; iconLabel?: string;
+  icon: IconName; label: string; unlocked: boolean; iconLabel?: string;
 }) {
   return (
     <div className="flex flex-col items-center gap-2">
       <div className={[
-        'flex items-center justify-center w-16 h-16 rounded-2xl text-2xl transition-opacity',
-        unlocked ? 'bg-linear-to-br from-brand to-brand-end' : 'bg-border opacity-40',
+        'flex items-center justify-center w-16 h-16 rounded-2xl transition-opacity',
+        unlocked ? 'bg-linear-to-br from-brand to-brand-end text-white' : 'bg-border opacity-40 text-text-muted',
       ].join(' ')}>
-        <span role="img" aria-label={iconLabel ?? (unlocked ? label : 'verrouillé')}>
-          {unlocked ? icon : '🔒'}
-        </span>
+        <AppIcon
+          name={unlocked ? icon : 'status-locked'}
+          size={32}
+          label={iconLabel ?? (unlocked ? label : 'verrouillé')}
+        />
       </div>
       <span className={`text-[0.65rem] text-center leading-tight max-w-15 ${unlocked ? 'text-text-primary' : 'text-text-muted'}`}>
         {label}
@@ -257,7 +255,7 @@ export default function BadgesPage() {
         )}
       </main>
 
-      <BottomNav items={navItems} />
+      <BottomNav items={STUDENT_NAV_ITEMS} />
     </div>
   );
 }

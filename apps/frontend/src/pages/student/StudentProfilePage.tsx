@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import BottomNav from '../../components/BottomNav';
+import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
 import PathTrickList from '../../components/student/PathTrickList';
 import type { StudentStats, LearningPath } from '../../api/studentApi';
@@ -33,13 +34,6 @@ import { prefetchOfflineContent } from '../../utils/prefetchOfflineContent';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import OfflineBanner from '../../components/OfflineBanner';
 import PwaInstallPrompt from '../../components/PwaInstallPrompt';
-
-const navItems = [
-  { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
-  { label: 'Catalogue',   icon: '🎯', path: '/student/catalogue' },
-  { label: 'Progression', icon: '📊', path: '/student/progression' },
-  { label: 'Profil',      icon: '👤', path: '/student/profil' },
-];
 
 const XP_PER_TRICK = 100;
 const XP_MAX = 500;
@@ -531,7 +525,7 @@ export default function StudentProfilePage() {
 
       </main>
 
-      <BottomNav items={navItems} />
+      <BottomNav items={STUDENT_NAV_ITEMS} />
     </div>
   );
 }

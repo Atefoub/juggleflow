@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
+import AppIcon from '../../components/icons/AppIcon';
+import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
 import type {
   StudentStats,
@@ -21,13 +23,6 @@ import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import OfflineBanner from '../../components/OfflineBanner';
 import { mergePendingIntoProgress } from '../../utils/offlineQueue';
 import { computePathCompletionPercent } from '../../utils/pathProgress';
-
-const navItems = [
-  { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
-  { label: 'Catalogue',   icon: '🎯', path: '/student/catalogue' },
-  { label: 'Progression', icon: '📊', path: '/student/progression' },
-  { label: 'Profil',      icon: '👤', path: '/student/profil' },
-];
 
 const XP_PER_TRICK = 100;
 const XP_MAX = 500;
@@ -305,9 +300,11 @@ export default function StudentDashboardPage() {
                         {badge.iconUrl ? (
                           <img src={badge.iconUrl} alt={badge.name} className="w-7" />
                         ) : (
-                          <span role="img" aria-label={badge.unlocked ? 'badge débloqué' : 'badge verrouillé'}>
-                            {badge.unlocked ? '🏅' : '🔒'}
-                          </span>
+                          <AppIcon
+                            name={badge.unlocked ? 'badge-mastery-10' : 'status-locked'}
+                            size={28}
+                            label={badge.unlocked ? 'badge débloqué' : 'badge verrouillé'}
+                          />
                         )}
                       </div>
                       <span
@@ -351,7 +348,7 @@ export default function StudentDashboardPage() {
         )}
       </main>
 
-      <BottomNav items={navItems} />
+      <BottomNav items={STUDENT_NAV_ITEMS} />
     </div>
   );
 }
