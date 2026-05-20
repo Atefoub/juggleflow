@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
           <img
             src="/logo1.png"
             alt="JuggleFlow"
-            className="w-70 h-auto object-contain block mx-auto"
+            className="w-full max-w-112 h-auto object-contain block mx-auto"
             style={{ mixBlendMode: 'screen' }}
           />
           <h1 className="font-display text-xl font-bold text-text-primary mt-4">
