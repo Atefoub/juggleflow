@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
+import AppIcon from '../../components/icons/AppIcon';
+import ProgressStatusIcon from '../../components/icons/ProgressStatusIcon';
+import type { IconName } from '../../components/icons/iconRegistry';
+import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
 import { getOnboardingLevel } from '../../utils/onboarding';
 import OfflineBanner from '../../components/OfflineBanner';
@@ -11,37 +15,27 @@ import type { StudentStats, BadgeData, TrickProgress } from '../../api/studentAp
 import { mergePendingIntoProgress } from '../../utils/offlineQueue';
 import { PROGRESS_UPDATED_EVENT } from '../../lib/progressEvents';
 
-const navItems = [
-  { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
-  { label: 'Catalogue',   icon: '🎯', path: '/student/catalogue' },
-  { label: 'Progression', icon: '📊', path: '/student/progression' },
-  { label: 'Profil',      icon: '👤', path: '/student/profil' },
-];
-
 const XP_PER_TRICK = 100;
 const XP_MAX = 500;
 
-const STREAK_BADGES = [
-  { id: 's1', name: '7 jours',   icon: '🔥', requirement: 7   },
-  { id: 's2', name: '30 jours',  icon: '⚡', requirement: 30  },
-  { id: 's3', name: '100 jours', icon: '💎', requirement: 100 },
+const STREAK_BADGES: { id: string; name: string; icon: IconName; requirement: number }[] = [
+  { id: 's1', name: '7 jours', icon: 'badge-streak-7', requirement: 7 },
+  { id: 's2', name: '30 jours', icon: 'badge-streak-30', requirement: 30 },
+  { id: 's3', name: '100 jours', icon: 'badge-streak-100', requirement: 100 },
 ];
 
 type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED';
 
-const STATUS_BADGE: Record<ProgressStatus, { label: string; cls: string; icon: string }> = {
+const STATUS_BADGE: Record<ProgressStatus, { label: string; cls: string }> = {
   MASTERED: {
-    icon: '✅',
     label: 'Maîtrisée',
     cls: 'bg-success/10 text-success border border-success/30',
   },
   IN_PROGRESS: {
-    icon: '🔄',
     label: 'En cours',
     cls: 'bg-brand/10 text-brand-end border border-brand/30',
   },
   NOT_STARTED: {
-    icon: '🔒',
     label: 'Non commencée',
     cls: 'bg-border/40 text-text-muted border border-border',
   },
@@ -305,9 +299,11 @@ export default function ProgressPage() {
                           {badge.iconUrl ? (
                             <img src={badge.iconUrl} alt={badge.name} className="w-8 h-8 object-contain" />
                           ) : (
-                            <span role="img" aria-label={isUnlocked ? 'badge débloqué' : 'badge verrouillé'}>
-                              {isUnlocked ? '🏅' : '🔒'}
-                            </span>
+                            <AppIcon
+                              name={isUnlocked ? 'badge-mastery-10' : 'status-locked'}
+                              size={28}
+                              label={isUnlocked ? 'badge débloqué' : 'badge verrouillé'}
+                            />
                           )}
                         </div>
                         <span
@@ -333,7 +329,7 @@ export default function ProgressPage() {
                   Régularité
                 </h2>
                 <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-bg-card border border-border">
-                  <span role="img" aria-label="feu" className="text-sm">🔥</span>
+                  <AppIcon name="badge-streak-7" size={16} label="série" />
                   <span className="text-xs font-bold text-brand-end">{streakDays} jours</span>
                 </div>
               </div>
@@ -351,9 +347,11 @@ export default function ProgressPage() {
                             : 'bg-border opacity-40',
                         ].join(' ')}
                       >
-                        <span role="img" aria-label={badge.name}>
-                          {isUnlocked ? badge.icon : '🔒'}
-                        </span>
+                        <AppIcon
+                          name={isUnlocked ? badge.icon : 'status-locked'}
+                          size={28}
+                          label={badge.name}
+                        />
                       </div>
                       <span
                         className={[
@@ -416,8 +414,9 @@ export default function ProgressPage() {
                             {p.updatedAt ? `Mis à jour : ${new Date(p.updatedAt).toLocaleDateString('fr-FR')}` : '—'}
                           </p>
                         </div>
-                        <span className={`shrink-0 text-[0.55rem] font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>
-                          <span aria-hidden="true">{badge.icon}</span>{' '}{badge.label}
+                        <span className={`inline-flex items-center gap-1 shrink-0 text-[0.55rem] font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>
+                          <ProgressStatusIcon status={p.status} size={12} />
+                          {badge.label}
                         </span>
                       </button>
                     );
@@ -429,7 +428,7 @@ export default function ProgressPage() {
         )}
       </main>
 
-      <BottomNav items={navItems} />
+      <BottomNav items={STUDENT_NAV_ITEMS} />
     </div>
   );
 }
