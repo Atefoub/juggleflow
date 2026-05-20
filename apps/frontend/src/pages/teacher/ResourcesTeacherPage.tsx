@@ -1,18 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import BottomNav from '../../components/BottomNav';
 import {
   resourcesApi,
   type PedagogicalResource,
   type ResourceType,
 } from '../../api/resourcesApi';
 import { isExternalHttpUrl, openExternalResource } from '../../utils/externalResource';
-
-const navItems = [
-  { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
-  { label: 'Élèves',         icon: '👦', path: '/teacher/eleves' },
-  { label: 'Parcours',       icon: '📚', path: '/teacher/parcours/assigner' },
-  { label: 'Ressources',     icon: '📁', path: '/teacher/ressources' },
-];
 
 type Tab = 'Études' | 'Vidéos' | 'Fiches' | 'Guides EPS';
 
@@ -74,9 +66,9 @@ export default function ResourcesTeacherPage() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+    <div className="flex flex-1 flex-col w-full min-h-0">
 
-      <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
+      <header className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-[#0D1235] border-b border-border">
         <h1 className="font-display font-bold text-text-primary text-2xl mb-4">Ressources</h1>
         <p className="text-xs text-text-secondary mb-4">Contenus pédagogiques et scientifiques</p>
 
@@ -98,7 +90,7 @@ export default function ResourcesTeacherPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
+      <main className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 flex flex-col gap-4">
 
         <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-bg-card border border-border">
           <span role="img" aria-label="recherche" className="text-sm">🔍</span>
@@ -133,7 +125,7 @@ export default function ResourcesTeacherPage() {
             <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
               Études scientifiques
             </h2>
-            <div className="flex flex-col gap-3">
+            <div className="grid gap-3 lg:grid-cols-2">
               {pdfs.length === 0 ? (
                 <EmptySearch />
               ) : pdfs.map((res) => (
@@ -147,7 +139,7 @@ export default function ResourcesTeacherPage() {
         )}
 
         {tab === 'Vidéos' && !loading && (
-          <div className="flex flex-col gap-3">
+          <div className="grid gap-3 lg:grid-cols-2">
             {videos.length === 0 ? <EmptySearch /> : videos.map((v) => (
               <VideoRow key={v.id} res={v} />
             ))}
@@ -155,7 +147,7 @@ export default function ResourcesTeacherPage() {
         )}
 
         {tab === 'Fiches' && !loading && (
-          <div className="flex flex-col gap-3">
+          <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
             {sheets.length === 0 ? <EmptySearch /> : sheets.map((g) => (
               <GuideRow key={g.id} res={g} />
             ))}
@@ -163,15 +155,13 @@ export default function ResourcesTeacherPage() {
         )}
 
         {tab === 'Guides EPS' && !loading && (
-          <div className="flex flex-col gap-3">
+          <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
             {guides.length === 0 ? <EmptySearch /> : guides.map((g) => (
               <GuideRow key={g.id} res={g} />
             ))}
           </div>
         )}
       </main>
-
-      <BottomNav items={navItems} />
     </div>
   );
 }

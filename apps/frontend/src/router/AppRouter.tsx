@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Role } from '../types/auth';
 import { isStudentOnboardingDone } from '../utils/onboarding';
 import AdminLayout from '../components/admin/AdminLayout';
+import TeacherLayout from '../components/teacher/TeacherLayout';
 
 // Lazy pages (code-splitting)
 const LoginPage            = lazy(() => import('../pages/LoginPage'));
@@ -98,7 +99,9 @@ const student = (el: React.ReactNode) => (
   <ProtectedRoute requiredRole="ROLE_ELEVE">{el}</ProtectedRoute>
 );
 const teacher = (el: React.ReactNode) => (
-  <ProtectedRoute requiredRole="ROLE_ENSEIGNANT">{el}</ProtectedRoute>
+  <ProtectedRoute requiredRole="ROLE_ENSEIGNANT">
+    <TeacherLayout>{el}</TeacherLayout>
+  </ProtectedRoute>
 );
 const admin = (el: React.ReactNode) => (
   <ProtectedRoute requiredRole="ROLE_ADMINISTRATEUR">
