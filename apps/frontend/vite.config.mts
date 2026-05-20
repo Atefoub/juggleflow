@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import svgr from 'vite-plugin-svgr';
 
 const pwaRegisterMock = path.resolve(
   import.meta.dirname,
@@ -38,6 +39,7 @@ export default defineConfig(({ mode }) => {
     },
   },
   plugins: [
+    svgr(),
     tailwindcss(),
     react(),
     nxViteTsPaths(),

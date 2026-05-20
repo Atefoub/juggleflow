@@ -12,7 +12,8 @@
       "@nx/react/typings/cssmodule.d.ts",
       "@nx/react/typings/image.d.ts",
       "vite/client",
-      "vite-plugin-pwa/client"
+      "vite-plugin-pwa/client",
+      "vite-plugin-svgr/client"
     ],
     "rootDir": "src",
     "forceConsistentCasingInFileNames": true

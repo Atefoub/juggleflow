@@ -11,11 +11,12 @@ import {
 } from '../../api/teacherApi';
 import { catalogueApi } from '../../api/catalogueApi';
 import { apiErrorMessage } from '../../utils/apiErrorMessage';
+import ProgressStatusIcon from '../../components/icons/ProgressStatusIcon';
 
 const STATUS_CONFIG = {
-  MASTERED:    { icon: '✅', label: 'Maîtrisé',   textClass: 'text-success',    bgClass: 'bg-success/10  border border-success/30'  },
-  IN_PROGRESS: { icon: '🔄', label: 'En cours',   textClass: 'text-brand-end',  bgClass: 'bg-brand/10    border border-brand/30'      },
-  NOT_STARTED: { icon: '🔒', label: 'Non commencé', textClass: 'text-text-muted', bgClass: 'bg-border/50   border border-border'        },
+  MASTERED:    { label: 'Maîtrisé',   textClass: 'text-success',    bgClass: 'bg-success/10  border border-success/30'  },
+  IN_PROGRESS: { label: 'En cours',   textClass: 'text-brand-end',  bgClass: 'bg-brand/10    border border-brand/30'      },
+  NOT_STARTED: { label: 'Non commencé', textClass: 'text-text-muted', bgClass: 'bg-border/50   border border-border'        },
 } as const;
 
 export default function StudentDetailPage() {
@@ -464,7 +465,7 @@ export default function StudentDetailPage() {
                           <div className="min-w-0">
                             <p className="text-sm font-semibold text-text-primary truncate">{t.trickName}</p>
                             <p className={`text-xs ${cfg.textClass}`}>
-                              <span role="img" aria-label={cfg.label}>{cfg.icon}</span> {cfg.label}
+                              <ProgressStatusIcon status={key} size={14} className="inline shrink-0" /> {cfg.label}
                               {t.attemptCount > 0 && (
                                 <span className="text-text-muted">
                                   {' '}

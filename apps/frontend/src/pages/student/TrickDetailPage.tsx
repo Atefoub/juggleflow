@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
+import AppIcon from '../../components/icons/AppIcon';
+import ProgressStatusIcon from '../../components/icons/ProgressStatusIcon';
+import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
 import { getTrickDetail } from '../../api/catalogueOffline';
 import { LEVEL_LABELS, scoreToStars, type TrickResponse } from '../../api/catalogueApi';
@@ -18,13 +21,6 @@ import {
   getCachedFavoriteIds,
   setCachedFavoriteIds,
 } from '../../utils/favoritesStore';
-
-const navItems = [
-  { label: 'Accueil',     icon: '🏠', path: '/student/dashboard' },
-  { label: 'Catalogue',   icon: '🎯', path: '/student/catalogue' },
-  { label: 'Progression', icon: '📊', path: '/student/progression' },
-  { label: 'Profil',      icon: '👤', path: '/student/profil' },
-];
 
 const LEVEL_CHIP: Record<string, string> = {
   Beginner:     'text-success  bg-success/10  border border-success/30',
@@ -334,7 +330,10 @@ export default function TrickDetailPage() {
                 status === 'MASTERED'    ? 'bg-success/10 border border-success/30 text-success' :
                 status === 'IN_PROGRESS' ? 'bg-brand/10 border border-brand/30 text-brand-end' : '',
               ].join(' ')}>
-                <span>{status === 'MASTERED' ? '✅' : '🔄'}</span>
+                <ProgressStatusIcon
+                  status={status === 'MASTERED' ? 'MASTERED' : 'IN_PROGRESS'}
+                  size={16}
+                />
                 <span>{status === 'MASTERED' ? 'Figure maîtrisée !' : 'Apprentissage en cours'}</span>
               </div>
             )}
@@ -432,7 +431,7 @@ export default function TrickDetailPage() {
                   ) : (
                     trick.prerequisiteNames.map((name) => (
                       <div key={name} className="flex items-center gap-3 p-3 rounded-xl bg-bg-card border border-border">
-                        <span role="img" aria-label="prérequis" className="text-lg">✅</span>
+                        <AppIcon name="status-mastered" size={18} label="prérequis" />
                         <span className="text-sm text-text-primary">{name}</span>
                       </div>
                     ))
@@ -476,7 +475,7 @@ export default function TrickDetailPage() {
         )}
       </main>
 
-      <BottomNav items={navItems} />
+      <BottomNav items={STUDENT_NAV_ITEMS} />
     </div>
   );
 }

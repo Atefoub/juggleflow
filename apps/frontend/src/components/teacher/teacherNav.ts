@@ -1,14 +1,16 @@
+import type { IconName } from '../icons/iconRegistry';
+
 export interface TeacherNavItem {
   label: string;
-  icon: string;
+  icon: IconName;
   path: string;
 }
 
 export const TEACHER_NAV_ITEMS: readonly TeacherNavItem[] = [
-  { label: "Vue d'ensemble", icon: '📊', path: '/teacher/dashboard' },
-  { label: 'Élèves', icon: '👦', path: '/teacher/eleves' },
-  { label: 'Parcours', icon: '📚', path: '/teacher/parcours/assigner' },
-  { label: 'Ressources', icon: '📁', path: '/teacher/ressources' },
+  { label: "Vue d'ensemble", icon: 'nav-teacher-dashboard', path: '/teacher/dashboard' },
+  { label: 'Élèves', icon: 'nav-teacher-eleves', path: '/teacher/eleves' },
+  { label: 'Parcours', icon: 'nav-teacher-parcours', path: '/teacher/parcours/assigner' },
+  { label: 'Ressources', icon: 'nav-teacher-ressources', path: '/teacher/ressources' },
 ] as const;
 
 export function isTeacherNavItemActive(pathname: string, itemPath: string): boolean {

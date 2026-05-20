@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AdminSidebar from './AdminSidebar';
-import { IconClose, IconLogout, IconMenu } from './AdminIcons';
+import AppIcon from '../icons/AppIcon';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -89,7 +89,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             className="jf-admin-btn-ghost absolute top-3 right-3"
             aria-label="Fermer le menu"
           >
-            <IconClose size={20} />
+            <AppIcon name="admin-close" size={20} />
           </button>
           <AdminSidebar onItemClick={() => setDrawerOpen(false)} />
         </div>
@@ -103,7 +103,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             className="jf-admin-btn-ghost lg:hidden"
             aria-label="Ouvrir la navigation"
           >
-            <IconMenu size={22} />
+            <AppIcon name="admin-menu" size={22} />
           </button>
 
           <div className="lg:hidden flex items-center gap-2">
@@ -135,7 +135,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             className="jf-admin-btn-secondary"
             aria-label="Se déconnecter"
           >
-            <IconLogout size={16} />
+            <AppIcon name="admin-logout" size={16} />
             <span className="hidden sm:inline">Déconnexion</span>
           </button>
         </header>
