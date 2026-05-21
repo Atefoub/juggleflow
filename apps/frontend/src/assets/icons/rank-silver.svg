@@ -1,11 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-
-  <path d="M12 3l8 5v5q0 5-8 8Q4 16 4 13V8z" stroke-width="1.5"/>
-  <circle cx="9"  cy="12" r="2.5"/>
-  <circle cx="15" cy="12" r="2.5"/>
-  <circle cx="12" cy="7.5" r="2.5"/>
-  <path d="M9 12 Q8 8.5 12 7.5" stroke-dasharray="2 1.5" opacity="0.5"/>
-  <path d="M15 12 Q16 8.5 12 7.5" stroke-dasharray="2 1.5" opacity="0.5"/>
-  <circle cx="12" cy="10" r="5" stroke-dasharray="2 2" opacity="0.25"/>
-
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="rankSilverGrad" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#64748B"/>
+      <stop offset="100%" stop-color="#E2E8F0"/>
+    </linearGradient>
+  </defs>
+  <path d="M12 3l8 5v5q0 5-8 8Q4 16 4 13V8z" fill="url(#rankSilverGrad)" fill-opacity="0.18" stroke="url(#rankSilverGrad)"/>
+  <circle cx="9" cy="12" r="2.5" fill="#CBD5E1" stroke="#94A3B8"/>
+  <circle cx="15" cy="12" r="2.5" fill="#E2E8F0" stroke="#64748B"/>
+  <circle cx="12" cy="7.5" r="2.5" fill="#F8FAFC" stroke="#94A3B8"/>
+  <path d="M9 12 Q8 8.5 12 7.5" stroke="#94A3B8" stroke-dasharray="2 1.5" opacity="0.5"/>
+  <path d="M15 12 Q16 8.5 12 7.5" stroke="#94A3B8" stroke-dasharray="2 1.5" opacity="0.5"/>
+  <circle cx="12" cy="10" r="5" stroke="#94A3B8" stroke-dasharray="2 2" opacity="0.3"/>
 </svg>

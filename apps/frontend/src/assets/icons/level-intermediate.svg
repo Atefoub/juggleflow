@@ -1,6 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-
-  <circle cx="12" cy="12" r="9" stroke-dasharray="3 2.5" opacity="0.35"/>
-  <path d="M13 4L7 13h5l-1 7 7-9h-5z"/>
-
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="levelInterGrad" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#8B2BE2"/>
+      <stop offset="100%" stop-color="#C724B1"/>
+    </linearGradient>
+  </defs>
+  <path d="M12 3v6" stroke="url(#levelInterGrad)"/>
+  <path d="M8 9h8" stroke="#C724B1"/>
+  <path d="M10 13h4" stroke="#8B2BE2"/>
+  <path d="M11 17h2" stroke="#C724B1"/>
+  <circle cx="12" cy="6" r="2" fill="#C724B1" fill-opacity="0.35" stroke="#C724B1"/>
+  <path d="M6 21h12" stroke="url(#levelInterGrad)" opacity="0.5"/>
 </svg>
