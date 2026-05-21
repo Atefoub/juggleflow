@@ -3,7 +3,9 @@ package com.juggleflow.backend.model;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 
+import java.sql.Types;
 import java.time.Instant;
 import java.util.List;
 
@@ -35,6 +37,14 @@ public class Trick {
 
     @Column(name = "juggling_lab_animation_url", columnDefinition = "TEXT")
     private String jugglingLabAnimationUrl;
+
+    /** Pattern complet Juggling Lab (siteswap + variables), prioritaire sur {@link #siteswap} pour le GIF. */
+    @Column(name = "juggling_lab_pattern", columnDefinition = "TEXT")
+    private String jugglingLabPattern;
+
+    @JdbcTypeCode(Types.JSON)
+    @Column(name = "learning_tips", columnDefinition = "jsonb")
+    private List<String> learningTips;
 
     @Column(name = "difficulty_score")
     private Integer difficultyScore;

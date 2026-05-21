@@ -80,9 +80,9 @@ public class DemoBootstrapRunner implements ApplicationRunner {
 
         String encoded = passwordEncoder.encode(demoPassword);
         int schoolYear = LocalDate.now().getYear();
-        Trick cascade = requireTrick("Cascade (3 balls)");
-        Trick shower = requireTrick("Shower");
-        Trick halfShower = requireTrick("Half-Shower");
+        Trick cascade = requireTrick("Cascade (3 balles)");
+        Trick shower = requireTrick("Fontaine");
+        Trick halfShower = requireTrick("Demi-fontaine");
 
         Teacher marie = saveTeacher(encoded, "marie.dupont@ecole.fr", "Marie", "Dupont");
         SchoolClass ce1 = saveClass("CE1 — Mme Dupont", "CE1", schoolYear, marie);
@@ -140,7 +140,7 @@ public class DemoBootstrapRunner implements ApplicationRunner {
                 DemoBootstrap : comptes de test créés (mot de passe = DEMO_BOOTSTRAP_PASSWORD)
                   Enseignants : marie.dupont@ecole.fr | pierre.lefebvre@ecole.fr | sophie.renard@ecole.fr
                   Élèves       : *@ecole.fr ({} au total)
-                  Classes      : CE1 (6 élèves, Lucas bloqué sur Shower), CM2 (5), CP (3)
+                  Classes      : CE1 (6 élèves, Lucas bloqué sur Fontaine), CM2 (5), CP (3)
                   Admin option : ADMIN_BOOTSTRAP_EMAIL dans .env
                 NE PAS ACTIVER EN PRODUCTION
                 """);

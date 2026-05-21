@@ -15,6 +15,8 @@ public class TrickResponse {
     private String siteswap;
     private String description;
     private String jugglingLabAnimationUrl;
+    private String jugglingLabPattern;
+    private List<String> learningTips;
     private Integer difficultyScore;
     private Integer estimatedLearningDuration;
     private boolean popular;
@@ -29,6 +31,8 @@ public class TrickResponse {
                 .siteswap(trick.getSiteswap())
                 .description(trick.getDescription())
                 .jugglingLabAnimationUrl(trick.getJugglingLabAnimationUrl())
+                .jugglingLabPattern(trick.getJugglingLabPattern())
+                .learningTips(trick.getLearningTips() != null ? trick.getLearningTips() : List.of())
                 .difficultyScore(trick.getDifficultyScore())
                 .estimatedLearningDuration(trick.getEstimatedLearningDuration())
                 .popular(trick.isPopular())
