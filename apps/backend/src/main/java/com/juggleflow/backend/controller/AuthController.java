@@ -27,18 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Endpoints d'authentification.
- *
- * Architecture des tokens (04/05/2026) :
- *   - Access token  → body JSON (stocké en mémoire JS, durée ~15 min)
- *   - Refresh token → cookie httpOnly/Secure/SameSite=Strict géré par CookieUtils
- *
- * Corrections appliquées dans cette version :
- *   [VULN-R3] Endpoint /logout ajouté (révocation serveur + suppression cookie).
- *   [FIX-COOKIE] Le refresh token transite désormais exclusivement par cookie
- *                httpOnly, cohérent avec ce qu'attend le frontend. L'ancien DTO
- *                RefreshTokenRequest dans le body est remplacé par la lecture
- *                du cookie via CookieUtils.extractRefreshToken().
+ * Authentification : access token en body, refresh token en cookie httpOnly (CookieUtils).
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -92,16 +81,7 @@ public class AuthController {
       .body(authService.requestPasswordReset(request.getEmail()));
   }
 
-  /**
-   * POST /api/auth/refresh
-   *
-   * [FIX-COOKIE] Le refresh token est lu depuis le cookie httpOnly
-   * (envoyé automatiquement par le navigateur via withCredentials=true).
-   * Aucun body n'est requis — cohérent avec ce qu'envoie le frontend.
-   *
-   * En cas de succès : rotation du refresh token (nouveau cookie posé,
-   * ancien révoqué) et nouvel access token retourné dans le body.
-   */
+  /** Refresh via cookie httpOnly ; rotation du refresh token en cas de succès. */
   @PostMapping("/refresh")
   public ResponseEntity<LoginResponse> refresh(
     HttpServletRequest request,
@@ -115,13 +95,7 @@ public class AuthController {
     return ResponseEntity.ok(loginResponse.withoutRefreshToken());
   }
 
-  /**
-   * POST /api/auth/logout
-   *
-   * [VULN-R3] Révoque le refresh token côté serveur et supprime le cookie.
-   * Accessible sans Bearer token valide : un utilisateur dont l'access token
-   * a expiré doit pouvoir se déconnecter proprement.
-   */
+  /** Logout sans Bearer requis (révocation refresh + suppression cookie). */
   @PostMapping("/logout")
   public ResponseEntity<Void> logout(
     HttpServletRequest request,
