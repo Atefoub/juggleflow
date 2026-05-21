@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { adminApi, type AdminSchoolClass, type AdminUser } from '../../api/adminApi';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AppIcon from '../../components/icons/AppIcon';
 import CreateUserModal from '../../components/admin/CreateUserModal';
 
 type Role = 'Tous' | 'Enseignants' | 'Élèves';
@@ -189,7 +190,7 @@ export default function AdminUsersPage() {
           ))}
         </div>
         <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--color-admin-border)] bg-[var(--color-admin-bg)] focus-within:border-[var(--color-admin)] focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--color-admin)_18%,transparent)]">
-          <span role="img" aria-label="recherche" className="text-sm">🔍</span>
+          <AppIcon name="search" size={16} label="Recherche" />
           <input
             type="search"
             value={search}
@@ -222,7 +223,7 @@ export default function AdminUsersPage() {
       {/* Alerte consentement manquant */}
       {missingConsent.length > 0 && (
         <div className="mb-4 flex items-start gap-3 p-4 rounded-lg border border-[color-mix(in_srgb,var(--color-admin-warning)_30%,transparent)] bg-[var(--color-admin-warning-bg)]">
-          <span role="img" aria-label="attention" className="text-lg shrink-0">⚠️</span>
+          <AppIcon name="alert-warning" size={20} className="shrink-0" label="Attention" />
           <div className="flex-1">
             <p className="text-sm font-bold text-[var(--color-admin-warning)] mb-0.5">
               {missingConsent.length} consentement{missingConsent.length > 1 ? 's' : ''} manquant{missingConsent.length > 1 ? 's' : ''}

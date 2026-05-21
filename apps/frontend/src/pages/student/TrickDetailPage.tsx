@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import AppIcon from '../../components/icons/AppIcon';
+import { RANK_BADGE_ICON } from '../../components/icons/iconRegistry';
 import ProgressStatusIcon from '../../components/icons/ProgressStatusIcon';
 import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
@@ -42,7 +43,13 @@ function StarRating({ score }: { score: number }) {
   return (
     <span className="flex gap-0.5" aria-label={`Difficulté : ${score} sur 10`}>
       {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={i < stars ? 'text-brand-end text-sm' : 'text-border text-sm'}>★</span>
+        <AppIcon
+          key={i}
+          name={i < stars ? 'star-filled' : 'star-outline'}
+          size={14}
+          className={i < stars ? 'text-brand-end' : 'text-border'}
+          label={i < stars ? 'étoile pleine' : 'étoile vide'}
+        />
       ))}
     </span>
   );
@@ -228,7 +235,12 @@ export default function TrickDetailPage() {
                   favoriteBusy ? 'opacity-50' : '',
                 ].join(' ')}
               >
-                {isFavorite ? '★' : '☆'}
+                <AppIcon
+                  name={isFavorite ? 'star-filled' : 'star-outline'}
+                  size={20}
+                  className={isFavorite ? 'text-[#FBBF24]' : undefined}
+                  label={isFavorite ? 'Favori' : 'Ajouter aux favoris'}
+                />
               </button>
               {trick.siteswap && (
                 <span className="text-xs px-2 py-1 rounded-lg bg-bg-card border border-border text-text-muted">
@@ -271,7 +283,7 @@ export default function TrickDetailPage() {
                 if (!anim) {
                   return (
                     <div className="rounded-2xl bg-bg-card border border-border h-48 flex flex-col items-center justify-center gap-2">
-                      <span role="img" aria-label="jonglage" className="text-4xl">🤹</span>
+                      <AppIcon name="juggler" size={48} className="text-text-muted" label="Jonglage" />
                       <p className="text-xs text-text-muted">Animation non disponible (pas de siteswap ni d’URL)</p>
                     </div>
                   );
@@ -344,8 +356,7 @@ export default function TrickDetailPage() {
               disabled={status === 'MASTERED' || savingStatus}
               className="jf-btn-primary w-full min-h-11 rounded-2xl py-3 text-sm disabled:opacity-50"
             >
-              <span aria-hidden="true">↗</span>
-              <span role="img" aria-label="chronomètre">⏱️</span>
+              <AppIcon name="timer" size={18} label="Session" className="shrink-0" />
               {status === 'IN_PROGRESS' ? 'Continuer la session' : 'Démarrer une session'}
             </button>
 
@@ -358,7 +369,7 @@ export default function TrickDetailPage() {
                   <p className="text-xs text-text-muted mt-0.5">Rang : Bronze</p>
                 </div>
                 <div className="flex items-center justify-center w-14 h-14 rounded-full border-4 border-brand shrink-0">
-                  <span role="img" aria-label="médaille bronze" className="text-2xl">🥉</span>
+                  <AppIcon name={RANK_BADGE_ICON.bronze} size={36} label="Rang Bronze" />
                 </div>
               </div>
               <div className="flex justify-between text-xs text-text-muted mb-1">
@@ -399,20 +410,20 @@ export default function TrickDetailPage() {
               {tab === 'conseils' && (
                 <div className="flex flex-col gap-3">
                   <div className="flex gap-3 p-3 rounded-xl bg-bg-card border border-border">
-                    <span role="img" aria-label="conseil" className="text-lg shrink-0">💡</span>
+                    <AppIcon name="tip-lightbulb" size={20} className="shrink-0 text-brand-end" label="Conseil" />
                     <p className="text-sm text-text-secondary leading-relaxed">
                       Lance toujours la 3ème balle au moment où la 2ème atteint son sommet.
                     </p>
                   </div>
                   <div className="flex gap-3 p-3 rounded-xl bg-bg-card border border-border">
-                    <span role="img" aria-label="astuce" className="text-lg shrink-0">🎯</span>
+                    <AppIcon name="tip-target" size={20} className="shrink-0 text-brand-end" label="Astuce" />
                     <p className="text-sm text-text-secondary leading-relaxed">
                       Garde les yeux fixés sur le point le plus haut de la trajectoire.
                     </p>
                   </div>
                   {trick.estimatedLearningDuration && (
                     <div className="flex gap-3 p-3 rounded-xl bg-bg-card border border-border">
-                      <span role="img" aria-label="durée" className="text-lg shrink-0">⏱️</span>
+                      <AppIcon name="timer" size={20} className="shrink-0 text-text-muted" label="Durée" />
                       <p className="text-sm text-text-secondary leading-relaxed">
                         Durée d'apprentissage estimée : <strong className="text-text-primary">{trick.estimatedLearningDuration} minutes</strong> de pratique.
                       </p>
@@ -459,7 +470,16 @@ export default function TrickDetailPage() {
                     : 'jf-btn-primary',
                 ].join(' ')}
               >
-                {savingStatus ? 'Sauvegarde…' : status === 'MASTERED' ? '✅ Figure maîtrisée !' : 'Marquer comme maîtrisée'}
+                {savingStatus ? (
+                  'Sauvegarde…'
+                ) : status === 'MASTERED' ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <AppIcon name="status-mastered" size={18} label="Maîtrisée" />
+                    Figure maîtrisée !
+                  </span>
+                ) : (
+                  'Marquer comme maîtrisée'
+                )}
               </button>
               {status !== 'IN_PROGRESS' && status !== 'MASTERED' && (
                 <button

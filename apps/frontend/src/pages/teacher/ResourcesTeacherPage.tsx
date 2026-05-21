@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import AppIcon from '../../components/icons/AppIcon';
 import {
   resourcesApi,
   type PedagogicalResource,
@@ -93,7 +94,7 @@ export default function ResourcesTeacherPage() {
       <main className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 flex flex-col gap-4">
 
         <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-bg-card border border-border">
-          <span role="img" aria-label="recherche" className="text-sm">🔍</span>
+          <AppIcon name="search" size={16} label="Recherche" />
           <input
             type="search"
             placeholder="Rechercher une ressource…"
@@ -181,7 +182,7 @@ function PdfCard({ res }: { res: PedagogicalResource }) {
     <div className="p-4 rounded-2xl bg-bg-card border border-border">
       <div className="flex items-start gap-3 mb-3">
         <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#2A1020] border border-alert/30 shrink-0">
-          <span role="img" aria-label="PDF" className="text-lg">📄</span>
+          <AppIcon name="pdf-document" size={20} label="PDF" />
         </div>
         <div className="flex-1">
           <p className="font-bold text-text-primary text-sm leading-tight mb-1">{res.title}</p>
@@ -211,9 +212,11 @@ function PdfCard({ res }: { res: PedagogicalResource }) {
           }}
           className="jf-btn-secondary jf-btn-secondary-sm inline-flex gap-1 disabled:opacity-50"
         >
-          <span role="img" aria-label={external ? 'lien' : 'télécharger'}>
-            {external ? '↗' : '↓'}
-          </span>
+          <AppIcon
+            name={external ? 'link-external' : 'download'}
+            size={16}
+            label={external ? 'Ouvrir le lien' : 'Télécharger'}
+          />
           {external ? 'Lire' : 'PDF'}
         </button>
       </div>
@@ -231,7 +234,7 @@ function VideoRow({ res }: { res: PedagogicalResource }) {
       className="p-4 rounded-2xl bg-bg-card border border-border flex items-center gap-3 w-full text-left hover:opacity-90 disabled:opacity-50"
     >
       <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand/20 border border-brand/40 shrink-0">
-        <span role="img" aria-label="vidéo" className="text-lg">▶️</span>
+        <AppIcon name="play" size={20} label="Vidéo" />
       </div>
       <div className="flex-1">
         <p className="font-bold text-text-primary text-sm">{res.title}</p>
@@ -251,7 +254,7 @@ function GuideRow({ res }: { res: PedagogicalResource }) {
   return (
     <div className="p-4 rounded-2xl bg-bg-card border border-border flex items-center gap-3">
       <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-success/10 border border-success/30 shrink-0">
-        <span role="img" aria-label="guide" className="text-lg">📗</span>
+        <AppIcon name="guide-book" size={20} label="Guide" />
       </div>
       <div className="flex-1">
         <p className="font-bold text-text-primary text-sm">{res.title}</p>
@@ -270,9 +273,14 @@ function GuideRow({ res }: { res: PedagogicalResource }) {
           }
           void resourcesApi.download(res.id, res.title);
         }}
-        className="text-xs px-2 py-1.5 rounded-lg bg-success/10 border border-success/30 text-success font-semibold hover:opacity-80 transition-opacity disabled:opacity-50"
+        className="inline-flex items-center gap-1 text-xs px-2 py-1.5 rounded-lg bg-success/10 border border-success/30 text-success font-semibold hover:opacity-80 transition-opacity disabled:opacity-50"
       >
-        {external ? '↗' : '↓'}
+        <AppIcon
+          name={external ? 'link-external' : 'download'}
+          size={14}
+          label={external ? 'Ouvrir' : 'Télécharger'}
+        />
+        {external ? 'Ouvrir' : 'PDF'}
       </button>
     </div>
   );

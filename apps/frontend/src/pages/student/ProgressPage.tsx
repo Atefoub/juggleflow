@@ -4,7 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import AppIcon from '../../components/icons/AppIcon';
 import ProgressStatusIcon from '../../components/icons/ProgressStatusIcon';
-import type { IconName } from '../../components/icons/iconRegistry';
+import {
+  ONBOARDING_LEVEL_ICON,
+  type IconName,
+} from '../../components/icons/iconRegistry';
 import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
 import { getOnboardingLevel } from '../../utils/onboarding';
@@ -191,7 +194,11 @@ export default function ProgressPage() {
         <div className="p-3 rounded-2xl bg-bg-card border border-border">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <span role="img" aria-label="niveau" className="text-xl">⭐</span>
+              <AppIcon
+                name={ONBOARDING_LEVEL_ICON[onboardingLevel]}
+                size={22}
+                label={`Niveau ${LEVEL_LABEL[onboardingLevel]}`}
+              />
               <div>
                 <p className="text-xs text-text-muted">Niveau actuel</p>
                 <p className="font-display font-bold text-text-primary text-sm">
@@ -237,16 +244,16 @@ export default function ProgressPage() {
                 Mes statistiques
               </h2>
               <div className="grid grid-cols-3 gap-3">
-                {[
-                  { value: stats?.totalTricksLearned ?? 0, label: 'Figures\napprises',  icon: '✅', iconLabel: 'figures apprises'  },
-                  { value: stats?.tricksInProgress   ?? 0, label: 'En\nprogression',   icon: '🔄', iconLabel: 'en progression'     },
-                  { value: stats?.badgesEarned        ?? 0, label: 'Badges\nobtenus',    icon: '🏅', iconLabel: 'badges obtenus'    },
-                ].map((stat) => (
+                {([
+                  { value: stats?.totalTricksLearned ?? 0, label: 'Figures\napprises', iconName: 'status-mastered' as IconName, iconLabel: 'figures apprises' },
+                  { value: stats?.tricksInProgress   ?? 0, label: 'En\nprogression', iconName: 'inline-in-progress' as IconName, iconLabel: 'en progression' },
+                  { value: stats?.badgesEarned        ?? 0, label: 'Badges\nobtenus', iconName: 'badge-mastery-10' as IconName, iconLabel: 'badges obtenus' },
+                ]).map((stat) => (
                   <div
                     key={stat.label}
                     className="p-3 rounded-xl flex flex-col gap-1 bg-bg-card border border-border"
                   >
-                    <span role="img" aria-label={stat.iconLabel} className="text-lg">{stat.icon}</span>
+                    <AppIcon name={stat.iconName} size={18} label={stat.iconLabel} />
                     <span className="font-display text-2xl font-bold text-text-primary">
                       {stat.value}
                     </span>

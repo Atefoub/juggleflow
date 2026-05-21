@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { adminApi, type AdminSchoolClass } from '../../api/adminApi';
 import { adminGdprApi, type ConsentStatusRow } from '../../api/adminGdprApi';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AppIcon from '../../components/icons/AppIcon';
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
@@ -334,7 +335,7 @@ export default function AdminRgpdPage() {
             <p className="jf-admin-section-title mb-3">Détail · classe sélectionnée</p>
 
             <div className="mb-3 flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--color-admin-border)] bg-[var(--color-admin-bg)] focus-within:border-[var(--color-admin)]">
-              <span role="img" aria-label="recherche" className="text-sm">🔍</span>
+              <AppIcon name="search" size={16} label="Recherche" />
               <input
                 type="search"
                 value={search}
@@ -466,7 +467,7 @@ export default function AdminRgpdPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="jf-admin-card p-4 flex items-start gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-admin-bg)] border border-[var(--color-admin-border)] shrink-0">
-              <span role="img" aria-label="CSV" className="text-lg">📊</span>
+              <AppIcon name="chart-bar" size={20} label="Export CSV" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-[var(--color-admin-text)] text-sm">
@@ -504,7 +505,7 @@ export default function AdminRgpdPage() {
 
           <div className="jf-admin-card p-4 flex items-start gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-admin-bg)] border border-[var(--color-admin-border)] shrink-0">
-              <span role="img" aria-label="Registre" className="text-lg">📋</span>
+              <AppIcon name="clipboard" size={20} label="Registre" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-[var(--color-admin-text)] text-sm">
@@ -573,7 +574,7 @@ export default function AdminRgpdPage() {
       {/* Mention légale */}
       <div className="jf-admin-card p-3">
         <p className="text-xs text-[var(--color-admin-text-muted)] leading-relaxed">
-          <span role="img" aria-label="drapeau France" className="mr-1">🇫🇷</span>
+          <AppIcon name="flag-france" size={16} className="mr-1 inline shrink-0" label="France" />
           Données hébergées en France. Conformité RGPD assurée. DPO contactable via{' '}
           <span className="text-[var(--color-admin-text-secondary)] font-medium">
             dpo@juggleflow.fr
