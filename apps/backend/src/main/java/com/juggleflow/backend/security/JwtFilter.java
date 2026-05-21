@@ -16,19 +16,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-/**
- * CORRECTIONS SÉCURITÉ appliquées :
- *
- * [VULN-06] Le message de log ne contient plus le contenu du token brut
- *           (risque de fuite dans les logs).
- *
- * [VULN-07] Toutes les branches d'exception sont attrapées séparément pour
- *           ne pas masquer des erreurs système derrière un simple "warn".
- *
- * [VULN-08] La méthode isTokenValid() du JwtUtils rejette désormais les
- *           refresh tokens utilisés comme access tokens (voir JwtUtils).
- *           Le filtre bénéficie automatiquement de cette protection.
- */
+/** Filtre JWT : valide l'access token (pas les refresh), sans logger le token brut. */
 @Slf4j
 @Component
 public class JwtFilter extends OncePerRequestFilter {
@@ -62,7 +50,6 @@ public class JwtFilter extends OncePerRequestFilter {
       if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-        // [VULN-08] isTokenValid() rejette les refresh tokens et les tokens révoqués
         if (jwtUtils.isTokenValid(jwt, userDetails)) {
           UsernamePasswordAuthenticationToken authToken =
             new UsernamePasswordAuthenticationToken(
@@ -71,13 +58,11 @@ public class JwtFilter extends OncePerRequestFilter {
             new WebAuthenticationDetailsSource().buildDetails(request));
           SecurityContextHolder.getContext().setAuthentication(authToken);
         } else {
-          // [VULN-06] Pas de log du token brut
           log.debug("Token JWT invalide ou révoqué pour la requête sur {}",
             request.getRequestURI());
         }
       }
     } catch (io.jsonwebtoken.ExpiredJwtException e) {
-      // [VULN-06] Log sans le token brut
       log.debug("Token JWT expiré — requête sur {}", request.getRequestURI());
     } catch (io.jsonwebtoken.JwtException e) {
       log.warn("Token JWT malformé sur {} : {}", request.getRequestURI(), e.getMessage());

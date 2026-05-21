@@ -21,28 +21,9 @@ import java.util.function.Function;
 
 /**
  * Gestion des tokens JWT (access + refresh).
- *
- * Corrections de sécurité appliquées :
- *
- * [VULN-01] Suppression de SignatureAlgorithm.HS256 (API dépréciée JJWT 0.12+).
- *           signWith(key) avec SecretKey déduit automatiquement HS256 et empêche
- *           tout downgrade vers alg:none.
- *
- * [VULN-02] Claim "typ" : "access" / "refresh" pour distinguer les deux types de
- *           tokens. Le filtre JWT rejette les refresh tokens présentés comme access.
- *
- * [VULN-03] Issuer "juggleflow" inclus et vérifié à chaque parsing.
- *
- * [VULN-04] Blacklist in-memory (ConcurrentHashSet) pour les tokens révoqués (logout).
- *           TODO prod : migrer vers Redis avec TTL = durée de vie du token.
- *
- * [VULN-05] Secret JWT minimum 32 caractères enforced au démarrage via @PostConstruct.
- *
- * [FIX-JTI] CORRECTION 04/05/2026 — Le JTI (JWT ID) n'était pas généré dans
- *            buildToken(), rendant la blacklist inopérante pour les access tokens
- *            (Claims::getId() retournait null). Désormais chaque token reçoit un
- *            UUID v4 unique via .id(UUID.randomUUID().toString()). La blacklist
- *            fonctionne maintenant pour les deux types de tokens.
+ * Access et refresh sont distingués par le claim {@code typ}, l'issuer est vérifié,
+ * chaque token a un JTI pour la révocation (logout). Blacklist en mémoire ;
+ * TODO prod : Redis avec TTL = durée de vie du token.
  */
 @Component
 public class JwtUtils {
@@ -81,8 +62,6 @@ public class JwtUtils {
 
   @PostConstruct
   public void init() {
-    // [VULN-05] Longueur minimale enforced au démarrage — l'application refuse
-    // de démarrer avec un secret trop court.
     if (secret == null || secret.length() < 32) {
       throw new IllegalStateException(
         "jwt.secret doit contenir au moins 32 caractères. " +
@@ -106,25 +85,15 @@ public class JwtUtils {
     return buildToken(userDetails, refreshExpirationMs, TYPE_REFRESH);
   }
 
-  /**
-   * Construit un token JWT signé.
-   *
-   * [VULN-01] signWith(key) sans algorithme explicite : JJWT 0.12+ déduit HS256
-   *           depuis le type SecretKey — pas de downgrade possible.
-   * [VULN-02] Claim "typ" discrimine access vs refresh.
-   * [VULN-03] Issuer "juggleflow" systématiquement inclus.
-   * [FIX-JTI] .id(UUID) : chaque token reçoit un identifiant unique, ce qui
-   *            rend la blacklist opérationnelle pour les access tokens également.
-   */
   private String buildToken(UserDetails userDetails, long expiration, String tokenType) {
     return Jwts.builder()
-      .id(UUID.randomUUID().toString())          // [FIX-JTI] JTI unique par token
+      .id(UUID.randomUUID().toString())
       .subject(userDetails.getUsername())
-      .issuer(ISSUER)                            // [VULN-03]
-      .claim(CLAIM_TOKEN_TYPE, tokenType)        // [VULN-02]
+      .issuer(ISSUER)
+      .claim(CLAIM_TOKEN_TYPE, tokenType)
       .issuedAt(new Date())
       .expiration(new Date(System.currentTimeMillis() + expiration))
-      .signWith(key)                             // [VULN-01] — algorithme déduit automatiquement
+      .signWith(key)
       .compact();
   }
 
@@ -145,9 +114,6 @@ public class JwtUtils {
     return resolver.apply(extractAllClaims(token));
   }
 
-  /**
-   * [VULN-03] requireIssuer() : tout token sans l'issuer attendu est rejeté.
-   */
   private Claims extractAllClaims(String token) {
     return Jwts.parser()
       .verifyWith(key)
@@ -158,13 +124,6 @@ public class JwtUtils {
   }
 
 
-  /**
-   * Valide un access token.
-   *
-   * [VULN-02] Rejet explicite si le claim "typ" n'est pas "access".
-   * [VULN-04] Vérification de la blacklist via le JTI.
-   * [FIX-JTI] Désormais efficace sur les access tokens (JTI présent).
-   */
   public boolean isTokenValid(String token, UserDetails userDetails) {
     try {
       final String email     = extractEmail(token);
@@ -185,12 +144,6 @@ public class JwtUtils {
     }
   }
 
-  /**
-   * Valide un refresh token.
-   *
-   * [VULN-02] Rejet explicite si le claim "typ" n'est pas "refresh".
-   * [VULN-04] Vérification de la blacklist via le JTI.
-   */
   public boolean isRefreshTokenValid(String token, UserDetails userDetails) {
     try {
       final String email     = extractEmail(token);
@@ -213,13 +166,7 @@ public class JwtUtils {
 
   /**
    * Révoque un token en ajoutant son JTI en blacklist (logout, rotation).
-   *
-   * [VULN-04] Révocation par JTI.
-   * [FIX-JTI] Désormais efficace sur les access tokens et les refresh tokens.
-   *
-   * TODO prod : stocker dans Redis avec TTL = expiration du token concerné.
-   *             Exemple : redisTemplate.opsForValue().set("revoked:" + jti, "1",
-   *                         Duration.ofMillis(remainingMs));
+   * TODO prod : Redis avec TTL = durée de vie restante du token.
    */
   public void revokeToken(String token) {
     try {
