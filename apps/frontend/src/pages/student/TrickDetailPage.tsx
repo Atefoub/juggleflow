@@ -7,7 +7,9 @@ import ProgressStatusIcon from '../../components/icons/ProgressStatusIcon';
 import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
 import { getTrickDetail } from '../../api/catalogueOffline';
-import { LEVEL_LABELS, scoreToStars, type TrickResponse } from '../../api/catalogueApi';
+import type { TrickResponse } from '../../api/catalogueApi';
+import DifficultyChip from '../../components/catalogue/DifficultyChip';
+import StarRating from '../../components/catalogue/StarRating';
 import { getStudentProgress } from '../../api/studentOffline';
 import { mergePendingIntoProgress } from '../../utils/offlineQueue';
 import { studentApi, type TrickProgress } from '../../api/studentApi';
@@ -16,20 +18,13 @@ import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { useAuth } from '../../context/AuthContext';
 import { enqueueProgressUpdate } from '../../utils/offlineQueue';
 import OfflineBanner from '../../components/OfflineBanner';
-import { resolveTrickAnimation } from '../../utils/jugglingLab';
+import AnimationPreview from '../../components/catalogue/AnimationPreview';
 import { LIBRARY_OF_JUGGLING_BY_TRICK_NAME } from '../../utils/libraryOfJugglingLinks';
 import { favoritesApi } from '../../api/favoritesApi';
 import {
   getCachedFavoriteIds,
   setCachedFavoriteIds,
 } from '../../utils/favoritesStore';
-
-const LEVEL_CHIP: Record<string, string> = {
-  Beginner:     'text-success  bg-success/10  border border-success/30',
-  Intermediate: 'text-brand-end bg-brand/12  border border-brand/35',
-  Advanced:     'text-brand    bg-brand/10    border border-brand/30',
-  Expert:       'text-alert    bg-alert/10    border border-alert/30',
-};
 
 const XP_BY_LEVEL: Record<string, number> = {
   Beginner: 100, Intermediate: 200, Advanced: 350, Expert: 500,
@@ -38,23 +33,6 @@ const XP_NEXT = 500;
 
 type Tab = 'description' | 'conseils' | 'prerequis';
 type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED';
-
-function StarRating({ score }: { score: number }) {
-  const stars = scoreToStars(score);
-  return (
-    <span className="flex gap-0.5" aria-label={`Difficulté : ${score} sur 10`}>
-      {Array.from({ length: 5 }, (_, i) => (
-        <AppIcon
-          key={i}
-          name={i < stars ? 'star-filled' : 'star-outline'}
-          size={14}
-          className={i < stars ? 'text-brand-end' : 'text-border'}
-          label={i < stars ? 'étoile pleine' : 'étoile vide'}
-        />
-      ))}
-    </span>
-  );
-}
 
 export default function TrickDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -162,9 +140,6 @@ export default function TrickDetailPage() {
   const xp         = XP_BY_LEVEL[level] ?? 100;
   const xpPercent  = Math.min((xp / XP_NEXT) * 100, 100);
   const xpDisplay  = Math.min(xp, XP_NEXT);
-  const levelLabel = LEVEL_LABELS[level] ?? level;
-  const chipClass  = LEVEL_CHIP[level] ?? LEVEL_CHIP.Beginner;
-
   async function handleSetStatus(newStatus: ProgressStatus) {
     if (!trick) return;
     setSavingStatus(true);
@@ -215,9 +190,7 @@ export default function TrickDetailPage() {
                 {trick.name}
               </h1>
               <div className="flex items-center gap-2 mt-1">
-                <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${chipClass}`}>
-                  {levelLabel}
-                </span>
+                <DifficultyChip level={trick.levelName} />
                 <StarRating score={trick.difficultyScore} />
               </div>
             </div>
@@ -273,68 +246,7 @@ export default function TrickDetailPage() {
 
         {!loading && !error && trick && (
           <>
-            {/* Animation : URL en base, sinon GIF Juggling Lab dérivé du siteswap (https://jugglinglab.org/) */}
-            <section>
-              {(() => {
-                const anim = resolveTrickAnimation(trick, {
-                  width: 400,
-                  height: 450,
-                  slowdown: 2,
-                });
-                if (!anim) {
-                  return (
-                    <div className="rounded-2xl bg-bg-card border border-border h-48 flex flex-col items-center justify-center gap-2">
-                      <AppIcon name="juggler" size={48} className="text-text-muted" label="Jonglage" />
-                      <p className="text-xs text-text-muted">Animation non disponible (pas de siteswap ni d’URL)</p>
-                    </div>
-                  );
-                }
-                return (
-                  <>
-                    <div className="rounded-2xl overflow-hidden bg-bg-card border border-border">
-                      {anim.kind === 'iframe' ? (
-                        <iframe
-                          src={anim.src}
-                          title={`Animation ${trick.name}`}
-                          className="w-full h-48 border-none"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <img
-                          src={anim.src}
-                          alt={anim.alt}
-                          className="w-full max-h-72 object-contain bg-black/30"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      )}
-                    </div>
-                    {anim.kind === 'img' && (
-                      <p className="text-[0.65rem] text-text-muted mt-2 leading-relaxed">
-                        Animation générée par{' '}
-                        <a
-                          href="https://jugglinglab.org/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline text-text-secondary hover:text-text-primary"
-                        >
-                          Juggling Lab
-                        </a>
-                        {' '}(logiciel libre).{' '}
-                        <a
-                          href="https://jugglinglab.org/html/ssnotation.html"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline text-text-secondary hover:text-text-primary"
-                        >
-                          Notation siteswap
-                        </a>.
-                      </p>
-                    )}
-                  </>
-                );
-              })()}
-            </section>
+            <AnimationPreview trick={trick} variant="detail" />
 
             {/* Status actuel */}
             {status !== 'NOT_STARTED' && (
