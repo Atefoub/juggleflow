@@ -25,8 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Verifie que BadgeService.checkAndUnlockBadges debloque correctement
- * les badges "Perseverant" (consecutive_days) et "Marathon" (practice_time)
- * seedes en V2.
+ * les badges "Persévérant" (consecutive_days) et "Marathonien" (practice_time)
+ * (libellés FR depuis V17).
  *
  * Ces deux badges existaient deja en base mais ne se debloquaient jamais
  * avant l'extension du switch dans isBadgeEarned.
@@ -40,6 +40,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 @Rollback
 class BadgeServiceTest {
+
+    private static final String BADGE_PERSEVERANT = "Persévérant";
+    private static final String BADGE_MARATHON = "Marathonien";
 
     @Autowired private BadgeService badgeService;
     @Autowired private UserBadgeRepository userBadgeRepository;
@@ -71,7 +74,7 @@ class BadgeServiceTest {
     }
 
     @Test
-    @DisplayName("Streak >= 7 jours : badge 'Perseverant' debloque")
+    @DisplayName("Streak >= 7 jours : badge 'Persévérant' debloque")
     void streakOf7_unlocksPerseverantBadge() {
         userStreakRepository.save(UserStreak.builder()
             .userId(user.getId())
@@ -85,12 +88,12 @@ class BadgeServiceTest {
         boolean perseverantUnlocked = userBadgeRepository
             .findByUser_IdOrderByUnlockedAtDesc(user.getId())
             .stream()
-            .anyMatch(ub -> "Perseverant".equalsIgnoreCase(ub.getBadge().getName()));
+            .anyMatch(ub -> BADGE_PERSEVERANT.equalsIgnoreCase(ub.getBadge().getName()));
         assertThat(perseverantUnlocked).isTrue();
     }
 
     @Test
-    @DisplayName("Streak < 7 jours : badge 'Perseverant' NON debloque")
+    @DisplayName("Streak < 7 jours : badge 'Persévérant' NON debloque")
     void streakBelow7_doesNotUnlockPerseverant() {
         userStreakRepository.save(UserStreak.builder()
             .userId(user.getId())
@@ -104,12 +107,12 @@ class BadgeServiceTest {
         boolean perseverantUnlocked = userBadgeRepository
             .findByUser_IdOrderByUnlockedAtDesc(user.getId())
             .stream()
-            .anyMatch(ub -> "Perseverant".equalsIgnoreCase(ub.getBadge().getName()));
+            .anyMatch(ub -> BADGE_PERSEVERANT.equalsIgnoreCase(ub.getBadge().getName()));
         assertThat(perseverantUnlocked).isFalse();
     }
 
     @Test
-    @DisplayName("Practice time >= 6000 minutes : badge 'Marathon' debloque")
+    @DisplayName("Practice time >= 6000 minutes : badge 'Marathonien' debloque")
     void practiceTimeOf100Hours_unlocksMarathonBadge() {
         // 6000 minutes = 360_000 secondes
         practiceSessionRepository.save(PracticeSession.builder()
@@ -125,12 +128,12 @@ class BadgeServiceTest {
         boolean marathonUnlocked = userBadgeRepository
             .findByUser_IdOrderByUnlockedAtDesc(user.getId())
             .stream()
-            .anyMatch(ub -> "Marathon".equalsIgnoreCase(ub.getBadge().getName()));
+            .anyMatch(ub -> BADGE_MARATHON.equalsIgnoreCase(ub.getBadge().getName()));
         assertThat(marathonUnlocked).isTrue();
     }
 
     @Test
-    @DisplayName("Practice time legerement insuffisant : badge 'Marathon' NON debloque")
+    @DisplayName("Practice time legerement insuffisant : badge 'Marathonien' NON debloque")
     void practiceTimeBelowThreshold_doesNotUnlockMarathon() {
         // 5999 minutes < 6000 minutes seuil
         practiceSessionRepository.save(PracticeSession.builder()
@@ -146,7 +149,7 @@ class BadgeServiceTest {
         boolean marathonUnlocked = userBadgeRepository
             .findByUser_IdOrderByUnlockedAtDesc(user.getId())
             .stream()
-            .anyMatch(ub -> "Marathon".equalsIgnoreCase(ub.getBadge().getName()));
+            .anyMatch(ub -> BADGE_MARATHON.equalsIgnoreCase(ub.getBadge().getName()));
         assertThat(marathonUnlocked).isFalse();
     }
 
@@ -175,7 +178,7 @@ class BadgeServiceTest {
             .map(ub -> ub.getBadge().getName())
             .toList();
 
-        assertThat(unlocked).contains("Perseverant", "Marathon");
+        assertThat(unlocked).contains(BADGE_PERSEVERANT, BADGE_MARATHON);
     }
 
     @Test
@@ -194,7 +197,7 @@ class BadgeServiceTest {
         long perseverantCount = userBadgeRepository
             .findByUser_IdOrderByUnlockedAtDesc(user.getId())
             .stream()
-            .filter(ub -> "Perseverant".equalsIgnoreCase(ub.getBadge().getName()))
+            .filter(ub -> BADGE_PERSEVERANT.equalsIgnoreCase(ub.getBadge().getName()))
             .count();
         assertThat(perseverantCount).isEqualTo(1L);
     }
