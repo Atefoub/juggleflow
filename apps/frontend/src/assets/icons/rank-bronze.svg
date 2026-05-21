@@ -1,10 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-
-  <path d="M12 3l8 5v5q0 5-8 8Q4 16 4 13V8z" stroke-width="1.5"/>
-  <circle cx="9"  cy="12" r="2.5"/>
-  <circle cx="15" cy="12" r="2.5"/>
-  <circle cx="12" cy="7.5" r="2.5"/>
-  <path d="M9 12 Q8 8.5 12 7.5" stroke-dasharray="2 1.5" opacity="0.5"/>
-  <path d="M15 12 Q16 8.5 12 7.5" stroke-dasharray="2 1.5" opacity="0.5"/>
-
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="rankBronzeGrad" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#92400E"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <path d="M12 3l8 5v5q0 5-8 8Q4 16 4 13V8z" fill="url(#rankBronzeGrad)" fill-opacity="0.2" stroke="url(#rankBronzeGrad)"/>
+  <circle cx="9" cy="12" r="2.5" fill="#F59E0B" stroke="#B45309"/>
+  <circle cx="15" cy="12" r="2.5" fill="#D97706" stroke="#92400E"/>
+  <circle cx="12" cy="7.5" r="2.5" fill="#FBBF24" stroke="#F59E0B"/>
+  <path d="M9 12 Q8 8.5 12 7.5" stroke="#F59E0B" stroke-dasharray="2 1.5" opacity="0.5"/>
+  <path d="M15 12 Q16 8.5 12 7.5" stroke="#F59E0B" stroke-dasharray="2 1.5" opacity="0.5"/>
 </svg>

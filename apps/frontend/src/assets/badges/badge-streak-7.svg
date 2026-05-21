@@ -1,16 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="-44 -44 88 88" role="img" aria-label="Badge régularité 7 jours">
   <title>7 jours de régularité</title>
   <defs>
-    <linearGradient id="gFire" x1="0" y1="1" x2="0" y2="0">
-      <stop offset="0%" stop-color="#FF4500"/>
-      <stop offset="100%" stop-color="#FF9A00"/>
+    <linearGradient id="gStreak7" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00B4D8"/>
+      <stop offset="100%" stop-color="#7B61FF"/>
     </linearGradient>
   </defs>
-  <rect x="-44" y="-44" width="88" height="88" rx="20" fill="#FF7A00" fill-opacity="0.12"/>
-  <rect x="-44" y="-44" width="88" height="88" rx="20" fill="none" stroke="#FF7A00" stroke-width="1.5"/>
-  <ellipse cx="0" cy="0" rx="38" ry="10" fill="none" stroke="#FF4500" stroke-width="1" stroke-dasharray="3 3" opacity="0.4"/>
-  <path d="M0,28 C-16,20 -22,6 -14,-8 C-10,-16 -6,-10 -4,-4 C-2,-16 4,-24 0,-34 C6,-24 14,-14 12,0 C16,-8 16,-18 12,-24 C20,-10 20,10 12,22 C8,28 4,32 0,28 Z" fill="url(#gFire)"/>
-  <path d="M0,20 C-8,14 -10,4 -4,-4 C-2,-10 0,-6 0,-2 C4,-10 6,-16 4,-22 C8,-14 10,-4 6,8 C4,14 2,18 0,20 Z" fill="#FFF" opacity="0.3"/>
+  <rect x="-44" y="-44" width="88" height="88" rx="20" fill="#00B4D8" fill-opacity="0.14"/>
+  <rect x="-44" y="-44" width="88" height="88" rx="20" fill="none" stroke="#00B4D8" stroke-width="1.5"/>
+  <ellipse cx="0" cy="0" rx="38" ry="10" fill="none" stroke="#00B4D8" stroke-width="1" stroke-dasharray="3 3" opacity="0.45"/>
+  <path d="M0,28 C-16,20 -22,6 -14,-8 C-10,-16 -6,-10 -4,-4 C-2,-16 4,-24 0,-34 C6,-24 14,-14 12,0 C16,-8 16,-18 12,-24 C20,-10 20,10 12,22 C8,28 4,32 0,28 Z" fill="url(#gStreak7)"/>
+  <path d="M0,20 C-8,14 -10,4 -4,-4 C-2,-10 0,-6 0,-2 C4,-10 6,-16 4,-22 C8,-14 10,-4 6,8 C4,14 2,18 0,20 Z" fill="#FFF" opacity="0.28"/>
   <circle cx="0" cy="-34" r="3" fill="#FFF" opacity="0.9"/>
-  <circle cx="36" cy="0" r="4" fill="#FF9A00" opacity="0.8"/>
+  <circle cx="36" cy="0" r="4" fill="#00B4D8" opacity="0.85"/>
 </svg>
