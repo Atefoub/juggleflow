@@ -76,6 +76,13 @@ export const LEVEL_LABELS: Record<string, string> = {
   Expert:       'Expert',
 };
 
+export const CATEGORY_LABELS: Record<string, string> = {
+  '3 Balls':         '3 balles',
+  Scarves:           'Foulards',
+  Clubs:             'Massues',
+  'Advanced Tricks': 'Figures avancées',
+};
+
 export const LEVEL_COLORS: Record<string, string> = {
   Beginner:     '#22C55E',
   Intermediate: '#FF7A00',

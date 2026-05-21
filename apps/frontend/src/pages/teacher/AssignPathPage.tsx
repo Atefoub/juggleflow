@@ -18,6 +18,13 @@ const LEVEL_CHIP: Record<string, string> = {
   Avancé:       'text-brand    bg-brand/10    border border-brand/30',
 };
 
+const PATH_LEVEL_LABELS: Record<string, string> = {
+  BEGINNER: 'Débutant',
+  INTERMEDIATE: 'Intermédiaire',
+  ADVANCED: 'Avancé',
+  EXPERT: 'Expert',
+};
+
 type Step = 1 | 2 | 3;
 
 export default function AssignPathPage() {
@@ -105,7 +112,10 @@ export default function AssignPathPage() {
   }, [selectedClass?.id, step]);
 
   // Filtrage des parcours
-  const uniqueLevels = ['Tous', ...Array.from(new Set(paths.map((p) => p.targetLevel ?? 'Tous').filter(Boolean)))];
+  const uniqueLevels = [
+    'Tous',
+    ...Array.from(new Set(paths.map((p) => p.targetLevel).filter(Boolean))),
+  ];
   const filteredPaths = paths.filter(
     (p) => levelFilter === 'Tous' || p.targetLevel === levelFilter
   );
@@ -215,7 +225,7 @@ export default function AssignPathPage() {
                       : 'border-border bg-bg-card text-text-muted',
                   ].join(' ')}
                 >
-                  {level}
+                  {level === 'Tous' ? level : (PATH_LEVEL_LABELS[level] ?? level)}
                 </button>
               ))}
             </div>
@@ -252,8 +262,8 @@ export default function AssignPathPage() {
                       {path.estimatedDurationDays ? ` · ${path.estimatedDurationDays} jours` : ''}
                     </p>
                     {path.targetLevel && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${LEVEL_CHIP[path.targetLevel] ?? 'text-text-muted bg-border'}`}>
-                        {path.targetLevel}
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${LEVEL_CHIP[path.targetLevel] ?? LEVEL_CHIP[PATH_LEVEL_LABELS[path.targetLevel] ?? ''] ?? 'text-text-muted bg-border'}`}>
+                        {PATH_LEVEL_LABELS[path.targetLevel] ?? path.targetLevel}
                       </span>
                     )}
                     {path.description && (
