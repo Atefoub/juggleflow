@@ -22,26 +22,10 @@ import {
   youtubeEmbedUrl,
 } from '../../utils/externalResource';
 
-const BRAIN_CHAPTERS = [
-  {
-    n: 1,
-    title: 'La plasticité cérébrale',
-    summary:
-      'Ton cerveau peut se modifier quand tu apprends : la pratique du jonglage augmente temporairement la matière grise dans les zones qui traitent le mouvement.',
-  },
-  {
-    n: 2,
-    title: 'Mémoire motrice et répétition',
-    summary:
-      'Chaque séance renforce des circuits moteurs : les progrès viennent de la répétition régulière, pas d’un seul coup de chance.',
-  },
-  {
-    n: 3,
-    title: 'Le rôle de la concentration',
-    summary:
-      'Jongler demande une attention soutenue : les deux hémisphères doivent coordonner le regard, les mains et le rythme en même temps.',
-  },
-] as const;
+import {
+  BRAIN_CHAPTERS,
+  BRAIN_MODULE_META,
+} from '../../content/brainModuleChapters';
 
 function isBrainChapterSource(resource: PedagogicalResource): boolean {
   return resource.tags.some((t) => t.startsWith('brain-chapter:'));
@@ -325,15 +309,15 @@ export default function ResourcesStudentPage() {
               </div>
               <div className="p-4">
                 <p className="font-bold text-text-primary text-sm mb-1">
-                  {brainModule?.title ?? 'Comment ton cerveau apprend à jongler ?'}
+                  {brainModule?.title ?? BRAIN_MODULE_META.title}
                 </p>
                 <p className="text-xs text-text-secondary mb-3">
-                  {brainModule?.subtitle ?? "Découvre ce qui se passe dans ta tête quand tu t'entraînes."}
+                  {brainModule?.subtitle ?? BRAIN_MODULE_META.subtitle}
                 </p>
 
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex gap-3 text-xs text-text-muted">
-                    <span>{brainModule?.metaLabel ?? '3 chapitres · 8 min'}</span>
+                    <span>{brainModule?.metaLabel ?? BRAIN_MODULE_META.metaLabel}</span>
                   </div>
                   {!moduleStarted && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-border text-text-muted">
@@ -402,6 +386,14 @@ export default function ResourcesStudentPage() {
                     {unlocked && (
                       <div className="px-3 pb-3 flex flex-col gap-2 border-t border-border/60 pt-2">
                         <p className="text-xs text-text-secondary leading-relaxed">{ch.summary}</p>
+                        <p className="text-[0.65rem] text-text-muted">
+                          ~{ch.durationMinutes} min de lecture
+                        </p>
+                        <ul className="flex flex-col gap-1.5 list-disc list-inside text-xs text-text-secondary">
+                          {ch.keyPoints.map((point) => (
+                            <li key={point}>{point}</li>
+                          ))}
+                        </ul>
                         {sources.map((src) => (
                           <button
                             key={src.id}
