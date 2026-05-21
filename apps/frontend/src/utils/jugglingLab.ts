@@ -41,18 +41,21 @@ export type ResolvedTrickAnimation =
  * Sinon, si siteswap présent → GIF direct (redirect) pour <img>.
  */
 export function resolveTrickAnimation(
-  trick: Pick<TrickResponse, 'name' | 'jugglingLabAnimationUrl' | 'siteswap'>,
+  trick: Pick<
+    TrickResponse,
+    'name' | 'jugglingLabAnimationUrl' | 'jugglingLabPattern' | 'siteswap'
+  >,
   gifOptions?: JugglingLabGifOptions,
 ): ResolvedTrickAnimation | null {
   const custom = trick.jugglingLabAnimationUrl?.trim();
   if (custom) {
     return { kind: 'iframe', src: custom };
   }
-  const sw = trick.siteswap?.trim();
-  if (!sw) return null;
+  const pattern = trick.jugglingLabPattern?.trim() || trick.siteswap?.trim();
+  if (!pattern) return null;
   return {
     kind: 'img',
-    src: buildJugglingLabGifUrl(sw, gifOptions),
-    alt: `Animation Juggling Lab — siteswap ${sw} — ${trick.name}`,
+    src: buildJugglingLabGifUrl(pattern, gifOptions),
+    alt: `Animation Juggling Lab — ${trick.name}`,
   };
 }

@@ -8,6 +8,9 @@ export interface TrickResponse {
   siteswap: string | null;
   description: string;
   jugglingLabAnimationUrl: string | null;
+  /** Pattern Juggling Lab complet (prioritaire sur siteswap pour l’animation). */
+  jugglingLabPattern: string | null;
+  learningTips: string[];
   difficultyScore: number;
   estimatedLearningDuration: number | null;
   popular: boolean;
