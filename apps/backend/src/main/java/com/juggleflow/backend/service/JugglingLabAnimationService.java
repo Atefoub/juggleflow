@@ -77,8 +77,8 @@ public class JugglingLabAnimationService {
         if (trimmed.length() > MAX_PATTERN_LENGTH) {
             throw new IllegalArgumentException("Siteswap trop long.");
         }
-        if (!trimmed.matches("[0-9a-zA-Z(),x\\s^+*\\[\\]{}|./_-]+")) {
-            throw new IllegalArgumentException("Caractères non autorisés dans le siteswap.");
+        if (!trimmed.matches("[0-9a-zA-Z(),x\\s^+*\\[\\]{}|./_;=-]+")) {
+            throw new IllegalArgumentException("Caractères non autorisés dans le pattern.");
         }
         return trimmed;
     }
