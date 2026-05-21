@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="88" viewBox="-44 -56 88 100" role="img" aria-label="Rang Argent">
+  <title>Rang Argent</title>
+  <defs>
+    <linearGradient id="gSilver" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#CBD5E1"/>
+    </linearGradient>
+  </defs>
+  <rect x="-44" y="-56" width="88" height="88" rx="20" fill="#CBD5E1" fill-opacity="0.1"/>
+  <rect x="-44" y="-56" width="88" height="88" rx="20" fill="none" stroke="#CBD5E1" stroke-width="1.5"/>
+  <path d="M0,-48 L28,-30 L28,6 Q28,18 0,30 Q-28,18 -28,6 L-28,-30 Z" fill="#475569" opacity="0.6"/>
+  <path d="M0,-44 L24,-28 L24,6 Q24,16 0,26 Q-24,16 -24,6 L-24,-28 Z" fill="none" stroke="#CBD5E1" stroke-width="1.2" opacity="0.7"/>
+  <circle cx="-14" cy="2" r="7" fill="url(#gSilver)"/>
+  <circle cx="14" cy="2" r="7" fill="#64748B" opacity="0.9"/>
+  <circle cx="0" cy="-18" r="7" fill="#CBD5E1" opacity="0.9"/>
+  <circle cx="0" cy="-8" r="26" fill="none" stroke="#CBD5E1" stroke-width="0.8" stroke-dasharray="3 3" opacity="0.35"/>
+  <path d="M-14,2 Q-18,-12 0,-18" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="2 2" fill="none" opacity="0.5"/>
+  <path d="M14,2 Q18,-12 0,-18" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="2 2" fill="none" opacity="0.5"/>
+  <path d="M-14,32 L-8,44 L0,38 L8,44 L14,32" fill="url(#gSilver)"/>
+</svg>

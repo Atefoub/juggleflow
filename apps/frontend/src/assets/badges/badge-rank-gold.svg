@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="88" viewBox="-44 -56 88 100" role="img" aria-label="Rang Or">
+  <title>Rang Or</title>
+  <defs>
+    <linearGradient id="gGold" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#B45309"/>
+      <stop offset="100%" stop-color="#FDE68A"/>
+    </linearGradient>
+  </defs>
+  <rect x="-44" y="-56" width="88" height="88" rx="20" fill="#FDE68A" fill-opacity="0.1"/>
+  <rect x="-44" y="-56" width="88" height="88" rx="20" fill="none" stroke="#FDE68A" stroke-width="1.5"/>
+  <line x1="0" y1="-52" x2="0" y2="-44" stroke="#FDE68A" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+  <line x1="28" y1="-42" x2="24" y2="-36" stroke="#FDE68A" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+  <line x1="-28" y1="-42" x2="-24" y2="-36" stroke="#FDE68A" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+  <path d="M0,-48 L28,-30 L28,6 Q28,18 0,30 Q-28,18 -28,6 L-28,-30 Z" fill="#B45309" opacity="0.7"/>
+  <path d="M0,-44 L24,-28 L24,6 Q24,16 0,26 Q-24,16 -24,6 L-24,-28 Z" fill="none" stroke="#FDE68A" stroke-width="1.2" opacity="0.8"/>
+  <circle cx="-14" cy="2" r="7" fill="url(#gGold)"/>
+  <circle cx="14" cy="2" r="7" fill="#D97706" opacity="0.9"/>
+  <circle cx="0" cy="-18" r="8" fill="#FDE68A" opacity="0.95"/>
+  <path d="M0,-22 L1,-19 L4,-19 L2,-17 L3,-14 L0,-16 L-3,-14 L-2,-17 L-4,-19 L-1,-19 Z" fill="#FFF" opacity="0.8"/>
+  <path d="M-14,2 Q-18,-12 0,-18" stroke="#FDE68A" stroke-width="1.2" stroke-dasharray="2 2" fill="none" opacity="0.6"/>
+  <path d="M14,2 Q18,-12 0,-18" stroke="#FDE68A" stroke-width="1.2" stroke-dasharray="2 2" fill="none" opacity="0.6"/>
+  <path d="M-14,32 L-8,44 L0,38 L8,44 L14,32" fill="url(#gGold)"/>
+</svg>
