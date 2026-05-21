@@ -2,17 +2,20 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/BottomNav';
 import AppIcon from '../../components/icons/AppIcon';
-import ProgressStatusIcon from '../../components/icons/ProgressStatusIcon';
+import AnimationPreview from '../../components/catalogue/AnimationPreview';
+import DifficultyChip from '../../components/catalogue/DifficultyChip';
+import ProgressChip from '../../components/catalogue/ProgressChip';
+import type { TrickProgressStatus } from '../../components/catalogue/progressStatus';
+import { TrickCard, TrickCardSkeleton } from '../../components/catalogue/TrickCard';
 import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import OfflineBanner from '../../components/OfflineBanner';
 import { getPopularTricks, getTricksPage } from '../../api/catalogueOffline';
-import { LEVEL_LABELS, scoreToStars, type TrickResponse } from '../../api/catalogueApi';
+import { LEVEL_LABELS, type TrickResponse } from '../../api/catalogueApi';
 import { getStudentProgress } from '../../api/studentOffline';
 import { useAuth } from '../../context/AuthContext';
 import { mergePendingIntoProgress } from '../../utils/offlineQueue';
 import type { TrickProgress } from '../../api/studentApi';
-import { resolveTrickAnimation } from '../../utils/jugglingLab';
 import { PROGRESS_UPDATED_EVENT } from '../../lib/progressEvents';
 import { favoritesApi } from '../../api/favoritesApi';
 import {
@@ -36,13 +39,6 @@ const FILTERS: { value: FilterLevel; label: string }[] = [
 const PAGE_SIZE = 10;
 
 
-const LEVEL_CHIP_CLASS: Record<string, string> = {
-  Beginner:     'text-[#22C55E] bg-[rgba(34,197,94,0.12)]',
-  Intermediate: 'text-[#C724B1] bg-[rgba(139,43,226,0.14)]',
-  Advanced:     'text-[#8B2BE2] bg-[rgba(139,43,226,0.12)]',
-  Expert:       'text-[#FF4D4D] bg-[rgba(255,77,77,0.12)]',
-};
-
 const FILTER_ACTIVE_CLASS: Record<FilterLevel, string> = {
   Tous:         'bg-linear-to-br from-[#8B2BE2] to-[#C724B1] text-white border-[#8B2BE2]',
   Beginner:     'bg-[rgba(34,197,94,0.12)] text-[#22C55E] border-[#22C55E]',
@@ -51,152 +47,6 @@ const FILTER_ACTIVE_CLASS: Record<FilterLevel, string> = {
   Expert:       'bg-[rgba(255,77,77,0.12)] text-[#FF4D4D] border-[#FF4D4D]',
   Favoris:      'bg-[rgba(255,193,7,0.15)] text-[#FBBF24] border-[#FBBF24]',
 };
-
-
-function StarRating({ score }: { score: number }) {
-  const stars = scoreToStars(score);
-  return (
-    <span className="flex gap-0.5" aria-label={`Difficulté : ${score} sur 10`}>
-      {Array.from({ length: 5 }, (_, i) => (
-        <AppIcon
-          key={i}
-          name={i < stars ? 'star-filled' : 'star-outline'}
-          size={10}
-          className={i < stars ? 'text-brand-end' : 'text-border'}
-          label={i < stars ? 'étoile pleine' : 'étoile vide'}
-        />
-      ))}
-    </span>
-  );
-}
-
-function DifficultyChip({ level }: { level: string | null }) {
-  if (!level) return null;
-  const cls = LEVEL_CHIP_CLASS[level] ?? 'text-text-secondary bg-border';
-  return (
-    <span className={`text-[0.6rem] font-bold px-2 py-0.5 rounded-full ${cls}`}>
-      {LEVEL_LABELS[level] ?? level}
-    </span>
-  );
-}
-
-function AnimationPreview({ trick }: { trick: TrickResponse }) {
-  const resolved = resolveTrickAnimation(trick, {
-    width: 200,
-    height: 225,
-    slowdown: 2,
-  });
-  if (!resolved) {
-    return (
-      <div className="flex items-center justify-center rounded-xl w-20 h-20 bg-bg-input shrink-0 text-text-muted" aria-hidden="true">
-        <AppIcon name="juggler" size={36} label="" />
-      </div>
-    );
-  }
-  if (resolved.kind === 'iframe') {
-    return (
-      <iframe
-        src={resolved.src}
-        title={`Animation de la figure ${trick.name}`}
-        className="rounded-xl shrink-0 w-20 h-20 bg-bg-input border-0"
-        loading="lazy"
-        scrolling="no"
-      />
-    );
-  }
-  return (
-    <img
-      src={resolved.src}
-      alt={resolved.alt}
-      className="rounded-xl shrink-0 w-20 h-20 object-cover bg-bg-input"
-      loading="lazy"
-      decoding="async"
-    />
-  );
-}
-
-type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED';
-
-function ProgressChip({ status }: { status: ProgressStatus }) {
-  if (status === 'NOT_STARTED') return null;
-  const cfg = status === 'MASTERED'
-    ? { label: 'Maîtrisée', cls: 'bg-success/10 text-success border border-success/30' }
-    : { label: 'En cours',  cls: 'bg-brand/10 text-brand-end border border-brand/30' };
-
-  return (
-    <span className={`inline-flex items-center gap-1 text-[0.55rem] font-bold px-2 py-0.5 rounded-full ${cfg.cls}`}>
-      <ProgressStatusIcon status={status} size={12} className="shrink-0" />
-      {cfg.label}
-    </span>
-  );
-}
-
-function TrickCard({
-  trick,
-  status,
-  onOpen,
-}: {
-  trick: TrickResponse;
-  status: ProgressStatus;
-  onOpen: (t: TrickResponse) => void;
-}) {
-  return (
-    <div className="flex items-center gap-4 p-4 rounded-2xl bg-bg-card border border-border">
-      <AnimationPreview trick={trick} />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <p className="font-bold text-white text-sm leading-tight truncate">{trick.name}</p>
-          <div className="flex items-center gap-2 shrink-0">
-            <ProgressChip status={status} />
-            {trick.popular && (
-              <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full bg-[#1A1028] text-brand-end border border-brand/35">
-                <AppIcon name="tag-popular" size={12} className="inline shrink-0" label="Populaire" />{' '}
-                Populaire
-              </span>
-            )}
-          </div>
-        </div>
-        <DifficultyChip level={trick.levelName} />
-        <div className="mt-1.5 mb-2">
-          <StarRating score={trick.difficultyScore} />
-        </div>
-        {trick.siteswap && (
-          <p className="text-[0.6rem] mb-2 text-text-muted">
-            Siteswap : <code className="text-text-secondary">{trick.siteswap}</code>
-          </p>
-        )}
-        <p className="text-xs leading-relaxed line-clamp-2 text-text-secondary">{trick.description}</p>
-        {trick.prerequisiteNames.length > 0 && (
-          <p className="text-[0.6rem] mt-1.5 text-text-muted">
-            Prérequis : {trick.prerequisiteNames.join(', ')}
-          </p>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={() => onOpen(trick)}
-        aria-label={`Voir la figure ${trick.name}`}
-        className="shrink-0 flex items-center justify-center w-9 h-9 rounded-xl text-xs font-bold text-white bg-linear-to-br from-[#8B2BE2] to-[#C724B1] transition-opacity hover:opacity-80"
-      >
-        →
-      </button>
-    </div>
-  );
-}
-
-function TrickCardSkeleton() {
-  return (
-    <div className="flex items-center gap-4 p-4 rounded-2xl bg-bg-card border border-border animate-pulse">
-      <div className="rounded-xl shrink-0 w-20 h-20 bg-border" />
-      <div className="flex-1 flex flex-col gap-2">
-        <div className="h-4 rounded bg-border w-3/5" />
-        <div className="h-3 rounded bg-border w-[35%]" />
-        <div className="h-3 rounded bg-border w-[90%]" />
-        <div className="h-3 rounded bg-border w-3/4" />
-      </div>
-    </div>
-  );
-}
 
 
 export default function CataloguePage() {
@@ -208,7 +58,7 @@ export default function CataloguePage() {
   const [activeFilter, setActiveFilter]       = useState<FilterLevel>('Tous');
   const [tricks, setTricks]                   = useState<TrickResponse[]>([]);
   const [popular, setPopular]                 = useState<TrickResponse[]>([]);
-  const [progressById, setProgressById]       = useState<Record<number, ProgressStatus>>({});
+  const [progressById, setProgressById]       = useState<Record<number, TrickProgressStatus>>({});
   const [loading, setLoading]                 = useState(true);
   const [loadingMore, setLoadingMore]         = useState(false);
   const [error, setError]                     = useState<string | null>(null);
@@ -232,7 +82,7 @@ export default function CataloguePage() {
     getStudentProgress(isOnline, user.id)
       .then((progress) => mergePendingIntoProgress(user.id, progress))
       .then((progress: TrickProgress[]) => {
-        const next: Record<number, ProgressStatus> = {};
+        const next: Record<number, TrickProgressStatus> = {};
         for (const p of progress) {
           next[p.trickId] = p.status;
         }
@@ -245,7 +95,7 @@ export default function CataloguePage() {
 
   useEffect(() => {
     const handler = (evt: Event) => {
-      const { detail } = evt as CustomEvent<{ trickId: number; status: ProgressStatus }>;
+      const { detail } = evt as CustomEvent<{ trickId: number; status: TrickProgressStatus }>;
       if (!detail?.trickId || !detail.status) return;
       setProgressById((prev) => ({ ...prev, [detail.trickId]: detail.status }));
     };
@@ -419,35 +269,7 @@ export default function CataloguePage() {
                   className="shrink-0 p-3 rounded-2xl text-left transition-opacity hover:opacity-80 w-35 bg-bg-card border border-border"
                   aria-label={`Voir la figure populaire : ${trick.name}`}
                 >
-                  <div className="flex items-center justify-center rounded-xl mb-2 w-full h-20 bg-bg-input overflow-hidden" aria-hidden="true">
-                    {(() => {
-                      const r = resolveTrickAnimation(trick, {
-                        width: 240,
-                        height: 270,
-                        slowdown: 2,
-                      });
-                      if (!r) return <AppIcon name="juggler" size={32} className="text-text-muted" label="" />;
-                      if (r.kind === 'iframe') {
-                        return (
-                          <iframe
-                            src={r.src}
-                            title={trick.name}
-                            className="w-full h-20 border-0 rounded-xl bg-bg-input pointer-events-none"
-                            scrolling="no"
-                          />
-                        );
-                      }
-                      return (
-                        <img
-                          src={r.src}
-                          alt=""
-                          className="w-full h-20 object-cover rounded-xl bg-bg-input pointer-events-none"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      );
-                    })()}
-                  </div>
+                  <AnimationPreview trick={trick} variant="tile" />
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <p className="font-bold text-white text-xs truncate" title={trick.name}>{trick.name}</p>
                     <ProgressChip status={progressById[trick.id] ?? 'NOT_STARTED'} />
