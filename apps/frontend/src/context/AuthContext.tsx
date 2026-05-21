@@ -1,15 +1,4 @@
-/**
- * AuthContext.tsx
- *
- * Gestion de l'état d'authentification React.
- *
- * [VULN-28] Pas de lecture de localStorage au montage — restauration de session
- *           via refresh silencieux (cookie httpOnly → nouvel access token en mémoire).
- * [VULN-30] logout() nettoie les clés d'onboarding dans localStorage pour éviter
- *           toute fuite d'état entre utilisateurs sur un appareil partagé.
- * [FIX-COOKIE] La restauration de session utilise l'instance axios (api) avec
- *              withCredentials: true, garantissant l'envoi automatique du cookie.
- */
+/** État d'authentification : session via cookie refresh, access token en mémoire. */
 
 import {
   createContext,
@@ -206,9 +195,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return resolvedProfile;
   };
 
-  /**
-   * [VULN-30] Nettoyage complet : access token mémoire + onboarding localStorage.
-   */
   const logout = async (): Promise<void> => {
     if (user?.id) {
       resetOnboarding(user.id);

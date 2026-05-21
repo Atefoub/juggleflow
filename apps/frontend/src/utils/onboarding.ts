@@ -1,16 +1,4 @@
-/**
- * onboarding.ts — CORRECTIONS SÉCURITÉ appliquées :
- *
- * [VULN-30] Les clés localStorage liées à l'onboarding peuvent révéler
- *           l'identifiant d'un utilisateur précédent sur un appareil partagé
- *           (ordinateurs de classe, tablettes scolaires).
- *
- *           CORRECTION :
- *           1. resetOnboarding() est appelé par AuthContext.logout() avant
- *              la suppression du user.id.
- *           2. Les clés ne contiennent que l'userId numérique (pas de PII directe).
- *           3. Pas de token ni de données personnelles stockées ici.
- */
+/** Cache local d'onboarding élève (userId uniquement) ; resetOnboarding au logout. */
 
 import type { UserProfile } from '../types/auth';
 
@@ -98,10 +86,7 @@ export function setOnboardingLevel(
   }
 }
 
-/**
- * [VULN-30] Nettoyage systématique au logout.
- * Appelé par AuthContext avant de perdre l'userId.
- */
+/** Nettoie le cache local d'onboarding (appelé par AuthContext.logout). */
 export function resetOnboarding(userId?: number | string | null): void {
   try {
     localStorage.removeItem(levelKey(userId));

@@ -27,25 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Contrôleur des parcours pédagogiques.
- *
- * CORRECTIONS APPLIQUÉES :
- *
- * [FIX-ROUTE-COLLISION] Les routes /api/tricks/paths et /api/tricks/paths/{id}
- *   étaient déclarées avec des @GetMapping en dur dans un contrôleur sans
- *   @RequestMapping. Cela créait un risque de collision avec TrickController
- *   (qui a @RequestMapping("/api/tricks")) : Spring pouvait matcher "paths"
- *   comme valeur du PathVariable {id} de GET /api/tricks/{id}.
- *
- *   CORRECTION : Les routes de lecture des parcours sont déplacées sous
- *   /api/learning-paths (préfixe dédié) pour éviter toute ambiguïté.
- *   Le Swagger reste cohérent via les @Operation annotations.
- *
- * [FIX-STRUCTURE] Deux groupes de routes distincts → deux méthodes de mapping
- *   claires avec préfixes séparés, sans @RequestMapping commun artificiel
- *   (les préfixes sont trop différents pour être factorisés).
- */
+/** Parcours pédagogiques : lecture sous /api/learning-paths, assignation sous /api/classes. */
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "Parcours pédagogiques",
@@ -56,14 +38,6 @@ public class LearningPathController {
     private final LearningPathService learningPathService;
 
 
-    /**
-     * GET /api/learning-paths?level=BEGINNER
-     * Retourne tous les parcours actifs, avec filtre optionnel par niveau.
-     * Accessible à tout utilisateur authentifié.
-     *
-     * [FIX-ROUTE-COLLISION] Ancienne route : /api/tricks/paths
-     * Nouvelle route : /api/learning-paths (évite la collision avec TrickController)
-     */
     @GetMapping("/api/learning-paths")
     @Operation(summary = "Lister les parcours pédagogiques disponibles")
     public ResponseEntity<List<LearningPathResponse>> getAllPaths(
@@ -87,14 +61,6 @@ public class LearningPathController {
                 learningPathService.getMyAssignedPaths(userDetails.getUsername()));
     }
 
-    /**
-     * GET /api/learning-paths/{id}
-     * Détail complet d'un parcours avec ses étapes et figures.
-     * Accessible à tout utilisateur authentifié.
-     *
-     * [FIX-ROUTE-COLLISION] Ancienne route : /api/tricks/paths/{id}
-     * Nouvelle route : /api/learning-paths/{id}
-     */
     @GetMapping("/api/learning-paths/{id}")
     @Operation(summary = "Détail d'un parcours pédagogique")
     public ResponseEntity<LearningPathResponse> getPathById(@PathVariable Long id) {

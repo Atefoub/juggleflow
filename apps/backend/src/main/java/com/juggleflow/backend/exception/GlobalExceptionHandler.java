@@ -20,26 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * CORRECTIONS SÉCURITÉ appliquées :
- *
- * [VULN-24] FUITE D'INFORMATIONS dans les messages d'erreur :
- *           - IllegalArgumentException exposait ex.getMessage() directement,
- *             ce qui peut révéler des détails d'implémentation.
- *             CORRECTION : message filtré via allowlist dans handleIllegalArgument().
- *           - ResourceNotFoundException exposait le message de l'exception.
- *             CORRECTION : message générique + log serveur avec un errorId traçable.
- *
- * [VULN-25] MESSAGE UNIFIÉ pour BadCredentials et UsernameNotFound :
- *           "Email ou mot de passe incorrect" — pas de distinction entre
- *           "email inexistant" et "mauvais mot de passe" (anti-énumération).
- *
- * [VULN-26] FALLBACK EXCEPTION : log avec errorId unique (UUID) retourné au
- *           client pour faciliter le débogage sans exposer la stacktrace.
- *
- * [VULN-27] Ajout du handler LockedException (compte verrouillé après trop
- *           de tentatives — implémentable avec Spring Security).
- */
+/** Réponses d'erreur API : messages génériques côté client, errorId pour le fallback 500. */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -71,10 +52,6 @@ public class GlobalExceptionHandler {
   }
 
 
-  /**
-   * [VULN-25] Message identique pour BadCredentials et UsernameNotFound.
-   * Le client ne peut pas distinguer "email inexistant" de "mauvais MDP".
-   */
   @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
   public ResponseEntity<ErrorResponse> handleBadCredentials(
     Exception ex,
@@ -127,9 +104,6 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
   }
 
-  /**
-   * [VULN-27] Compte verrouillé (trop de tentatives).
-   */
   @ExceptionHandler(LockedException.class)
   public ResponseEntity<ErrorResponse> handleLocked(
     LockedException ex,
@@ -146,11 +120,6 @@ public class GlobalExceptionHandler {
   }
 
 
-  /**
-   * [VULN-24] IllegalArgumentException : on retourne le message uniquement
-   * s'il fait partie d'une allowlist de messages métier contrôlés.
-   * Dans tous les autres cas, message générique.
-   */
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<ErrorResponse> handleIllegalArgument(
     IllegalArgumentException ex,
@@ -176,7 +145,6 @@ public class GlobalExceptionHandler {
     ResourceNotFoundException ex,
     HttpServletRequest request) {
 
-    // [VULN-24] On ne retourne pas le message de l'exception (peut contenir un ID interne)
     ErrorResponse body = ErrorResponse.builder()
       .status(HttpStatus.NOT_FOUND.value())
       .error("Ressource introuvable")
@@ -220,9 +188,6 @@ public class GlobalExceptionHandler {
   }
 
 
-  /**
-   * [VULN-26] Fallback avec errorId traçable — pas de stacktrace côté client.
-   */
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponse> handleGeneric(
     Exception ex,
@@ -267,6 +232,5 @@ public class GlobalExceptionHandler {
     private String message;
     private String path;
     private Map<String, String> fieldErrors;
-    // [VULN-26] Pas de champ "trace" ou "exception" — jamais de stacktrace
   }
 }

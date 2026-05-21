@@ -16,8 +16,7 @@ import java.util.regex.Pattern;
 /**
  * Bootstrap conditionnel d'un compte ROLE_ADMINISTRATEUR au démarrage de l'application.
  *
- * [DEV-BOOTSTRAP-01] L'endpoint public POST /api/auth/register est volontairement
- * verrouillé contre les rôles admin (mitigation [VULN-20] dans AuthService) : il
+ * L'endpoint public POST /api/auth/register refuse les rôles admin (AuthService) :
  * rétrograde toute valeur autre que ROLE_ENSEIGNANT/TEACHER vers Student. C'est la
  * bonne posture sécurité (anti-élévation de privilèges via l'API publique).
  *
