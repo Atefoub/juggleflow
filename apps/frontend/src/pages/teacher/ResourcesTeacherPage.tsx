@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import AppIcon from '../../components/icons/AppIcon';
+import YoutubeVideoCard from '../../components/YoutubeVideoCard';
 import {
   resourcesApi,
   type PedagogicalResource,
   type ResourceType,
 } from '../../api/resourcesApi';
-import { isExternalHttpUrl, openExternalResource } from '../../utils/externalResource';
+import { isExternalHttpUrl, isYoutubeUrl, openExternalResource } from '../../utils/externalResource';
 
 type Tab = 'Études' | 'Vidéos' | 'Fiches' | 'Guides EPS';
 
@@ -16,12 +17,15 @@ const TAB_TO_TYPE: Record<Tab, ResourceType | null> = {
   'Guides EPS': 'TEACHER_GUIDE',
 };
 
+const VIDEO_THUMB_COLORS = ['#4068D8', '#8B2BE2', '#C724B1'];
+
 export default function ResourcesTeacherPage() {
   const [tab, setTab] = useState<Tab>('Études');
   const [search, setSearch] = useState('');
   const [resources, setResources] = useState<PedagogicalResource[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeVideoId, setActiveVideoId] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,10 +144,27 @@ export default function ResourcesTeacherPage() {
         )}
 
         {tab === 'Vidéos' && !loading && (
-          <div className="grid gap-3 lg:grid-cols-2">
-            {videos.length === 0 ? <EmptySearch /> : videos.map((v) => (
-              <VideoRow key={v.id} res={v} />
-            ))}
+          <div className="grid gap-4 lg:grid-cols-2">
+            {videos.length === 0 ? (
+              <EmptySearch />
+            ) : (
+              videos.map((v, index) => (
+                <VideoCard
+                  key={v.id}
+                  res={v}
+                  index={index}
+                  isActive={activeVideoId === v.id}
+                  onPlay={() => {
+                    if (!v.resourceUrl) return;
+                    if (isYoutubeUrl(v.resourceUrl)) {
+                      setActiveVideoId((current) => (current === v.id ? null : v.id));
+                      return;
+                    }
+                    openExternalResource(v.resourceUrl);
+                  }}
+                />
+              ))
+            )}
           </div>
         )}
 
@@ -224,13 +245,38 @@ function PdfCard({ res }: { res: PedagogicalResource }) {
   );
 }
 
-function VideoRow({ res }: { res: PedagogicalResource }) {
+function VideoCard({
+  res,
+  index,
+  isActive,
+  onPlay,
+}: {
+  res: PedagogicalResource;
+  index: number;
+  isActive: boolean;
+  onPlay: () => void;
+}) {
+  if (res.resourceUrl && isYoutubeUrl(res.resourceUrl)) {
+    return (
+      <YoutubeVideoCard
+        title={res.title}
+        subtitle={res.subtitle}
+        metaLabel={res.metaLabel}
+        tags={res.tags}
+        resourceUrl={res.resourceUrl}
+        isActive={isActive}
+        onPlay={onPlay}
+        fallbackAccent={VIDEO_THUMB_COLORS[index % VIDEO_THUMB_COLORS.length]}
+      />
+    );
+  }
+
   const level = res.tags[0] ?? '';
   return (
     <button
       type="button"
       disabled={!res.resourceUrl}
-      onClick={() => openExternalResource(res.resourceUrl)}
+      onClick={onPlay}
       className="p-4 rounded-2xl bg-bg-card border border-border flex items-center gap-3 w-full text-left hover:opacity-90 disabled:opacity-50"
     >
       <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand/20 border border-brand/40 shrink-0">
