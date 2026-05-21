@@ -1,29 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AppIcon from '../../components/icons/AppIcon';
+import DifficultyChip from '../../components/catalogue/DifficultyChip';
+import { PATH_LEVEL_LABELS } from '../../components/catalogue/trickLevelStyles';
 import {
   teacherApi,
   type SchoolClass,
   type LearningPathSummary,
   type StudentSummary,
 } from '../../api/teacherApi';
-
-const LEVEL_CHIP: Record<string, string> = {
-  Beginner:     'text-success  bg-success/10  border border-success/30',
-  Intermediate: 'text-brand-end bg-brand/12  border border-brand/35',
-  Advanced:     'text-brand    bg-brand/10    border border-brand/30',
-  Expert:       'text-alert    bg-alert/10    border border-alert/30',
-  Débutant:     'text-success  bg-success/10  border border-success/30',
-  Intermédiaire:'text-brand-end bg-brand/12  border border-brand/35',
-  Avancé:       'text-brand    bg-brand/10    border border-brand/30',
-};
-
-const PATH_LEVEL_LABELS: Record<string, string> = {
-  BEGINNER: 'Débutant',
-  INTERMEDIATE: 'Intermédiaire',
-  ADVANCED: 'Avancé',
-  EXPERT: 'Expert',
-};
 
 type Step = 1 | 2 | 3;
 
@@ -262,9 +247,7 @@ export default function AssignPathPage() {
                       {path.estimatedDurationDays ? ` · ${path.estimatedDurationDays} jours` : ''}
                     </p>
                     {path.targetLevel && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${LEVEL_CHIP[path.targetLevel] ?? LEVEL_CHIP[PATH_LEVEL_LABELS[path.targetLevel] ?? ''] ?? 'text-text-muted bg-border'}`}>
-                        {PATH_LEVEL_LABELS[path.targetLevel] ?? path.targetLevel}
-                      </span>
+                      <DifficultyChip level={path.targetLevel} />
                     )}
                     {path.description && (
                       <p className="text-xs text-text-muted mt-2 line-clamp-2">{path.description}</p>
