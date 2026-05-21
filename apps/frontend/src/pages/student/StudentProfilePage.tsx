@@ -8,6 +8,7 @@ import {
   type IconName,
 } from '../../components/icons/iconRegistry';
 import BottomNav from '../../components/BottomNav';
+import ToggleSwitch from '../../components/ToggleSwitch';
 import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
 import PathTrickList from '../../components/student/PathTrickList';
@@ -395,45 +396,38 @@ export default function StudentProfilePage() {
                   <p className="text-xs text-text-muted">Rappels d'entraînement</p>
                 </div>
               </div>
-              <button
-                type="button"
+              <ToggleSwitch
+                checked={notificationsOn}
                 disabled={notificationsBusy}
-                onClick={async () => {
-                  if (!user?.id || notificationsBusy) return;
-                  const next = !notificationsOn;
-                  setNotificationsBusy(true);
-                  setNotificationsHint(null);
-                  setNotificationsOn(next);
-                  setPracticeRemindersEnabled(next, user.id);
-                  try {
-                    if (isOnline) {
-                      const prefs = await studentPreferencesApi.update(next);
-                      setNotificationsOn(prefs.practiceRemindersEnabled);
-                      setPracticeRemindersEnabled(prefs.practiceRemindersEnabled, user.id);
+                aria-label={
+                  notificationsOn ? 'Désactiver les notifications' : 'Activer les notifications'
+                }
+                onChange={() => {
+                  void (async () => {
+                    if (!user?.id || notificationsBusy) return;
+                    const next = !notificationsOn;
+                    setNotificationsBusy(true);
+                    setNotificationsHint(null);
+                    setNotificationsOn(next);
+                    setPracticeRemindersEnabled(next, user.id);
+                    try {
+                      if (isOnline) {
+                        const prefs = await studentPreferencesApi.update(next);
+                        setNotificationsOn(prefs.practiceRemindersEnabled);
+                        setPracticeRemindersEnabled(prefs.practiceRemindersEnabled, user.id);
+                      }
+                    } catch {
+                      setNotificationsOn(!next);
+                      setPracticeRemindersEnabled(!next, user.id);
+                      setNotificationsHint(
+                        'Impossible de sauvegarder ce réglage. Réessaie en ligne.',
+                      );
+                    } finally {
+                      setNotificationsBusy(false);
                     }
-                  } catch {
-                    setNotificationsOn(!next);
-                    setPracticeRemindersEnabled(!next, user.id);
-                    setNotificationsHint(
-                      'Impossible de sauvegarder ce réglage. Réessaie en ligne.',
-                    );
-                  } finally {
-                    setNotificationsBusy(false);
-                  }
+                  })();
                 }}
-                aria-label={notificationsOn ? 'Désactiver les notifications' : 'Activer les notifications'}
-                className={[
-                  'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 disabled:opacity-60',
-                  notificationsOn ? 'bg-linear-to-br from-brand to-brand-end' : 'bg-border',
-                ].join(' ')}
-              >
-                <span
-                  className={[
-                    'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
-                    notificationsOn ? 'translate-x-5' : 'translate-x-0.5',
-                  ].join(' ')}
-                />
-              </button>
+              />
             </div>
             {notificationsHint && (
               <p className="px-4 pb-3 text-xs text-alert bg-bg-card">{notificationsHint}</p>
@@ -448,21 +442,11 @@ export default function StudentProfilePage() {
                   <p className="text-xs text-text-muted">Thème sombre actif</p>
                 </div>
               </div>
-              <button
-                onClick={() => setDarkMode((v) => !v)}
+              <ToggleSwitch
+                checked={darkMode}
                 aria-label={darkMode ? 'Désactiver le mode foncé' : 'Activer le mode foncé'}
-                className={[
-                  'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0',
-                  darkMode ? 'bg-linear-to-br from-brand to-brand-end' : 'bg-border',
-                ].join(' ')}
-              >
-                <span
-                  className={[
-                    'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
-                    darkMode ? 'translate-x-5' : 'translate-x-0.5',
-                  ].join(' ')}
-                />
-              </button>
+                onChange={() => setDarkMode((v) => !v)}
+              />
             </div>
 
             <div className="flex items-center justify-between p-4 bg-bg-card">
@@ -475,28 +459,22 @@ export default function StudentProfilePage() {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={async () => {
-                  const next = !offlineMode;
-                  setOfflineModeState(next);
-                  setOfflineMode(next, user?.id);
-                  if (next) await enableOfflineMode();
-                  else setOfflineHint(null);
-                }}
+              <ToggleSwitch
+                checked={offlineMode}
                 disabled={offlinePrefetching}
-                aria-label={offlineMode ? 'Désactiver le mode hors-ligne' : 'Activer le mode hors-ligne'}
-                className={[
-                  'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 disabled:opacity-60',
-                  offlineMode ? 'bg-linear-to-br from-brand to-brand-end' : 'bg-border',
-                ].join(' ')}
-              >
-                <span
-                  className={[
-                    'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
-                    offlineMode ? 'translate-x-5' : 'translate-x-0.5',
-                  ].join(' ')}
-                />
-              </button>
+                aria-label={
+                  offlineMode ? 'Désactiver le mode hors-ligne' : 'Activer le mode hors-ligne'
+                }
+                onChange={() => {
+                  void (async () => {
+                    const next = !offlineMode;
+                    setOfflineModeState(next);
+                    setOfflineMode(next, user?.id);
+                    if (next) await enableOfflineMode();
+                    else setOfflineHint(null);
+                  })();
+                }}
+              />
             </div>
           </div>
 
