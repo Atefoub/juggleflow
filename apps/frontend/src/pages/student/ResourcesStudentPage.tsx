@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import AppIcon from '../../components/icons/AppIcon';
+import {
+  RESOURCE_EXERCISE_ICONS,
+  RESOURCE_VIDEO_ICONS,
+} from '../../components/icons/iconRegistry';
 import BottomNav from '../../components/BottomNav';
 import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import OfflineBanner from '../../components/OfflineBanner';
@@ -52,8 +57,6 @@ function brainChapterNumber(resource: PedagogicalResource): number | null {
 type Tab = 'Vidéos' | 'Exercices' | 'Mon cerveau';
 
 const THUMB_COLORS = ['#8B2BE2', '#4068D8', '#C724B1'];
-const VIDEO_EMOJIS = ['🎪', '🤹', '🎯'];
-const EXERCISE_ICONS = ['🖐️', '🎯', '🔄'];
 
 export default function ResourcesStudentPage() {
   const { user } = useAuth();
@@ -212,7 +215,7 @@ export default function ResourcesStudentPage() {
                 const level = video.tags[0] ?? 'Débutant';
                 const extraTags = video.tags.slice(1);
                 const thumbColor = THUMB_COLORS[index % THUMB_COLORS.length];
-                const trickEmoji = VIDEO_EMOJIS[index % VIDEO_EMOJIS.length];
+                const videoIcon = RESOURCE_VIDEO_ICONS[index % RESOURCE_VIDEO_ICONS.length];
                 const embedSrc =
                   activeVideoId === video.id && video.resourceUrl
                     ? youtubeEmbedUrl(video.resourceUrl)
@@ -234,7 +237,7 @@ export default function ResourcesStudentPage() {
                     className="relative h-40 flex items-center justify-center"
                     style={{ background: `linear-gradient(135deg, ${thumbColor}40, #111638)` }}
                   >
-                    <span role="img" aria-label={video.title} className="text-6xl">{trickEmoji}</span>
+                    <AppIcon name={videoIcon} size={56} label={video.title} />
                     <button
                       type="button"
                       aria-label={`Lire ${video.title}`}
@@ -243,7 +246,7 @@ export default function ResourcesStudentPage() {
                       className="absolute inset-0 flex items-center justify-center disabled:opacity-50"
                     >
                       <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
-                        <span className="text-white text-2xl ml-1">▶</span>
+                        <AppIcon name="play" size={28} className="text-white ml-1" label="Lire" />
                       </div>
                     </button>
                   </div>
@@ -279,9 +282,11 @@ export default function ResourcesStudentPage() {
               {exercises.map((ex, index) => (
                 <div key={ex.id} className="flex items-center gap-3 p-4 rounded-2xl bg-bg-card border border-border">
                   <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-brand/10 border border-brand/30 shrink-0">
-                    <span role="img" aria-label={ex.title} className="text-xl">
-                      {EXERCISE_ICONS[index % EXERCISE_ICONS.length]}
-                    </span>
+                    <AppIcon
+                      name={RESOURCE_EXERCISE_ICONS[index % RESOURCE_EXERCISE_ICONS.length]}
+                      size={22}
+                      label={ex.title}
+                    />
                   </div>
                   <div className="flex-1">
                     <p className="font-bold text-text-primary text-sm">{ex.title}</p>
@@ -316,7 +321,7 @@ export default function ResourcesStudentPage() {
             <div className="rounded-2xl overflow-hidden bg-bg-card border border-border">
               {/* Illustration */}
               <div className="h-32 flex items-center justify-center bg-linear-to-br from-[#1A0A2E] to-bg-primary border-b border-border">
-                <span role="img" aria-label="cerveau" className="text-5xl">🧠</span>
+                <AppIcon name="brain" size={56} className="text-brand-end" label="Module cerveau" />
               </div>
               <div className="p-4">
                 <p className="font-bold text-text-primary text-sm mb-1">
@@ -347,7 +352,10 @@ export default function ResourcesStudentPage() {
                   onClick={() => void completeBrainChapter(1)}
                   className="w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-linear-to-br from-brand to-brand-end min-h-11 hover:opacity-90 transition-opacity disabled:opacity-60"
                 >
-                  {moduleStarted ? '▶ Continuer le module' : 'Commencer le module →'}
+                  <span className="inline-flex items-center justify-center gap-2">
+                    {moduleStarted && <AppIcon name="play" size={16} label="Continuer" />}
+                    {moduleStarted ? 'Continuer le module' : 'Commencer le module'}
+                  </span>
                 </button>
               </div>
             </div>

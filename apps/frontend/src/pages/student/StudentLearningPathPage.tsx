@@ -13,13 +13,6 @@ import { mergePendingIntoProgress } from '../../utils/offlineQueue';
 import { PROGRESS_UPDATED_EVENT } from '../../lib/progressEvents';
 import { computePathCompletionPercent } from '../../utils/pathProgress';
 
-const navItems = [
-  { label: 'Accueil', icon: '🏠', path: '/student/dashboard' },
-  { label: 'Catalogue', icon: '🎯', path: '/student/catalogue' },
-  { label: 'Progression', icon: '📊', path: '/student/progression' },
-  { label: 'Profil', icon: '👤', path: '/student/profil' },
-];
-
 type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'MASTERED';
 
 export default function StudentLearningPathPage() {

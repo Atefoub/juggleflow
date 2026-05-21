@@ -3,21 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { adminApi, type AdminEstablishmentStats, type AdminSchoolClass } from '../../api/adminApi';
 import { adminGdprApi, type ConsentStatusRow } from '../../api/adminGdprApi';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AppIcon from '../../components/icons/AppIcon';
+import type { IconName } from '../../components/icons/iconRegistry';
 
 
 interface KpiCardProps {
   label: string;
   value: string | number;
   sublabel?: string;
-  icon: string;
+  icon: IconName;
   iconLabel: string;
 }
 
 function KpiCard({ label, value, sublabel, icon, iconLabel }: KpiCardProps) {
   return (
     <div className="jf-admin-card p-5 flex items-start gap-4">
-      <div className="w-10 h-10 bg-[var(--color-admin-bg)] border border-[var(--color-admin-border)] rounded-lg flex items-center justify-center text-lg shrink-0">
-        <span role="img" aria-label={iconLabel}>{icon}</span>
+      <div className="w-10 h-10 bg-[var(--color-admin-bg)] border border-[var(--color-admin-border)] rounded-lg flex items-center justify-center shrink-0 text-[var(--color-admin-text-secondary)]">
+        <AppIcon name={icon} size={22} label={iconLabel} />
       </div>
       <div>
         <div className="text-2xl font-bold text-[var(--color-admin-text)] leading-none mb-1">{value}</div>
@@ -200,28 +202,28 @@ export default function AdminDashboardPage() {
         <h2 className="jf-admin-section-title mb-3">Vue d'ensemble</h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <KpiCard
-            icon="🏫"
+            icon="school"
             iconLabel="Établissement"
             label="Classes"
             value={isLoading ? '—' : (stats != null ? stats.classCount : classes.length)}
             sublabel="dans l'établissement"
           />
           <KpiCard
-            icon="👦"
+            icon="student-user"
             iconLabel="Élèves"
             label="Élèves inscrits"
             value={isLoading ? '—' : (stats != null ? stats.studentCount : totalEleves)}
             sublabel="toutes classes"
           />
           <KpiCard
-            icon="👩‍🏫"
+            icon="teacher-user"
             iconLabel="Enseignants"
             label="Enseignants"
             value={isLoading ? '—' : (stats != null ? stats.teacherAccountCount : teacherCount)}
             sublabel={stats != null ? 'comptes enseignant' : 'titulaires uniques'}
           />
           <KpiCard
-            icon="🔒"
+            icon="lock"
             iconLabel="RGPD"
             label="Consentements manquants"
             value={isLoading ? '—' : alertesRgpd}

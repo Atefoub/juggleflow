@@ -9,29 +9,27 @@ import {
   type OnboardingLevel,
 } from '../../utils/onboarding';
 import { useAuth } from '../../context/AuthContext';
+import AppIcon from '../../components/icons/AppIcon';
+import { ONBOARDING_LEVEL_ICON } from '../../components/icons/iconRegistry';
 
 const levels: {
   value: OnboardingLevel;
   label: string;
-  icon: string;
   description: string;
 }[] = [
   {
     value: 'BEGINNER',
     label: 'Débutant',
-    icon: '🌱',
     description: "Je n'ai jamais jonglé ou je commence tout juste",
   },
   {
     value: 'INTERMEDIATE',
     label: 'Intermédiaire',
-    icon: '⚡',
     description: 'Je maîtrise les 3 balles et quelques figures de base',
   },
   {
     value: 'ADVANCED',
     label: 'Avancé',
-    icon: '🔥',
     description: 'Je pratique régulièrement des figures complexes',
   },
 ];
@@ -53,7 +51,7 @@ export default function OnboardingPage() {
       {/* Header */}
       <div className="text-center mb-10">
         <div className="text-4xl mb-4">
-          <span role="img" aria-label="jongleur">🤹</span>
+          <AppIcon name="juggler" size={40} label="Jongleur" />
         </div>
         <h1 className="font-display text-2xl font-bold text-white mb-2">
           Bienvenue sur JuggleFlow !
@@ -92,7 +90,11 @@ export default function OnboardingPage() {
                   isSelected ? 'jf-nav-pill-active' : 'bg-border',
                 ].join(' ')}
               >
-                <span role="img" aria-label={level.label}>{level.icon}</span>
+                <AppIcon
+                  name={ONBOARDING_LEVEL_ICON[level.value]}
+                  size={24}
+                  label={level.label}
+                />
               </div>
               <div className="flex-1">
                 <div className={`font-bold text-sm mb-1 ${isSelected ? 'text-white' : 'text-text-secondary'}`}>

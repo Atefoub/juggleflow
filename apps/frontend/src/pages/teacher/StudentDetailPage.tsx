@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import AppIcon from '../../components/icons/AppIcon';
+import type { IconName } from '../../components/icons/iconRegistry';
 import ProgressBar from '../../components/ProgressBar';
 import {
   teacherApi,
@@ -312,16 +314,26 @@ export default function StudentDetailPage() {
                 Statistiques
               </h2>
               <div className="grid grid-cols-3 gap-3">
-                {[
-                  { value: `${progressPct}%`, label: 'Progression',      icon: '📈', iconLabel: 'progression'   },
-                  { value: student.groupColor === 'VERT' ? 'Avance' : student.groupColor === 'ORANGE' ? 'Normal' : '⚠️ Attention', label: 'Groupe', icon: '🎯', iconLabel: 'groupe' },
-                  { value: student.lastActivityAt ? new Date(student.lastActivityAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : '—', label: 'Dernière activité', icon: '📅', iconLabel: 'dernière activité' },
-                ].map((stat) => (
+                {([
+                  { value: `${progressPct}%`, label: 'Progression', iconName: 'chart-bar' as IconName, iconLabel: 'progression' },
+                  {
+                    value: student.groupColor === 'VERT' ? 'Avance' : student.groupColor === 'ORANGE' ? 'Normal' : 'Attention',
+                    label: 'Groupe',
+                    iconName: (student.groupColor === 'ROUGE' ? 'alert-warning' : 'tip-target') as IconName,
+                    iconLabel: 'groupe',
+                  },
+                  {
+                    value: student.lastActivityAt ? new Date(student.lastActivityAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : '—',
+                    label: 'Dernière activité',
+                    iconName: 'timer' as IconName,
+                    iconLabel: 'dernière activité',
+                  },
+                ]).map((stat) => (
                   <div
                     key={stat.label}
                     className="p-3 rounded-xl flex flex-col gap-1 bg-bg-card border border-border"
                   >
-                    <span role="img" aria-label={stat.iconLabel} className="text-lg">{stat.icon}</span>
+                    <AppIcon name={stat.iconName} size={18} label={stat.iconLabel} />
                     <span className="font-display text-base font-bold text-text-primary leading-tight">
                       {stat.value}
                     </span>
