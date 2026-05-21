@@ -14,7 +14,12 @@ export function extractYoutubeVideoId(url: string): string | null {
   try {
     const u = new URL(url);
     if (u.hostname.includes('youtube.com') || u.hostname.includes('youtube-nocookie.com')) {
-      return u.searchParams.get('v');
+      const fromQuery = u.searchParams.get('v');
+      if (fromQuery) return fromQuery;
+      const shorts = u.pathname.match(/^\/shorts\/([^/]+)/);
+      if (shorts?.[1]) return shorts[1];
+      const embed = u.pathname.match(/^\/embed\/([^/]+)/);
+      if (embed?.[1]) return embed[1];
     }
     if (u.hostname.includes('youtu.be')) {
       const id = u.pathname.replace(/^\//, '').split('/')[0];
@@ -24,6 +29,17 @@ export function extractYoutubeVideoId(url: string): string | null {
     return null;
   }
   return null;
+}
+
+/** Miniature officielle YouTube (image de démarrage). */
+export function youtubeThumbnailUrl(
+  url: string,
+  quality: 'hq' | 'mq' = 'hq',
+): string | null {
+  const id = extractYoutubeVideoId(url);
+  if (!id) return null;
+  const file = quality === 'hq' ? 'hqdefault.jpg' : 'mqdefault.jpg';
+  return `https://i.ytimg.com/vi/${id}/${file}`;
 }
 
 export function youtubeEmbedUrl(url: string): string | null {

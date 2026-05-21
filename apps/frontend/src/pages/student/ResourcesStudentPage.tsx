@@ -16,11 +16,8 @@ import {
   setBrainChaptersCompleted,
   setBrainModuleStarted,
 } from '../../utils/resourcesLocalState';
-import {
-  isYoutubeUrl,
-  openExternalResource,
-  youtubeEmbedUrl,
-} from '../../utils/externalResource';
+import YoutubeVideoCard from '../../components/YoutubeVideoCard';
+import { isYoutubeUrl, openExternalResource } from '../../utils/externalResource';
 
 import {
   BRAIN_CHAPTERS,
@@ -195,63 +192,21 @@ export default function ResourcesStudentPage() {
             </h2>
             {loading && <p className="text-sm text-text-muted">Chargement…</p>}
             <div className="flex flex-col gap-4">
-              {videos.map((video, index) => {
-                const level = video.tags[0] ?? 'Débutant';
-                const extraTags = video.tags.slice(1);
-                const thumbColor = THUMB_COLORS[index % THUMB_COLORS.length];
-                const videoIcon = RESOURCE_VIDEO_ICONS[index % RESOURCE_VIDEO_ICONS.length];
-                const embedSrc =
-                  activeVideoId === video.id && video.resourceUrl
-                    ? youtubeEmbedUrl(video.resourceUrl)
-                    : null;
-                return (
-                <div key={video.id} className="rounded-2xl overflow-hidden bg-bg-card border border-border">
-                  {embedSrc ? (
-                    <div className="relative aspect-video bg-black">
-                      <iframe
-                        title={video.title}
-                        src={embedSrc}
-                        className="absolute inset-0 h-full w-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
-                  ) : (
-                  <div
-                    className="relative h-40 flex items-center justify-center"
-                    style={{ background: `linear-gradient(135deg, ${thumbColor}40, #111638)` }}
-                  >
-                    <AppIcon name={videoIcon} size={56} label={video.title} />
-                    <button
-                      type="button"
-                      aria-label={`Lire ${video.title}`}
-                      disabled={!video.resourceUrl}
-                      onClick={() => handlePlayVideo(video)}
-                      className="absolute inset-0 flex items-center justify-center disabled:opacity-50"
-                    >
-                      <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
-                        <AppIcon name="play" size={28} className="text-white ml-1" label="Lire" />
-                      </div>
-                    </button>
-                  </div>
-                  )}
-
-                  <div className="p-3">
-                    <p className="font-bold text-text-primary text-sm mb-1">{video.title}</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-text-muted">{video.metaLabel}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full text-success bg-success/10 border border-success/30">
-                        {level}
-                      </span>
-                      {extraTags.map((tag) => (
-                        <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-border text-text-muted">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              );})}
+              {videos.map((video, index) => (
+                <YoutubeVideoCard
+                  key={video.id}
+                  title={video.title}
+                  subtitle={video.subtitle}
+                  metaLabel={video.metaLabel}
+                  tags={video.tags}
+                  resourceUrl={video.resourceUrl}
+                  isActive={activeVideoId === video.id}
+                  disabled={!isOnline}
+                  onPlay={() => handlePlayVideo(video)}
+                  fallbackIcon={RESOURCE_VIDEO_ICONS[index % RESOURCE_VIDEO_ICONS.length]}
+                  fallbackAccent={THUMB_COLORS[index % THUMB_COLORS.length]}
+                />
+              ))}
             </div>
           </>
         )}

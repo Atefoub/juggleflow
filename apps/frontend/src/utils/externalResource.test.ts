@@ -4,6 +4,7 @@ import {
   isExternalHttpUrl,
   isYoutubeUrl,
   youtubeEmbedUrl,
+  youtubeThumbnailUrl,
 } from './externalResource';
 
 describe('externalResource', () => {
@@ -16,6 +17,15 @@ describe('externalResource', () => {
   it('construit une URL d’embed sans cookie', () => {
     expect(youtubeEmbedUrl('https://www.youtube.com/watch?v=dCYDZDlcO6g')).toBe(
       'https://www.youtube-nocookie.com/embed/dCYDZDlcO6g?rel=0',
+    );
+  });
+
+  it('construit l’URL de miniature YouTube', () => {
+    expect(youtubeThumbnailUrl('https://www.youtube.com/watch?v=cDTF4qOvbrs')).toBe(
+      'https://i.ytimg.com/vi/cDTF4qOvbrs/hqdefault.jpg',
+    );
+    expect(youtubeThumbnailUrl('https://youtu.be/abc123', 'mq')).toBe(
+      'https://i.ytimg.com/vi/abc123/mqdefault.jpg',
     );
   });
 
