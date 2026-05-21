@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import BottomNav from '../../components/BottomNav';
 import AppIcon from '../../components/icons/AppIcon';
-import type { IconName } from '../../components/icons/iconRegistry';
+import {
+  BADGE_ICON_BY_ID,
+  RANK_INLINE_ICON,
+  type IconName,
+} from '../../components/icons/iconRegistry';
 import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
 import OfflineBanner from '../../components/OfflineBanner';
@@ -65,8 +69,8 @@ function computeStreakFromProgress(progress: TrickProgress[]): number {
   return streak;
 }
 
-function BadgeItem({ icon, label, unlocked, iconLabel }: {
-  icon: IconName; label: string; unlocked: boolean; iconLabel?: string;
+function BadgeItem({ icon, label, unlocked, iconUrl, iconLabel }: {
+  icon: IconName; label: string; unlocked: boolean; iconUrl?: string | null; iconLabel?: string;
 }) {
   return (
     <div className="flex flex-col items-center gap-2">
@@ -74,11 +78,15 @@ function BadgeItem({ icon, label, unlocked, iconLabel }: {
         'flex items-center justify-center w-16 h-16 rounded-2xl transition-opacity',
         unlocked ? 'bg-linear-to-br from-brand to-brand-end text-white' : 'bg-border opacity-40 text-text-muted',
       ].join(' ')}>
-        <AppIcon
-          name={unlocked ? icon : 'status-locked'}
-          size={32}
-          label={iconLabel ?? (unlocked ? label : 'verrouillé')}
-        />
+        {iconUrl ? (
+          <img src={iconUrl} alt={label} className="w-8 h-8 object-contain" />
+        ) : (
+          <AppIcon
+            name={unlocked ? icon : 'status-locked'}
+            size={32}
+            label={iconLabel ?? (unlocked ? label : 'verrouillé')}
+          />
+        )}
       </div>
       <span className={`text-[0.65rem] text-center leading-tight max-w-15 ${unlocked ? 'text-text-primary' : 'text-text-muted'}`}>
         {label}
@@ -149,7 +157,7 @@ export default function BadgesPage() {
             <div className="flex flex-col items-end gap-1">
               <span className="text-xs text-text-muted">Rang actuel</span>
               <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-border">
-                <span role="img" aria-label="médaille" className="text-sm">🥉</span>
+                <AppIcon name={RANK_INLINE_ICON.bronze} size={16} label="Rang Bronze" />
                 <span className="text-xs font-bold text-text-primary">{RANK_LABEL}</span>
               </span>
             </div>
@@ -199,7 +207,8 @@ export default function BadgesPage() {
                   {levelBadges.map((badge) => (
                     <BadgeItem
                       key={badge.id}
-                      icon={badge.iconUrl ? '' : '🏅'}
+                      icon={BADGE_ICON_BY_ID[badge.id] ?? 'badge-mastery-10'}
+                      iconUrl={badge.iconUrl}
                       label={badge.name}
                       unlocked={unlockedIds.has(badge.id)}
                     />

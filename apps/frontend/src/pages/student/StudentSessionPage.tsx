@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import AppIcon from '../../components/icons/AppIcon';
 import BottomNav from '../../components/BottomNav';
 import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
@@ -202,7 +203,10 @@ export default function StudentSessionPage() {
                   onClick={() => setIsRunning((v) => !v)}
                   className="jf-btn-secondary flex-1 min-h-11 rounded-2xl py-3 text-sm"
                 >
-                  {isRunning ? '⏸️ Pause' : '▶️ Reprendre'}
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <AppIcon name={isRunning ? 'pause' : 'play'} size={18} label={isRunning ? 'Pause' : 'Reprendre'} />
+                    {isRunning ? 'Pause' : 'Reprendre'}
+                  </span>
                 </button>
                 <button
                   type="button"
@@ -226,7 +230,16 @@ export default function StudentSessionPage() {
                     : 'bg-linear-to-br from-brand to-brand-end text-white hover:opacity-90',
                 ].join(' ')}
               >
-                {saving ? 'Sauvegarde…' : status === 'MASTERED' ? '✅ Figure maîtrisée !' : 'Marquer comme maîtrisée'}
+                {saving ? (
+                  'Sauvegarde…'
+                ) : status === 'MASTERED' ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <AppIcon name="status-mastered" size={18} label="Maîtrisée" />
+                    Figure maîtrisée !
+                  </span>
+                ) : (
+                  'Marquer comme maîtrisée'
+                )}
               </button>
               <button
                 type="button"

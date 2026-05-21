@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import AppIcon from '../../components/icons/AppIcon';
 import {
   teacherApi,
   type SchoolClass,
@@ -187,7 +188,10 @@ export default function AssignPathPage() {
 
         {success && (
           <div className="p-4 rounded-2xl text-sm text-center text-success bg-success/10 border border-success/30">
-            ✅ Parcours assigné avec succès ! Redirection…
+            <span className="inline-flex items-center justify-center gap-2">
+              <AppIcon name="status-mastered" size={18} label="Succès" />
+              Parcours assigné avec succès ! Redirection…
+            </span>
           </div>
         )}
 

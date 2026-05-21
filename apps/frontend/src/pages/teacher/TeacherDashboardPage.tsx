@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ProgressBar from '../../components/ProgressBar';
+import AppIcon from '../../components/icons/AppIcon';
 import {
   teacherApi,
   GROUP_COLOR_MAP,
@@ -247,7 +248,7 @@ export default function TeacherDashboardPage() {
             {/* Alerte blocage sur figure (parcours) */}
             {exerciseBlockedStudents.length > 0 && selectedClass && (
               <div className="flex items-start gap-3 rounded-2xl border border-[#2A1A10] border-l-[3px] border-l-brand-end bg-[#1A1020] p-4 lg:col-span-2">
-                <span role="img" aria-label="attention" className="text-lg shrink-0">⚠️</span>
+                <AppIcon name="alert-warning" size={20} className="shrink-0" label="Attention" />
                 <div className="flex-1">
                   <p className="text-sm font-bold text-white mb-1">
                     {exerciseBlockedStudents.length} élève{exerciseBlockedStudents.length > 1 ? 's' : ''}{' '}
@@ -277,7 +278,7 @@ export default function TeacherDashboardPage() {
             {/* Alerte élèves en difficulté (groupe rouge) */}
             {blockedStudents.length > 0 && (
               <div className="flex items-start gap-3 rounded-2xl border border-[#2A1A10] border-l-[3px] border-l-brand-end bg-[#1A1020] p-4 lg:col-span-2">
-                <span role="img" aria-label="attention" className="text-lg shrink-0">⚠️</span>
+                <AppIcon name="alert-warning" size={20} className="shrink-0" label="Attention" />
                 <div className="flex-1">
                   <p className="text-sm font-bold text-white mb-1">
                     {blockedStudents.length} élève{blockedStudents.length > 1 ? 's' : ''} en difficulté
@@ -417,7 +418,10 @@ export default function TeacherDashboardPage() {
                   }}
                   className="jf-btn-secondary jf-btn-secondary-sm min-h-11 rounded-xl px-4 py-2 text-xs"
                 >
-                  ↓ Générer rapport
+                  <span className="inline-flex items-center gap-1.5">
+                    <AppIcon name="download" size={14} label="Générer rapport" />
+                    Générer rapport
+                  </span>
                 </button>
 
                 <button
