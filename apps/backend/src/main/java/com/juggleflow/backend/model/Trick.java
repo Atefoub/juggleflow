@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import java.sql.Types;
 import java.time.Instant;
 import java.util.List;
 
@@ -42,7 +42,7 @@ public class Trick {
     @Column(name = "juggling_lab_pattern", columnDefinition = "TEXT")
     private String jugglingLabPattern;
 
-    @JdbcTypeCode(Types.JSON)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "learning_tips", columnDefinition = "jsonb")
     private List<String> learningTips;
 
