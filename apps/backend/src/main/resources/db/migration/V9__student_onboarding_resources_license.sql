@@ -1,5 +1,5 @@
 -- =============================================================
--- V7 — Onboarding élève, ressources pédagogiques, licence établissement
+-- V9 — Onboarding élève, ressources pédagogiques, licence établissement
 -- =============================================================
 
 ALTER TABLE student
