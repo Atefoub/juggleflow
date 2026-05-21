@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import AppIcon from '../../components/icons/AppIcon';
+import {
+  ONBOARDING_LEVEL_ICON,
+  RANK_INLINE_ICON,
+  type IconName,
+} from '../../components/icons/iconRegistry';
 import BottomNav from '../../components/BottomNav';
 import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
@@ -206,7 +212,7 @@ export default function StudentProfilePage() {
 
         {/* XP badge */}
         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-bg-card border border-border">
-          <span role="img" aria-label="XP" className="text-sm">⭐</span>
+          <AppIcon name="xp-star" size={16} label="Points d'expérience" />
           <span className="text-sm font-bold text-text-primary">{xpDisplay} XP</span>
           <span className="text-xs text-text-muted">· Bronze</span>
         </div>
@@ -235,16 +241,16 @@ export default function StudentProfilePage() {
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-3">
-              {[
-                { value: stats?.totalTricksLearned ?? 0, label: 'Figures\napprises', icon: '✅', iconLabel: 'figures apprises' },
-                { value: totalTimeLabel,                  label: 'Temps\nestimé',     icon: '⏱️', iconLabel: 'temps estimé'     },
-                { value: stats?.badgesEarned ?? 0,        label: 'Badges\nobtenus',   icon: '🏅', iconLabel: 'badges obtenus'   },
-              ].map((stat) => (
+              {([
+                { value: stats?.totalTricksLearned ?? 0, label: 'Figures\napprises', iconName: 'status-mastered' as IconName, iconLabel: 'figures apprises' },
+                { value: totalTimeLabel, label: 'Temps\nestimé', iconName: 'timer' as IconName, iconLabel: 'temps estimé' },
+                { value: stats?.badgesEarned ?? 0, label: 'Badges\nobtenus', iconName: 'badge-mastery-10' as IconName, iconLabel: 'badges obtenus' },
+              ]).map((stat) => (
                 <div
                   key={stat.label}
                   className="p-3 rounded-xl flex flex-col gap-1 bg-bg-card border border-border"
                 >
-                  <span role="img" aria-label={stat.iconLabel} className="text-lg">{stat.icon}</span>
+                  <AppIcon name={stat.iconName} size={18} label={stat.iconLabel} />
                   <span className="font-display text-xl font-bold text-text-primary leading-tight">
                     {stat.value}
                   </span>
@@ -266,7 +272,10 @@ export default function StudentProfilePage() {
             <div className="flex items-center justify-between mb-2">
               <div>
                 <p className="text-xs text-text-muted mb-0.5">Rang actuel</p>
-                <p className="font-display font-bold text-text-primary text-base">🥉 Bronze</p>
+                <p className="font-display font-bold text-text-primary text-base flex items-center gap-1.5">
+                  <AppIcon name={RANK_INLINE_ICON.bronze} size={18} label="Rang Bronze" />
+                  Bronze
+                </p>
               </div>
               <div className="text-right">
                 <p className="text-xs text-text-muted mb-0.5">Points XP</p>
@@ -334,7 +343,11 @@ export default function StudentProfilePage() {
 
             <div className="p-4 bg-bg-card">
               <div className="flex items-center gap-3 mb-3">
-                <span role="img" aria-label="niveau" className="text-lg">⭐</span>
+                <AppIcon
+                  name={ONBOARDING_LEVEL_ICON[onboardingLevel]}
+                  size={20}
+                  label="Niveau"
+                />
                 <div>
                   <p className="text-sm font-semibold text-text-primary">Niveau</p>
                   <p className="text-xs text-text-muted">Ajuste ton parcours et les recommandations</p>
@@ -376,7 +389,7 @@ export default function StudentProfilePage() {
             {/* Notifications */}
             <div className="flex items-center justify-between p-4 bg-bg-card">
               <div className="flex items-center gap-3">
-                <span role="img" aria-label="notifications" className="text-lg">🔔</span>
+                <AppIcon name="bell" size={20} label="Notifications" />
                 <div>
                   <p className="text-sm font-semibold text-text-primary">Notifications</p>
                   <p className="text-xs text-text-muted">Rappels d'entraînement</p>
@@ -429,7 +442,7 @@ export default function StudentProfilePage() {
             {/* Dark mode */}
             <div className="flex items-center justify-between p-4 bg-bg-card">
               <div className="flex items-center gap-3">
-                <span role="img" aria-label="mode foncé" className="text-lg">🌙</span>
+                <AppIcon name="moon" size={20} label="Mode foncé" />
                 <div>
                   <p className="text-sm font-semibold text-text-primary">Mode foncé</p>
                   <p className="text-xs text-text-muted">Thème sombre actif</p>
@@ -454,7 +467,7 @@ export default function StudentProfilePage() {
 
             <div className="flex items-center justify-between p-4 bg-bg-card">
               <div className="flex items-center gap-3">
-                <span role="img" aria-label="mode hors-ligne" className="text-lg">📴</span>
+                <AppIcon name="offline" size={20} label="Mode hors-ligne" />
                 <div>
                   <p className="text-sm font-semibold text-text-primary">Mode hors-ligne</p>
                   <p className="text-xs text-text-muted">

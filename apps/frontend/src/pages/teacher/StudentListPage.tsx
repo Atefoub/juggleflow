@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import AppIcon from '../../components/icons/AppIcon';
 import ProgressBar from '../../components/ProgressBar';
 import {
   teacherApi,
@@ -288,7 +289,7 @@ export default function StudentListPage() {
 
         {/* Search */}
         <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-bg-card border border-border">
-          <span role="img" aria-label="recherche" className="text-sm">🔍</span>
+          <AppIcon name="search" size={16} label="Recherche" />
           <input
             type="search"
             value={search}
@@ -326,7 +327,7 @@ export default function StudentListPage() {
         {/* Empty state */}
         {!loading && !error && filteredStudents.length === 0 && (
           <div className="flex flex-col items-center gap-3 py-12 text-center">
-            <span role="img" aria-label="aucun résultat" className="text-4xl">🔍</span>
+            <AppIcon name="search" size={40} className="text-text-muted" label="Aucun résultat" />
             <p className="text-sm text-text-muted">
               {search || groupFilter !== 'Tous'
                 ? 'Aucun élève ne correspond à ces filtres.'

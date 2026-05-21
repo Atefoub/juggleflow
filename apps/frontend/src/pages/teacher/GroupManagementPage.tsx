@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import AppIcon from '../../components/icons/AppIcon';
 import ProgressBar from '../../components/ProgressBar';
 import {
   teacherApi,
@@ -338,7 +339,7 @@ export default function GroupManagementPage() {
 
             {/* Recherche + filtres */}
             <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-bg-card border border-border">
-              <span role="img" aria-label="recherche" className="text-sm">🔍</span>
+              <AppIcon name="search" size={16} label="Recherche" />
               <input
                 type="search"
                 value={search}

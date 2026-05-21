@@ -58,9 +58,13 @@ function StarRating({ score }: { score: number }) {
   return (
     <span className="flex gap-0.5" aria-label={`Difficulté : ${score} sur 10`}>
       {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={i < stars ? 'text-brand-end text-[0.6rem]' : 'text-border text-[0.6rem]'}>
-          ★
-        </span>
+        <AppIcon
+          key={i}
+          name={i < stars ? 'star-filled' : 'star-outline'}
+          size={10}
+          className={i < stars ? 'text-brand-end' : 'text-border'}
+          label={i < stars ? 'étoile pleine' : 'étoile vide'}
+        />
       ))}
     </span>
   );
@@ -84,8 +88,8 @@ function AnimationPreview({ trick }: { trick: TrickResponse }) {
   });
   if (!resolved) {
     return (
-      <div className="flex items-center justify-center rounded-xl w-20 h-20 bg-bg-input shrink-0 text-3xl" aria-hidden="true">
-        🤹
+      <div className="flex items-center justify-center rounded-xl w-20 h-20 bg-bg-input shrink-0 text-text-muted" aria-hidden="true">
+        <AppIcon name="juggler" size={36} label="" />
       </div>
     );
   }
@@ -146,7 +150,7 @@ function TrickCard({
             <ProgressChip status={status} />
             {trick.popular && (
               <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full bg-[#1A1028] text-brand-end border border-brand/35">
-                <AppIcon name="badge-streak-7" size={12} className="inline shrink-0" label="Populaire" />{' '}
+                <AppIcon name="tag-popular" size={12} className="inline shrink-0" label="Populaire" />{' '}
                 Populaire
               </span>
             )}
@@ -338,7 +342,7 @@ export default function CataloguePage() {
         />
 
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl mb-4 bg-bg-input border border-border">
-          <span role="img" aria-label="Recherche" className="text-text-muted text-base">🔍</span>
+          <AppIcon name="search" size={18} className="text-text-muted shrink-0" label="Recherche" />
           <input
             type="search"
             value={search}
@@ -403,7 +407,7 @@ export default function CataloguePage() {
         {!loading && !error && activeFilter === 'Tous' && !debouncedSearch && popular.length > 0 && (
           <section>
             <h2 className="font-display font-bold text-white text-sm uppercase tracking-wider mb-3">
-              <AppIcon name="badge-streak-7" size={14} className="inline shrink-0" label="Populaire" />{' '}
+              <AppIcon name="tag-popular" size={14} className="inline shrink-0" label="Populaire" />{' '}
               Figures populaires
             </h2>
             <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
@@ -422,7 +426,7 @@ export default function CataloguePage() {
                         height: 270,
                         slowdown: 2,
                       });
-                      if (!r) return <span className="text-3xl">🤹</span>;
+                      if (!r) return <AppIcon name="juggler" size={32} className="text-text-muted" label="" />;
                       if (r.kind === 'iframe') {
                         return (
                           <iframe
