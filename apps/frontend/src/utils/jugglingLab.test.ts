@@ -14,11 +14,26 @@ describe('jugglingLab', () => {
     const anim = resolveTrickAnimation({
       name: 'Cascade',
       siteswap: '3',
+      jugglingLabPattern: null,
       jugglingLabAnimationUrl: null,
     });
     expect(anim?.kind).toBe('img');
     if (anim?.kind === 'img') {
       expect(anim.src).toContain('/api/juggling-lab/anim');
+    }
+  });
+
+  it('resolveTrickAnimation privilégie jugglingLabPattern', () => {
+    const anim = resolveTrickAnimation({
+      name: 'Mills Mess',
+      siteswap: '3',
+      jugglingLabPattern: '3;hands=(-25)(2.5).(25)(-2.5).(-25)(0).',
+      jugglingLabAnimationUrl: null,
+    });
+    expect(anim?.kind).toBe('img');
+    if (anim?.kind === 'img') {
+      expect(anim.src).toContain('pattern=3');
+      expect(anim.src).toContain('hands');
     }
   });
 });

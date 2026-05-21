@@ -17,6 +17,7 @@ import { useAuth } from '../../context/AuthContext';
 import { enqueueProgressUpdate } from '../../utils/offlineQueue';
 import OfflineBanner from '../../components/OfflineBanner';
 import { resolveTrickAnimation } from '../../utils/jugglingLab';
+import { LIBRARY_OF_JUGGLING_BY_TRICK_NAME } from '../../utils/libraryOfJugglingLinks';
 import { favoritesApi } from '../../api/favoritesApi';
 import {
   getCachedFavoriteIds,
@@ -404,23 +405,45 @@ export default function TrickDetailPage() {
                   <p className="text-sm text-text-secondary leading-relaxed">
                     {trick.description || 'Aucune description disponible pour cette figure.'}
                   </p>
+                  {LIBRARY_OF_JUGGLING_BY_TRICK_NAME[trick.name] && (
+                    <p className="text-xs text-text-muted leading-relaxed">
+                      Contenu adapté depuis la{' '}
+                      <a
+                        href={LIBRARY_OF_JUGGLING_BY_TRICK_NAME[trick.name]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline text-text-secondary hover:text-text-primary"
+                      >
+                        Library of Juggling
+                      </a>
+                      .
+                    </p>
+                  )}
                 </div>
               )}
 
               {tab === 'conseils' && (
                 <div className="flex flex-col gap-3">
-                  <div className="flex gap-3 p-3 rounded-xl bg-bg-card border border-border">
-                    <AppIcon name="tip-lightbulb" size={20} className="shrink-0 text-brand-end" label="Conseil" />
-                    <p className="text-sm text-text-secondary leading-relaxed">
-                      Lance toujours la 3ème balle au moment où la 2ème atteint son sommet.
+                  {(trick.learningTips ?? []).length === 0 ? (
+                    <p className="text-sm text-text-muted">
+                      Aucun conseil détaillé pour cette figure pour le moment.
                     </p>
-                  </div>
-                  <div className="flex gap-3 p-3 rounded-xl bg-bg-card border border-border">
-                    <AppIcon name="tip-target" size={20} className="shrink-0 text-brand-end" label="Astuce" />
-                    <p className="text-sm text-text-secondary leading-relaxed">
-                      Garde les yeux fixés sur le point le plus haut de la trajectoire.
-                    </p>
-                  </div>
+                  ) : (
+                    (trick.learningTips ?? []).map((tip, index) => (
+                      <div
+                        key={index}
+                        className="flex gap-3 p-3 rounded-xl bg-bg-card border border-border"
+                      >
+                        <AppIcon
+                          name={index % 2 === 0 ? 'tip-lightbulb' : 'tip-target'}
+                          size={20}
+                          className="shrink-0 text-brand-end"
+                          label="Conseil"
+                        />
+                        <p className="text-sm text-text-secondary leading-relaxed">{tip}</p>
+                      </div>
+                    ))
+                  )}
                   {trick.estimatedLearningDuration && (
                     <div className="flex gap-3 p-3 rounded-xl bg-bg-card border border-border">
                       <AppIcon name="timer" size={20} className="shrink-0 text-text-muted" label="Durée" />
