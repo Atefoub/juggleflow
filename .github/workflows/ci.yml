@@ -33,6 +33,86 @@ jobs:
       - name: Build
         run: npx nx build frontend
 
+  e2e:
+    name: E2E (Playwright smoke)
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: juggleflow_db
+          POSTGRES_USER: juggleflow_user
+          POSTGRES_PASSWORD: juggleflow_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U juggleflow_user -d juggleflow_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Start API with demo data
+        working-directory: apps/backend
+        env:
+          POSTGRES_DB: juggleflow_db
+          POSTGRES_USER: juggleflow_user
+          POSTGRES_PASSWORD: juggleflow_dev
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/juggleflow_db
+          JWT_SECRET: e2e-ci-jwt-secret-must-be-at-least-32-chars-long
+          CORS_ALLOWED_ORIGINS: http://localhost:4200
+          COOKIE_SECURE: "false"
+          DEMO_BOOTSTRAP_ENABLED: "true"
+          DEMO_BOOTSTRAP_PASSWORD: Demo2026!
+          ADMIN_BOOTSTRAP_EMAIL: admin@juggleflow.local
+          ADMIN_BOOTSTRAP_PASSWORD: Admin2026!
+        run: |
+          chmod +x mvnw
+          ./mvnw -q spring-boot:run &
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8080/actuator/health > /dev/null; then
+              echo "Backend ready"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Backend failed to start"
+          exit 1
+
+      - name: Run E2E smoke tests
+        env:
+          CI: true
+          E2E_PASSWORD: Demo2026!
+          E2E_TEACHER_EMAIL: marie.dupont@ecole.fr
+        run: npm run e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/frontend/playwright-report
+          retention-days: 7
+
   backend:
     name: Backend (test/build)
     runs-on: ubuntu-latest
