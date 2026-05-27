@@ -90,6 +90,21 @@ export interface AdminEstablishmentStats {
   licenseExpiresAt: string | null;
 }
 
+export interface AdminLicenseSettings {
+  establishmentName: string;
+  licenseSeatCap: number;
+  licenseUsedCount: number;
+  licenseExpiresAt: string | null;
+  licenseExpired: boolean;
+  licenseAtCapacity: boolean;
+}
+
+export interface AdminUpdateLicenseSettingsPayload {
+  licenseSeatCap: number;
+  /** YYYY-MM-DD ou null pour supprimer l'expiration. */
+  licenseExpiresAt: string | null;
+}
+
 export interface AdminAuditEvent {
   id: number;
   occurredAt: string;
@@ -152,6 +167,18 @@ export const adminApi = {
 
   getEstablishmentStats: async (): Promise<AdminEstablishmentStats> => {
     const res = await api.get<AdminEstablishmentStats>('/admin/stats');
+    return res.data;
+  },
+
+  getLicenseSettings: async (): Promise<AdminLicenseSettings> => {
+    const res = await api.get<AdminLicenseSettings>('/admin/license');
+    return res.data;
+  },
+
+  updateLicenseSettings: async (
+    payload: AdminUpdateLicenseSettingsPayload,
+  ): Promise<AdminLicenseSettings> => {
+    const res = await api.patch<AdminLicenseSettings>('/admin/license', payload);
     return res.data;
   },
 
