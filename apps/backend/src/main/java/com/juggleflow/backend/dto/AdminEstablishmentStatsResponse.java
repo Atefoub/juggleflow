@@ -3,10 +3,7 @@ package com.juggleflow.backend.dto;
 import lombok.Builder;
 import lombok.Value;
 
-/**
- * Vue agrégée de l'établissement pour le tableau de bord admin.
- * {@code licenseSeatCap} est réservé à une future gestion de quotas (null = non configuré).
- */
+/** Vue agrégée de l'établissement pour le tableau de bord admin. */
 @Value
 @Builder
 public class AdminEstablishmentStatsResponse {

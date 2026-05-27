@@ -6,6 +6,8 @@ import com.juggleflow.backend.dto.AdminCreateUserRequest;
 import com.juggleflow.backend.dto.AdminCreateUserResponse;
 import com.juggleflow.backend.dto.AdminResetPasswordResponse;
 import com.juggleflow.backend.dto.AdminEstablishmentStatsResponse;
+import com.juggleflow.backend.dto.AdminLicenseSettingsResponse;
+import com.juggleflow.backend.dto.AdminUpdateLicenseSettingsRequest;
 import com.juggleflow.backend.dto.AdminSetEnabledRequest;
 import com.juggleflow.backend.dto.AdminUpdateSchoolClassRequest;
 import com.juggleflow.backend.dto.AdminUserResponse;
@@ -13,6 +15,7 @@ import com.juggleflow.backend.dto.SchoolClassResponse;
 import com.juggleflow.backend.dto.StudentSummaryResponse;
 import com.juggleflow.backend.service.AdminAuditService;
 import com.juggleflow.backend.service.AdminService;
+import com.juggleflow.backend.service.EstablishmentLicenseService;
 import com.juggleflow.backend.service.SchoolClassService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -46,6 +49,7 @@ public class AdminController {
     private final AdminService adminService;
     private final SchoolClassService schoolClassService;
     private final AdminAuditService adminAuditService;
+    private final EstablishmentLicenseService establishmentLicenseService;
 
     /**
      * GET /api/admin/stats
@@ -55,6 +59,40 @@ public class AdminController {
     @Operation(summary = "Statistiques établissement (admin)")
     public ResponseEntity<AdminEstablishmentStatsResponse> getEstablishmentStats() {
         return ResponseEntity.ok(adminService.getEstablishmentStats());
+    }
+
+    /**
+     * GET /api/admin/license
+     * Paramètres de licence (plafond, expiration, utilisation).
+     */
+    @GetMapping("/license")
+    @Operation(summary = "Consulter la licence établissement (admin)")
+    public ResponseEntity<AdminLicenseSettingsResponse> getLicenseSettings() {
+        return ResponseEntity.ok(establishmentLicenseService.getLicenseSettingsResponse());
+    }
+
+    /**
+     * PATCH /api/admin/license
+     * Met à jour le plafond de sièges et la date d'expiration.
+     */
+    @PatchMapping("/license")
+    @Operation(summary = "Mettre à jour la licence établissement (admin)")
+    public ResponseEntity<AdminLicenseSettingsResponse> updateLicenseSettings(
+        @Valid @RequestBody AdminUpdateLicenseSettingsRequest body,
+        @AuthenticationPrincipal UserDetails principal) {
+
+        AdminLicenseSettingsResponse updated = establishmentLicenseService.updateLicenseSettings(
+            body.getLicenseSeatCap(),
+            body.getLicenseExpiresAt());
+
+        adminAuditService.record(
+            principal.getUsername(),
+            "LICENSE_UPDATED",
+            "seatCap=" + updated.getLicenseSeatCap()
+                + ", used=" + updated.getLicenseUsedCount()
+                + ", expiresAt=" + updated.getLicenseExpiresAt());
+
+        return ResponseEntity.ok(updated);
     }
 
     /**
