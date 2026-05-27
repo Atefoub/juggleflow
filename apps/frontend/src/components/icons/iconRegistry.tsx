@@ -16,6 +16,7 @@ import InlineInProgress from '../../assets/icons/inline-in-progress.svg?react';
 import LevelBeginner from '../../assets/icons/level-beginner.svg?react';
 import LevelIntermediate from '../../assets/icons/level-intermediate.svg?react';
 import LevelAdvanced from '../../assets/icons/level-advanced.svg?react';
+import LevelExpert from '../../assets/icons/level-expert.svg?react';
 import RankBronze from '../../assets/icons/rank-bronze.svg?react';
 import RankSilver from '../../assets/icons/rank-silver.svg?react';
 import RankGold from '../../assets/icons/rank-gold.svg?react';
@@ -88,6 +89,7 @@ export const ICONS = {
   'level-beginner': LevelBeginner,
   'level-intermediate': LevelIntermediate,
   'level-advanced': LevelAdvanced,
+  'level-expert': LevelExpert,
   'rank-bronze': RankBronze,
   'rank-silver': RankSilver,
   'rank-gold': RankGold,
@@ -180,18 +182,20 @@ export const BADGE_ICON_BY_ID: Record<string, IconName> = {
   m3: 'badge-mastery-50',
 };
 
-export type OnboardingLevelKey = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+export type OnboardingLevelKey = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
 
 export const ONBOARDING_LEVEL_ICON: Record<OnboardingLevelKey, IconName> = {
   BEGINNER: 'level-beginner',
   INTERMEDIATE: 'level-intermediate',
   ADVANCED: 'level-advanced',
+  EXPERT: 'level-expert',
 };
 
 export const TRICK_LEVEL_ICON: Record<string, IconName> = {
   Beginner: 'level-beginner',
   Intermediate: 'level-intermediate',
   Advanced: 'level-advanced',
+  Expert: 'level-expert',
 };
 
 export type StudentRankKey = 'bronze' | 'silver' | 'gold';

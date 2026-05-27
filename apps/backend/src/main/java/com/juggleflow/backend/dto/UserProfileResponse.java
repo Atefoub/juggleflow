@@ -17,7 +17,7 @@ public class UserProfileResponse {
     private String lastName;
     private String role;
     private Instant createdAt;
-    /** BEGINNER | INTERMEDIATE | ADVANCED — élèves uniquement. */
+    /** BEGINNER | INTERMEDIATE | ADVANCED | EXPERT — élèves uniquement. */
     private String jugglingLevel;
     private boolean onboardingCompleted;
 

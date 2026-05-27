@@ -52,6 +52,20 @@ class PedagogicalResourceControllerTest {
             .andExpect(jsonPath("$.onboardingCompleted").value(true));
     }
 
+    @Test
+    @DisplayName("POST /api/eleve/onboarding → accepte le niveau EXPERT")
+    void completeStudentOnboardingExpert() throws Exception {
+        String token = registerAndGetToken("onboard-expert@test.fr", "ROLE_ELEVE");
+
+        mockMvc.perform(post("/api/eleve/onboarding")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"level\":\"EXPERT\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.jugglingLevel").value("EXPERT"))
+            .andExpect(jsonPath("$.onboardingCompleted").value(true));
+    }
+
     private String registerAndGetToken(String email, String role) throws Exception {
         RegisterRequest req = new RegisterRequest();
         req.setEmail(email);

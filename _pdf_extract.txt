@@ -1,0 +1,61 @@
+Traceback (most recent call last):
+  File "<string>", line 10, in <module>
+    print(full[:25000])
+    ~~~~~^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2192' in position 549: character maps to <undefined>
+### JuggleFlow_project_final.pdf pages= 1
+JuggleFlow - PrÚsentation du projet
+JuggleFlow est une application web pour apprendre le jonglage. L'objectif est de rassembler les ressources dispersÚes (tutoriels 
+vidÚo, forums, articles) dans une plateforme structurÚe avec un parcours d'apprentissage progressif. Le projet s'appuie Úgalement 
+sur les recherches scientifiques qui dÚmontrent les bienfaits du jonglage sur le dÚveloppement cognitif.
+Fonctionnement
+L'application propose un parcours d'apprentissage par Útapes, du niveau dÚbutant au niveau expert. Pour maintenir la motivation, 
+un systÞme de badges et de statistiques de progression a ÚtÚ intÚgrÚ.
+Au-delÓ de l'apprentissage technique, l'application met en avant les bÚnÚfices du jonglage : amÚlioration de la concentration, 
+dÚveloppement de la coordination £il-main, rÚduction du stress et renforcement de la persÚvÚrance. Ces aspects positionnent le 
+jonglage comme un outil de dÚveloppement personnel.
+Public cible
+╔tablissements scolaires (B2B)
+Un espace dÚdiÚ aux enseignants propose :
+ò Des contenus pÚdagogiques basÚs sur les recherches en neurosciences concernant l'impact du jonglage sur le 
+dÚveloppement cognitif des enfants 
+ò Un tableau de bord permettant de suivre la progression d'une classe 
+ò Des ressources tÚlÚchargeables : dossiers pÚdagogiques, guides d'activitÚs, Útudes scientifiques 
+ò Un systÞme de licences collectives adaptÚ au contexte scolaire 
+Cette dimension Úducative implique des exigences particuliÞres : conformitÚ RGPD renforcÚe pour les donnÚes des mineurs, 
+gestion multi-utilisateurs (enseignants et ÚlÞves), et nÚcessitÚ de rÚfÚrences scientifiques validÚes.
+Architecture technique
+Le projet repose sur trois composants principaux :
+Frontend
+Une PWA dÚveloppÚe en React et TypeScript, optimisÚe pour mobile. Le Service Worker permet un chargement rapide et un 
+fonctionnement hors ligne. L'interface s'adapte selon le contexte d'utilisation (individuel ou scolaire).
+API externe
+IntÚgration avec Juggling Lab pour gÚnÚrer automatiquement des animations visuelles des figures de jonglage en temps rÚel, 
+facilitant la comprÚhension des mouvements.
+Backend
+Un serveur avec base de donnÚes qui assure :
+ò La sauvegarde de la progression individuelle 
+ò La gestion multi-r¶les (administrateur, enseignant, ÚlÞve) 
+ò Le stockage et la diffusion des ressources pÚdagogiques 
+ò La gÚnÚration de rapports de progression pour les enseignants 
+ò La conformitÚ RGPD dans le contexte scolaire 
+IntÚrÛt du projet
+JuggleFlow dÚmontre la capacitÚ Ó concevoir et dÚvelopper une application professionnelle complÞte avec :
+ò Plusieurs publics cibles (particuliers et Útablissements) et diffÚrents r¶les utilisateurs 
+ò Une architecture distribuÚe Frontend/Backend/API externe avec gestion avancÚe des permissions 
+ò Des enjeux mÚtier concrets : modÞle de monÚtisation par licences scolaires, conformitÚ juridique, validation scientifique 
+ò Un impact Úducatif mesurable sur le dÚveloppement des enfants 
+Le projet illustre la ma¯trise de l'ensemble du cycle de dÚveloppement web moderne : analyse des besoins, conception d'une 
+architecture scalable, prise en compte des aspects juridiques et sÚcuritaires, et valorisation pÚdagogique du contenu.
+
+---END---
+
+### JuggleFlow - illustrationImage.pdf pages= 1
+
+
+---END---
+
+### juggleflow-wireframes.pdf pages= 1

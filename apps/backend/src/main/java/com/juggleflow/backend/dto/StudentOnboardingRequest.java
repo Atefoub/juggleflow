@@ -8,6 +8,6 @@ import lombok.Data;
 public class StudentOnboardingRequest {
 
     @NotBlank
-    @Pattern(regexp = "BEGINNER|INTERMEDIATE|ADVANCED")
+    @Pattern(regexp = "BEGINNER|INTERMEDIATE|ADVANCED|EXPERT")
     private String level;
 }
