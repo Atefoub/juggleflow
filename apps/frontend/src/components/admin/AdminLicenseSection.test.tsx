@@ -7,7 +7,8 @@ vi.mock('axios', async () => {
   const actual = await vi.importActual<typeof import('axios')>('axios');
   return {
     ...actual,
-    isAxiosError: (e: unknown) => (e as { __isAxiosError?: boolean } | null)?.__isAxiosError === true,
+    isAxiosError: (e: unknown) =>
+      (e as { __isAxiosError?: boolean } | null)?.__isAxiosError === true,
   };
 });
 
