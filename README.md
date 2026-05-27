@@ -54,7 +54,7 @@ L'application fonctionne comme une **Progressive Web App (PWA)** : elle s'instal
 - Gestion des ressources pédagogiques (upload PDF)
 - Tableau de bord : statistiques de l'établissement
 - Journal d'audit des actions sensibles
-- Gestion des licences (plafond de sièges, date d'expiration)
+- Gestion des licences (plafond de sièges, date d'expiration, édition via l'interface admin)
 - Interface RGPD : consentements parentaux, exports CSV/PDF, relance
 
 ---

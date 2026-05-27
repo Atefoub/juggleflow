@@ -6,6 +6,7 @@ import {
   type AdminSchoolClass,
   type AdminUser,
 } from '../../api/adminApi';
+import AdminLicenseSection from '../../components/admin/AdminLicenseSection';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 
 const LEVELS = ['PS', 'MS', 'GS', 'CP', 'CE1', 'CE2', 'CM1', 'CM2'] as const;
@@ -249,22 +250,10 @@ export default function AdminClassesPage() {
               Comptes actifs (tous rôles) : <strong className="text-[var(--color-admin-text-secondary)]">{stats.activeUserCount}</strong> ·{' '}
               Enseignants : <strong className="text-[var(--color-admin-text-secondary)]">{stats.teacherAccountCount}</strong> ·{' '}
               Administrateurs : <strong className="text-[var(--color-admin-text-secondary)]">{stats.administratorAccountCount}</strong>
-              {stats.licenseSeatCap != null ? (
-                <>
-                  {' '}· Licence :{' '}
-                  <strong className="text-[var(--color-admin-text-secondary)]">
-                    {stats.licenseUsedCount} / {stats.licenseSeatCap}
-                  </strong>
-                  {stats.licenseExpiresAt
-                    ? <> (expire le {stats.licenseExpiresAt})</>
-                    : null}
-                </>
-              ) : (
-                <> · Plafond licence : non configuré côté serveur</>
-              )}
             </p>
           )}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <AdminLicenseSection onUpdated={() => void reloadAll()} />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mt-4">
             <div className="p-3 rounded-lg bg-[var(--color-admin-bg)] border border-[var(--color-admin-border)] text-center">
               <p className="font-display font-bold text-2xl text-[var(--color-admin-text)]">
                 {stats != null ? stats.classCount : classes.length}

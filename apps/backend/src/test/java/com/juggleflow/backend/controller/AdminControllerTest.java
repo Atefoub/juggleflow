@@ -29,6 +29,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -213,6 +214,70 @@ class AdminControllerTest {
                 .content(objectMapper.writeValueAsString(body)))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.generatedPassword").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("GET /api/admin/license → paramètres licence (admin)")
+    void getLicenseSettings_shouldReturn200_whenAdmin() throws Exception {
+        String adminToken = createAdminAndLogin("admin-license-get@create.fr");
+
+        mockMvc.perform(get("/api/admin/license")
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.licenseSeatCap").value(60))
+            .andExpect(jsonPath("$.establishmentName").exists())
+            .andExpect(jsonPath("$.licenseUsedCount").isNumber());
+    }
+
+    @Test
+    @DisplayName("PATCH /api/admin/license → met à jour plafond et expiration")
+    void updateLicenseSettings_shouldReturn200_whenAdmin() throws Exception {
+        String adminToken = createAdminAndLogin("admin-license-patch@create.fr");
+
+        mockMvc.perform(patch("/api/admin/license")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"licenseSeatCap":80,"licenseExpiresAt":"2027-12-31"}
+                    """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.licenseSeatCap").value(80))
+            .andExpect(jsonPath("$.licenseExpiresAt").value("2027-12-31"));
+
+        assertThat(adminAuditEventRepository.count()).isGreaterThanOrEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("PATCH /api/admin/license → 409 si plafond inférieur aux comptes utilisés")
+    void updateLicenseSettings_shouldReturn409_whenSeatCapBelowUsed() throws Exception {
+        String adminToken = createAdminAndLogin("admin-license-cap@create.fr");
+
+        for (int i = 1; i <= 2; i++) {
+            AdminCreateUserRequest student = new AdminCreateUserRequest();
+            student.setEmail("used-seat-" + i + "@create.fr");
+            student.setFirstName("U");
+            student.setLastName("S" + i);
+            student.setRole("ROLE_ELEVE");
+
+            mockMvc.perform(post("/api/admin/users")
+                    .header("Authorization", "Bearer " + adminToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(student)))
+                .andExpect(status().isCreated());
+        }
+
+        mockMvc.perform(patch("/api/admin/license")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"licenseSeatCap\":0}"))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(patch("/api/admin/license")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"licenseSeatCap\":1}"))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("plafond")));
     }
 
     @Test
