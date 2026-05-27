@@ -48,3 +48,10 @@ vitest.config.*.timestamp*
 
 code_complet.txt
 apps/frontend/dev-dist/
+
+# Playwright E2E
+/test-results/
+/playwright-report/
+/blob-report/
+apps/frontend/test-results/
+apps/frontend/playwright-report/
