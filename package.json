@@ -6,7 +6,9 @@
     "frontend:build": "nx build @juggleflow/frontend",
     "frontend:preview": "nx preview @juggleflow/frontend --host",
     "frontend:serve": "nx serve @juggleflow/frontend",
-    "frontend:preview:pwa": "nx build @juggleflow/frontend && nx preview @juggleflow/frontend --host"
+    "frontend:preview:pwa": "nx build @juggleflow/frontend && nx preview @juggleflow/frontend --host",
+    "e2e": "playwright test --config=apps/frontend/playwright.config.mts",
+    "e2e:ui": "playwright test --config=apps/frontend/playwright.config.mts --ui"
   },
   "private": true,
   "dependencies": {
@@ -36,6 +38,7 @@
     "@tailwindcss/vite": "^4.2.4",
     "@testing-library/dom": "10.4.0",
     "@testing-library/react": "16.3.0",
+    "@playwright/test": "^1.52.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "20.19.9",
     "@types/react": "^19.0.0",

@@ -209,6 +209,20 @@ npx nx test frontend       # Tests unitaires (Vitest)
 npx nx lint frontend       # Lint ESLint
 ```
 
+### E2E (Playwright)
+
+Prérequis : PostgreSQL + API avec données démo (`DEMO_BOOTSTRAP_ENABLED=true`).
+
+```bash
+docker compose up -d postgres
+docker compose up backend
+# autre terminal
+npx playwright install chromium
+npm run e2e
+```
+
+Le test smoke vérifie la connexion enseignant (`marie.dupont@ecole.fr` / `Demo2026!`) jusqu'au tableau de bord.
+
 ### Backend
 
 ```bash
@@ -219,7 +233,7 @@ cd apps/backend
 
 ### CI
 
-Chaque push sur `master` et chaque pull request déclenchent automatiquement lint + tests + build sur les deux applications via GitHub Actions.
+Chaque push sur `master` et chaque pull request déclenchent automatiquement lint + tests + build (frontend et backend) et un **test E2E smoke** Playwright via GitHub Actions.
 
 ---
 
