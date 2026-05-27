@@ -10,7 +10,7 @@ import {
 } from '../../components/icons/iconRegistry';
 import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
-import { getOnboardingLevel } from '../../utils/onboarding';
+import { getOnboardingLevel, ONBOARDING_LEVEL_LABELS } from '../../utils/onboarding';
 import OfflineBanner from '../../components/OfflineBanner';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { getStudentBadges, getStudentProgress, getStudentStatistics } from '../../api/studentOffline';
@@ -140,11 +140,6 @@ export default function ProgressPage() {
   const xpDisplay = Math.min(xp, XP_MAX);
 
   const onboardingLevel = getOnboardingLevel(user?.id) ?? 'BEGINNER';
-  const LEVEL_LABEL: Record<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED', string> = {
-    BEGINNER: 'Débutant',
-    INTERMEDIATE: 'Intermédiaire',
-    ADVANCED: 'Avancé',
-  };
 
   const unlockedIds = new Set(badges.map((b) => b.id));
   const badgeGrid = [
@@ -197,12 +192,12 @@ export default function ProgressPage() {
               <AppIcon
                 name={ONBOARDING_LEVEL_ICON[onboardingLevel]}
                 size={22}
-                label={`Niveau ${LEVEL_LABEL[onboardingLevel]}`}
+                label={`Niveau ${ONBOARDING_LEVEL_LABELS[onboardingLevel]}`}
               />
               <div>
                 <p className="text-xs text-text-muted">Niveau actuel</p>
                 <p className="font-display font-bold text-text-primary text-sm">
-                  {LEVEL_LABEL[onboardingLevel]}
+                  {ONBOARDING_LEVEL_LABELS[onboardingLevel]}
                 </p>
               </div>
             </div>

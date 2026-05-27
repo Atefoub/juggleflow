@@ -28,7 +28,7 @@ L'application fonctionne comme une **Progressive Web App (PWA)** : elle s'instal
 ## Fonctionnalités
 
 ### Élève
-- Onboarding personnalisé selon le niveau initial (débutant → avancé)
+- Onboarding personnalisé selon le niveau initial (débutant → expert)
 - Catalogue de figures avec animations générées par [Juggling Lab](https://jugglinglab.org/) (notation siteswap)
 - Parcours pédagogiques progressifs assignés par l'enseignant
 - Suivi de progression par figure (non commencé / en cours / maîtrisé)
@@ -192,7 +192,7 @@ juggleflow/
 │       │   ├── dto/           # Objets de transfert
 │       │   ├── repository/    # Couche d'accès données (Spring Data)
 │       │   └── security/      # JWT, filtres, rate limiting
-│       └── src/main/resources/db/migration/   # Migrations Flyway (V1 → V16)
+│       └── src/main/resources/db/migration/   # Migrations Flyway (V1 → V18)
 ├── docker-compose.yml         # Stack dev locale
 ├── .github/workflows/ci.yml   # Pipeline CI
 └── nx.json                    # Configuration Nx

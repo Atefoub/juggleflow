@@ -112,7 +112,7 @@ public class DemoBootstrapRunner implements ApplicationRunner {
                         List.of(mastered(cascade), mastered(shower), mastered(halfShower)), "VERT"),
                 new DemoStudent("hugo.girard@ecole.fr", "Hugo", "Girard", "CM2", "INTERMEDIATE",
                         List.of(mastered(cascade), mastered(shower), inProgress(halfShower, 2, 35)), "ORANGE"),
-                new DemoStudent("lea.fontaine@ecole.fr", "Léa", "Fontaine", "CM2", "ADVANCED",
+                new DemoStudent("lea.fontaine@ecole.fr", "Léa", "Fontaine", "CM2", "EXPERT",
                         List.of(mastered(cascade), inProgress(shower, 3, 20)), "ORANGE"),
                 new DemoStudent("adam.diallo@ecole.fr", "Adam", "Diallo", "CM2", "INTERMEDIATE",
                         List.of(mastered(cascade), inProgress(shower, 1, 8)), "ROUGE"),

@@ -48,6 +48,7 @@ const STROKE_COLOR = {
   'level-beginner.svg': BRAND.cyan,
   'level-intermediate.svg': BRAND.magenta,
   'level-advanced.svg': BRAND.purple,
+  'level-expert.svg': BRAND.orange,
   'status-mastered.svg': BRAND.success,
   'inline-mastered.svg': BRAND.success,
   'status-in-progress.svg': BRAND.orange,

@@ -33,7 +33,7 @@ public class Student extends User {
     @Column(name = "enrollment_date")
     private LocalDate enrollmentDate;
 
-    /** BEGINNER, INTERMEDIATE ou ADVANCED — déclaré à l'onboarding. */
+    /** BEGINNER, INTERMEDIATE, ADVANCED ou EXPERT — déclaré à l'onboarding. */
     @Column(name = "juggling_level", length = 20)
     private String jugglingLevel;
 
