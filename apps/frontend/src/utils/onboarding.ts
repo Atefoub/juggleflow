@@ -2,7 +2,48 @@
 
 import type { UserProfile } from '../types/auth';
 
-export type OnboardingLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+export type OnboardingLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+
+export const ONBOARDING_LEVEL_LABELS: Record<OnboardingLevel, string> = {
+  BEGINNER: 'Débutant',
+  INTERMEDIATE: 'Intermédiaire',
+  ADVANCED: 'Avancé',
+  EXPERT: 'Expert',
+};
+
+export const ONBOARDING_LEVEL_OPTIONS: ReadonlyArray<{
+  value: OnboardingLevel;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: 'BEGINNER',
+    label: ONBOARDING_LEVEL_LABELS.BEGINNER,
+    description: "Je n'ai jamais jonglé ou je commence tout juste",
+  },
+  {
+    value: 'INTERMEDIATE',
+    label: ONBOARDING_LEVEL_LABELS.INTERMEDIATE,
+    description: 'Je maîtrise les 3 balles et quelques figures de base',
+  },
+  {
+    value: 'ADVANCED',
+    label: ONBOARDING_LEVEL_LABELS.ADVANCED,
+    description: 'Je pratique régulièrement des figures complexes',
+  },
+  {
+    value: 'EXPERT',
+    label: ONBOARDING_LEVEL_LABELS.EXPERT,
+    description: 'Je maîtrise des enchaînements avancés et des patterns complexes',
+  },
+] as const;
+
+export const ALL_ONBOARDING_LEVELS: readonly OnboardingLevel[] =
+  ONBOARDING_LEVEL_OPTIONS.map((o) => o.value);
+
+export function isOnboardingLevel(value: string | null | undefined): value is OnboardingLevel {
+  return value != null && (ALL_ONBOARDING_LEVELS as readonly string[]).includes(value);
+}
 
 /** Profil serveur prioritaire, localStorage en secours (offline / migration). */
 export function isStudentOnboardingDone(
@@ -52,7 +93,7 @@ export function isOnboardingCompleted(userId?: number | string | null): boolean 
 export function getOnboardingLevel(userId?: number | string | null): OnboardingLevel | null {
   try {
     const v = localStorage.getItem(levelKey(userId));
-    if (v === 'BEGINNER' || v === 'INTERMEDIATE' || v === 'ADVANCED') return v;
+    if (isOnboardingLevel(v)) return v;
     return null;
   } catch {
     return null;

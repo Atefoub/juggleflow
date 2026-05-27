@@ -16,7 +16,7 @@ import java.util.Set;
 public class StudentOnboardingService {
 
     private static final Set<String> ALLOWED_LEVELS = Set.of(
-        "BEGINNER", "INTERMEDIATE", "ADVANCED"
+        "BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"
     );
 
     private final StudentRepository studentRepository;
