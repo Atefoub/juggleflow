@@ -83,7 +83,7 @@ describe('AdminLicenseSection', () => {
     await user.click(noExpiration);
     expect(noExpiration.checked).toBe(false);
 
-    const expiresAtInput = container.querySelector('input[type=\"date\"]') as HTMLInputElement | null;
+    const expiresAtInput = container.querySelector('input[type="date"]') as HTMLInputElement | null;
     expect(expiresAtInput).toBeTruthy();
     if (!expiresAtInput) throw new Error('date input not found');
     await user.clear(expiresAtInput);
