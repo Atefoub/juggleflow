@@ -28,7 +28,8 @@ import {
   applyProfileOnboarding,
   getOnboardingLevel,
   setOnboardingLevel,
-  type OnboardingLevel,
+  ALL_ONBOARDING_LEVELS,
+  ONBOARDING_LEVEL_LABELS,
 } from '../../utils/onboarding';
 import {
   getOfflineMode,
@@ -168,12 +169,6 @@ export default function StudentProfilePage() {
     : '??';
 
   const onboardingLevel = getOnboardingLevel(user?.id) ?? 'BEGINNER';
-  const LEVEL_LABEL: Record<OnboardingLevel, string> = {
-    BEGINNER: 'Débutant',
-    INTERMEDIATE: 'Intermédiaire',
-    ADVANCED: 'Avancé',
-  };
-
   const xp          = (stats?.totalTricksLearned ?? 0) * XP_PER_TRICK;
   const xpPercent   = Math.min((xp / XP_MAX) * 100, 100);
   const xpDisplay   = Math.min(xp, XP_MAX);
@@ -207,7 +202,7 @@ export default function StudentProfilePage() {
             {user ? `${user.firstName} ${user.lastName}` : '—'}
           </p>
           <p className="text-xs text-text-secondary mt-0.5">
-            Élève · {LEVEL_LABEL[onboardingLevel]} {currentPath ? `· ${currentPath.pathName}` : ''}
+            Élève · {ONBOARDING_LEVEL_LABELS[onboardingLevel]} {currentPath ? `· ${currentPath.pathName}` : ''}
           </p>
         </div>
 
@@ -354,8 +349,8 @@ export default function StudentProfilePage() {
                   <p className="text-xs text-text-muted">Ajuste ton parcours et les recommandations</p>
                 </div>
               </div>
-              <div role="group" aria-label="Choisir mon niveau" className="flex gap-2">
-                {(['BEGINNER', 'INTERMEDIATE', 'ADVANCED'] as OnboardingLevel[]).map((lvl) => {
+              <div role="group" aria-label="Choisir mon niveau" className="grid grid-cols-2 gap-2">
+                {ALL_ONBOARDING_LEVELS.map((lvl) => {
                   const active = onboardingLevel === lvl;
                   return (
                     <button
@@ -380,7 +375,7 @@ export default function StudentProfilePage() {
                           : 'bg-bg-primary border-border text-text-muted',
                       ].join(' ')}
                     >
-                      {LEVEL_LABEL[lvl]}
+                      {ONBOARDING_LEVEL_LABELS[lvl]}
                     </button>
                   );
                 })}

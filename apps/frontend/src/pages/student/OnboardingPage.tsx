@@ -6,33 +6,12 @@ import {
   applyProfileOnboarding,
   completeOnboarding,
   getOnboardingLevel,
+  ONBOARDING_LEVEL_OPTIONS,
   type OnboardingLevel,
 } from '../../utils/onboarding';
 import { useAuth } from '../../context/AuthContext';
 import AppIcon from '../../components/icons/AppIcon';
 import { ONBOARDING_LEVEL_ICON } from '../../components/icons/iconRegistry';
-
-const levels: {
-  value: OnboardingLevel;
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: 'BEGINNER',
-    label: 'Débutant',
-    description: "Je n'ai jamais jonglé ou je commence tout juste",
-  },
-  {
-    value: 'INTERMEDIATE',
-    label: 'Intermédiaire',
-    description: 'Je maîtrise les 3 balles et quelques figures de base',
-  },
-  {
-    value: 'ADVANCED',
-    label: 'Avancé',
-    description: 'Je pratique régulièrement des figures complexes',
-  },
-];
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
@@ -71,7 +50,7 @@ export default function OnboardingPage() {
 
       {/* Choix */}
       <div className="flex flex-col gap-4 mb-8">
-        {levels.map((level) => {
+        {ONBOARDING_LEVEL_OPTIONS.map((level) => {
           const isSelected = selected === level.value;
           return (
             <button

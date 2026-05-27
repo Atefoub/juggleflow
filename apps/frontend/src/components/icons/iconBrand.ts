@@ -24,6 +24,7 @@ export const ICON_COLOR_CLASS: Partial<Record<IconName, string>> = {
   'level-beginner': 'text-info',
   'level-intermediate': 'text-brand-end',
   'level-advanced': 'text-brand',
+  'level-expert': 'text-alert',
   'status-mastered': 'text-[#0CC896]',
   'inline-mastered': 'text-[#0CC896]',
   'status-in-progress': 'text-cta',
