@@ -49,6 +49,15 @@ public class SecurityConfig {
   @Value("${cors.allowed-origins}")
   private String allowedOrigins;
 
+  @Value("${cors.allowed-methods:GET,POST,PUT,DELETE,OPTIONS,PATCH}")
+  private String allowedMethods;
+
+  @Value("${cors.allowed-headers:Authorization,Content-Type,Accept}")
+  private String allowedHeaders;
+
+  @Value("${cors.exposed-headers:Retry-After}")
+  private String exposedHeaders;
+
   /** true = Swagger public (dev) ; false = ROLE_ADMINISTRATEUR (prod). */
   @Value("${swagger.public:false}")
   private boolean swaggerPublic;
@@ -99,6 +108,12 @@ public class SecurityConfig {
         .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
           "Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()"
         ))
+        .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
+          "Cross-Origin-Opener-Policy", "same-origin"
+        ))
+        .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
+          "Cross-Origin-Resource-Policy", "same-origin"
+        ))
       )
 
       .authorizeHttpRequests(auth -> auth
@@ -143,14 +158,23 @@ public class SecurityConfig {
     });
 
     config.setAllowedOrigins(origins);
-    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-    config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+    config.setAllowedMethods(splitCsv(allowedMethods));
+    config.setAllowedHeaders(splitCsv(allowedHeaders));
+    config.setExposedHeaders(splitCsv(exposedHeaders));
     config.setAllowCredentials(true);
     config.setMaxAge(3600L);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", config);
     return source;
+  }
+
+  private static List<String> splitCsv(String csv) {
+    if (csv == null || csv.isBlank()) return List.of();
+    return List.of(csv.split(",")).stream()
+      .map(String::trim)
+      .filter(s -> !s.isBlank())
+      .toList();
   }
 
   @Bean

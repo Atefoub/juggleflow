@@ -18,6 +18,7 @@ L'application fonctionne comme une **Progressive Web App (PWA)** : elle s'instal
 - [Structure du projet](#structure-du-projet)
 - [Tests](#tests)
 - [Déploiement](#déploiement)
+- [Production checklist](#production-checklist)
 - [Rôles et parcours utilisateurs](#rôles-et-parcours-utilisateurs)
 - [Conformité RGPD](#conformité-rgpd)
 - [Contribuer](#contribuer)
@@ -271,6 +272,16 @@ Chaque push sur `master` et chaque pull request déclenchent automatiquement lin
 | `DEMO_BOOTSTRAP_ENABLED` | `false` |
 | `ADMIN_BOOTSTRAP_EMAIL` | Laisser vide après la première initialisation |
 
+### Reverse proxy / IP client (rate limiting, audit)
+
+Si `APP_TRUSTED_PROXY=true`, le backend utilise la **dernière** entrée de `X-Forwarded-For` pour déterminer l'IP client.
+C'est intentionnel : derrière un proxy de confiance qui **ajoute** sa propre IP en fin de liste, cette valeur correspond à l'IP
+TCP vue par le proxy et n'est pas forgeable par un client.
+
+Assure-toi que ton proxy est configuré pour :
+- **Ajouter** `X-Forwarded-For` (append) et ne pas accepter une valeur fournie par le client sans la réécrire
+- Ne définir `APP_TRUSTED_PROXY=true` que si le trafic passe bien par ce proxy (sinon `X-Forwarded-For` est forgeable)
+
 ### Build de production (frontend)
 
 ```bash
@@ -278,6 +289,12 @@ npx nx build frontend
 # Les fichiers statiques sont générés dans apps/frontend/dist/
 # À servir via nginx ou un CDN.
 ```
+
+---
+
+## Production checklist
+
+Voir `PRODUCTION_CHECKLIST.md`.
 
 ### Healthcheck
 
