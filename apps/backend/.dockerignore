@@ -1,3 +1,12 @@
+target
+.idea
+.vscode
+**/*.iml
+**/.env
+node_modules
+.git
+.github
+README.md
 src/main/resources/application-local.properties
 src/main/resources/application-local.properties.bak
 target/

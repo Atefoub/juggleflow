@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: juggleflow-postgres
+spec:
+  selector:
+    app: juggleflow-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: juggleflow-postgres
+spec:
+  serviceName: juggleflow-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: juggleflow-postgres
+  template:
+    metadata:
+      labels:
+        app: juggleflow-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_DB
+              value: juggleflow_db
+            - name: POSTGRES_USER
+              value: juggleflow_user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: juggleflow-secrets
+                  key: POSTGRES_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U juggleflow_user -d juggleflow_db"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U juggleflow_user -d juggleflow_db"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: pgdata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+

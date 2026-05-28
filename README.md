@@ -134,6 +134,24 @@ docker compose up backend
 
 L'API est disponible sur `http://localhost:8080`.
 
+### Mode "prod-like" (image immutable — Podman/Docker)
+
+Ce mode ne monte pas le code source dans le conteneur et se rapproche d'un déploiement réel.
+Le healthcheck est défini dans `compose.prod.yml` (Kubernetes utilise des probes).
+
+```bash
+# Variables minimales (exemples)
+export POSTGRES_PASSWORD='change-me'
+export JWT_SECRET='change-me-please-generate-a-long-secret-32-chars-minimum'
+export CORS_ALLOWED_ORIGINS='http://localhost:4200'
+
+# Podman
+podman compose -f compose.prod.yml up -d
+
+# (ou Docker)
+docker compose -f compose.prod.yml up -d
+```
+
 ### Frontend
 
 ```bash
