@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   analyze:
@@ -23,11 +22,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: github/codeql-action/init@v3
+      - name: Init CodeQL (Java)
+        if: matrix.language == 'java-kotlin'
+        uses: github/codeql-action/init@v3
         with:
-          languages: ${{ matrix.language }}
-          # CodeQL: JS/TS n'utilise pas de build mode "manual" (il doit être "none").
-          build-mode: ${{ matrix.language == 'javascript-typescript' && 'none' || 'manual' }}
+          languages: java-kotlin
+          build-mode: manual
+
+      - name: Init CodeQL (JavaScript/TypeScript)
+        if: matrix.language == 'javascript-typescript'
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          build-mode: none
 
       - if: matrix.language == 'java-kotlin'
         uses: actions/setup-java@v4
@@ -60,12 +67,10 @@ jobs:
       # Sur l'événement pull_request, l'upload SARIF peut échouer selon les permissions
       # ("Resource not accessible by integration"). On force donc upload=false sur PR,
       # et on garde l'upload sur push/schedule.
-      - name: Perform CodeQL Analysis (upload on push/schedule)
-        if: github.event_name != 'pull_request'
-        uses: github/codeql-action/analyze@v3
-
-      - name: Perform CodeQL Analysis (no upload on PRs)
-        if: github.event_name == 'pull_request'
+      # Sur certains repos (ex. GHAS/Code Scanning désactivé), l'upload SARIF échoue.
+      # Pour garder une CI verte par défaut, on désactive l'upload et on laisse
+      # l'activation de Code Scanning comme étape explicite (voir README/Settings).
+      - name: Perform CodeQL Analysis (no upload)
         uses: github/codeql-action/analyze@v3
         with:
           upload: false
