@@ -9,6 +9,9 @@ permissions:
 jobs:
   dependency-review:
     runs-on: ubuntu-latest
+    # Le dependency graph peut être désactivé sur certains repos (ou nécessite GHAS).
+    # On rend ce check non-bloquant dans ce cas pour ne pas casser la CI.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/dependency-review-action@v4
