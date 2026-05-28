@@ -15,6 +15,11 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+    # Sur les PRs provenant de forks, GitHub peut refuser l'upload (Resource not accessible by integration).
+    # On garde CodeQL sur push/schedule et sur PRs internes au repo.
+    if: >
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     strategy:
       fail-fast: false
       matrix:
@@ -26,6 +31,7 @@ jobs:
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
+          build-mode: manual
 
       - if: matrix.language == 'java-kotlin'
         uses: actions/setup-java@v4
@@ -40,8 +46,20 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+      - name: Install Node dependencies
+        if: matrix.language == 'javascript-typescript'
+        run: npm ci
+
+      - name: Build frontend (TypeScript)
+        if: matrix.language == 'javascript-typescript'
+        run: npx nx build frontend
+
+      - name: Build backend (Maven)
+        if: matrix.language == 'java-kotlin'
+        working-directory: apps/backend
+        run: |
+          chmod +x mvnw
+          ./mvnw -q -DskipTests package
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
