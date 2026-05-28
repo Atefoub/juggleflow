@@ -5,17 +5,18 @@ on:
     branches: [ master ]
   pull_request:
   schedule:
-    - cron: '0 3 * * 1' # weekly
+    - cron: '0 3 * * 1'
 
 permissions:
   contents: read
   security-events: write
-  actions: read
 
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     strategy:
       fail-fast: false
       matrix:
@@ -24,48 +25,62 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Init CodeQL (Java)
+      # -------------------------
+      # Java setup (before CodeQL)
+      # -------------------------
+      - name: Setup Java
         if: matrix.language == 'java-kotlin'
-        uses: github/codeql-action/init@v3
-        with:
-          languages: java-kotlin
-          build-mode: manual
-
-      - name: Init CodeQL (JavaScript/TypeScript)
-        if: matrix.language == 'javascript-typescript'
-        uses: github/codeql-action/init@v3
-        with:
-          languages: javascript-typescript
-          build-mode: none
-
-      - if: matrix.language == 'java-kotlin'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
           cache: maven
 
-      - if: matrix.language == 'javascript-typescript'
+      # -------------------------
+      # Node setup (before CodeQL)
+      # -------------------------
+      - name: Setup Node
+        if: matrix.language == 'javascript-typescript'
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
+      # -------------------------
+      # Init CodeQL
+      # -------------------------
+      - name: Init CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.language == 'java-kotlin' && 'manual' || 'none' }}
+
+      # -------------------------
+      # JS/TS build
+      # -------------------------
       - name: Install Node dependencies
         if: matrix.language == 'javascript-typescript'
         run: npm ci
 
-      - name: Build frontend (TypeScript)
+      - name: Build frontend
         if: matrix.language == 'javascript-typescript'
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npx nx build frontend
 
-      - name: Build backend (Maven)
+      # -------------------------
+      # Java build
+      # -------------------------
+      - name: Build backend
         if: matrix.language == 'java-kotlin'
         working-directory: apps/backend
         run: |
           chmod +x mvnw
           ./mvnw -q -DskipTests package
 
+      # -------------------------
+      # CodeQL Analysis
+      # -------------------------
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
