@@ -30,6 +30,21 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7.4-alpine
+    container_name: juggleflow-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - juggleflow_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     image: eclipse-temurin:21-jdk-jammy
     container_name: juggleflow-backend
@@ -56,10 +71,17 @@ services:
       DEMO_BOOTSTRAP_PASSWORD: ${DEMO_BOOTSTRAP_PASSWORD:-Demo2026!}
       ADMIN_BOOTSTRAP_EMAIL: ${ADMIN_BOOTSTRAP_EMAIL:-admin@juggleflow.local}
       ADMIN_BOOTSTRAP_PASSWORD: ${ADMIN_BOOTSTRAP_PASSWORD:-Admin2026!}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      APP_JWT_REVOCATION_STORE: ${APP_JWT_REVOCATION_STORE:-redis}
+      APP_RATE_LIMIT_STORE: ${APP_RATE_LIMIT_STORE:-redis}
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
 volumes:
   juggleflow_pgdata:
   maven_cache:
+  juggleflow_redisdata:

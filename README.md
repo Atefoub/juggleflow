@@ -67,8 +67,9 @@ L'application fonctionne comme une **Progressive Web App (PWA)** : elle s'instal
 | Frontend | React 19, TypeScript, Tailwind CSS 4, Vite |
 | PWA | Workbox (Service Worker, cache offline, sync différée) |
 | Backend | Spring Boot 3.4, Java 21 |
-| Authentification | JWT (access + refresh token httpOnly), blacklist JTI |
+| Authentification | JWT (access + refresh token httpOnly), blacklist JTI (Redis recommandé) |
 | Base de données | PostgreSQL 17, migrations Flyway |
+| Cache / sécurité | Redis 7 (révocation JWT + rate limiting distribués) |
 | CI/CD | GitHub Actions (lint, tests, build) |
 | Conteneurisation | Docker / Podman (Compose pour le dev local) |
 
@@ -79,6 +80,7 @@ L'application fonctionne comme une **Progressive Web App (PWA)** : elle s'instal
 - **Node.js** 22+ et npm
 - **Java** 21+
 - **PostgreSQL** 17 (local ou via Docker)
+- **Redis** 7 (recommandé, requis en multi-instances)
 - Docker ou Podman (optionnel, recommandé)
 
 ---
@@ -123,8 +125,8 @@ Toutes les autres variables disposent de valeurs par défaut documentées dans `
 ### Avec Docker (recommandé)
 
 ```bash
-# Démarrer PostgreSQL
-docker compose up -d postgres
+# Démarrer PostgreSQL + Redis
+docker compose up -d postgres redis
 
 # Démarrer le backend (les migrations Flyway s'exécutent automatiquement)
 docker compose up backend
