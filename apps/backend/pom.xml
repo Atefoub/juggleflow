@@ -141,6 +141,12 @@
       <version>${bucket4j.version}</version>
     </dependency>
 
+    <!-- Redis (distributed rate limiting + token revocation store) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-redis</artifactId>
+    </dependency>
+
     <!-- OpenPDF : export PDF du registre des consentements RGPD -->
     <dependency>
       <groupId>com.github.librepdf</groupId>

@@ -9,10 +9,14 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Duration;
 import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
@@ -22,8 +26,7 @@ import java.util.function.Function;
 /**
  * Gestion des tokens JWT (access + refresh).
  * Access et refresh sont distingués par le claim {@code typ}, l'issuer est vérifié,
- * chaque token a un JTI pour la révocation (logout). Blacklist en mémoire ;
- * TODO prod : Redis avec TTL = durée de vie du token.
+ * chaque token a un JTI pour la révocation (logout). Stockage "memory" (dev) ou Redis (prod).
  */
 @Component
 public class JwtUtils {
@@ -32,6 +35,7 @@ public class JwtUtils {
   private static final String CLAIM_TOKEN_TYPE = "typ";
   private static final String TYPE_ACCESS      = "access";
   private static final String TYPE_REFRESH     = "refresh";
+  private static final String REDIS_KEY_PREFIX = "jwt:revoked:jti:";
 
   /**
    * Blacklist des JTI révoqués.
@@ -39,6 +43,17 @@ public class JwtUtils {
    * À remplacer par Redis en prod (TTL = expiration du token concerné).
    */
   private final Set<String> revokedTokenIds = ConcurrentHashMap.newKeySet();
+
+  /**
+   * Store de révocation :
+   * - memory : Set en mémoire (dev uniquement, perdu au redémarrage)
+   * - redis  : clés TTL en Redis (prod / multi-instances)
+   */
+  @Value("${app.jwt.revocation.store:memory}")
+  private String revocationStore;
+
+  @Autowired(required = false)
+  private StringRedisTemplate redis;
 
   @Value("${jwt.secret}")
   private String secret;
@@ -73,6 +88,15 @@ public class JwtUtils {
       this.key = Keys.hmacShaKeyFor(keyBytes);
     } catch (Exception e) {
       throw new RuntimeException("Erreur lors de l'initialisation de la clé JWT", e);
+    }
+  }
+
+  @PostConstruct
+  void validateRevocationStoreConfig() {
+    if ("redis".equalsIgnoreCase(revocationStore) && redis == null) {
+      throw new IllegalStateException(
+        "app.jwt.revocation.store=redis mais Redis n'est pas configuré. " +
+          "Ajoutez spring-boot-starter-data-redis et définissez REDIS_HOST/REDIS_PORT.");
     }
   }
 
@@ -134,7 +158,7 @@ public class JwtUtils {
       }
 
       String jti = extractClaim(token, Claims::getId);
-      if (jti != null && revokedTokenIds.contains(jti)) {
+      if (isRevoked(jti)) {
         return false;
       }
 
@@ -154,7 +178,7 @@ public class JwtUtils {
       }
 
       String jti = extractClaim(token, Claims::getId);
-      if (jti != null && revokedTokenIds.contains(jti)) {
+      if (isRevoked(jti)) {
         return false;
       }
 
@@ -166,17 +190,41 @@ public class JwtUtils {
 
   /**
    * Révoque un token en ajoutant son JTI en blacklist (logout, rotation).
-   * TODO prod : Redis avec TTL = durée de vie restante du token.
    */
   public void revokeToken(String token) {
     try {
       String jti = extractClaim(token, Claims::getId);
-      if (jti != null) {
+      if (!StringUtils.hasText(jti)) {
+        return;
+      }
+
+      Date exp = extractExpiration(token);
+      long ttlMs = exp.getTime() - System.currentTimeMillis();
+      if (ttlMs <= 0) {
+        return;
+      }
+
+      if ("redis".equalsIgnoreCase(revocationStore) && redis != null) {
+        redis.opsForValue().set(REDIS_KEY_PREFIX + jti, "1", Duration.ofMillis(ttlMs));
+      } else {
         revokedTokenIds.add(jti);
       }
     } catch (JwtException | IllegalArgumentException ignored) {
       // Token déjà invalide — pas besoin de le révoquer
     }
+  }
+
+  private boolean isRevoked(String jti) {
+    if (!StringUtils.hasText(jti)) {
+      return false;
+    }
+
+    if ("redis".equalsIgnoreCase(revocationStore) && redis != null) {
+      Boolean exists = redis.hasKey(REDIS_KEY_PREFIX + jti);
+      return Boolean.TRUE.equals(exists);
+    }
+
+    return revokedTokenIds.contains(jti);
   }
 
   private boolean isTokenExpired(String token) {
