@@ -1,8 +1,9 @@
 package com.juggleflow.backend.security;
 
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -51,8 +52,8 @@ public class CookieUtils {
    * Appelé après login et après rotation du refresh token.
    */
   public void addRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
-    Cookie cookie = buildCookie(refreshToken, (int) (refreshExpirationMs / 1000));
-    response.addCookie(cookie);
+    ResponseCookie cookie = buildResponseCookie(refreshToken, (int) (refreshExpirationMs / 1000));
+    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
   }
 
   /**
@@ -66,7 +67,7 @@ public class CookieUtils {
     }
     return Arrays.stream(request.getCookies())
       .filter(c -> REFRESH_TOKEN_COOKIE.equals(c.getName()))
-      .map(Cookie::getValue)
+      .map(jakarta.servlet.http.Cookie::getValue)
       .filter(v -> v != null && !v.isBlank())
       .findFirst();
   }
@@ -76,18 +77,18 @@ public class CookieUtils {
    * Appelé lors du logout.
    */
   public void clearRefreshTokenCookie(HttpServletResponse response) {
-    Cookie cookie = buildCookie("", 0);
-    response.addCookie(cookie);
+    ResponseCookie cookie = buildResponseCookie("", 0);
+    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
   }
 
 
-  private Cookie buildCookie(String value, int maxAgeSeconds) {
-    Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE, value);
-    cookie.setHttpOnly(true);   // inaccessible à JavaScript
-    cookie.setSecure(cookieSecure);
-    cookie.setPath(COOKIE_PATH);
-    cookie.setMaxAge(maxAgeSeconds);
-    cookie.setAttribute("SameSite", "Strict");
-    return cookie;
+  private ResponseCookie buildResponseCookie(String value, int maxAgeSeconds) {
+    return ResponseCookie.from(REFRESH_TOKEN_COOKIE, value)
+      .httpOnly(true)
+      .secure(cookieSecure)
+      .path(COOKIE_PATH)
+      .maxAge(maxAgeSeconds)
+      .sameSite("Strict")
+      .build();
   }
 }
