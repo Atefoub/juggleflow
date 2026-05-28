@@ -9,10 +9,12 @@ on:
 
 permissions:
   contents: read
+  security-events: write
+  actions: read
 
 jobs:
   analyze:
-    name: Analyze
+    name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -64,14 +66,7 @@ jobs:
           chmod +x mvnw
           ./mvnw -q -DskipTests package
 
-      # Sur l'événement pull_request, l'upload SARIF peut échouer selon les permissions
-      # ("Resource not accessible by integration"). On force donc upload=false sur PR,
-      # et on garde l'upload sur push/schedule.
-      # Sur certains repos (ex. GHAS/Code Scanning désactivé), l'upload SARIF échoue.
-      # Pour garder une CI verte par défaut, on désactive l'upload et on laisse
-      # l'activation de Code Scanning comme étape explicite (voir README/Settings).
-      - name: Perform CodeQL Analysis (no upload)
+      - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
-          upload: false
-
+          category: "/language:${{ matrix.language }}"
