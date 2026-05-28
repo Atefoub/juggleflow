@@ -26,7 +26,8 @@ jobs:
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          build-mode: manual
+          # CodeQL: JS/TS n'utilise pas de build mode "manual" (il doit être "none").
+          build-mode: ${{ matrix.language == 'javascript-typescript' && 'none' || 'manual' }}
 
       - if: matrix.language == 'java-kotlin'
         uses: actions/setup-java@v4
@@ -56,14 +57,15 @@ jobs:
           chmod +x mvnw
           ./mvnw -q -DskipTests package
 
-      - name: Perform CodeQL Analysis
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+      # Sur l'événement pull_request, l'upload SARIF peut échouer selon les permissions
+      # ("Resource not accessible by integration"). On force donc upload=false sur PR,
+      # et on garde l'upload sur push/schedule.
+      - name: Perform CodeQL Analysis (upload on push/schedule)
+        if: github.event_name != 'pull_request'
         uses: github/codeql-action/analyze@v3
 
-      # PR depuis un fork: GitHub peut refuser l'upload SARIF ("Resource not accessible by integration").
-      # On exécute quand même l'analyse, mais sans upload pour éviter un échec du check.
-      - name: Perform CodeQL Analysis (no upload on fork PRs)
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+      - name: Perform CodeQL Analysis (no upload on PRs)
+        if: github.event_name == 'pull_request'
         uses: github/codeql-action/analyze@v3
         with:
           upload: false
