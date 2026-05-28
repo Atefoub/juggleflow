@@ -1,5 +1,7 @@
 # JuggleFlow
 
+![JuggleFlow preview](.github/preview.png)
+
 Plateforme pédagogique web pour l'apprentissage du jonglage en contexte scolaire. JuggleFlow propose des parcours progressifs, un catalogue de figures animées, un suivi enseignant en temps réel, un système de gamification (XP, badges, séries) et une conformité RGPD adaptée aux établissements accueillant des mineurs.
 
 L'application fonctionne comme une **Progressive Web App (PWA)** : elle s'installe sur mobile et reste utilisable hors connexion pendant les séances en salle.
