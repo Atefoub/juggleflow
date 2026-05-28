@@ -1,8 +1,15 @@
 ##
-## JuggleFlow Backend — Production image (Podman default: Containerfile)
+## JuggleFlow Backend — Production image
 ##
 ## Build:
 ##   podman build -t juggleflow-backend:local apps/backend
+##
+## Run (example):
+##   podman run --rm -p 8080:8080 \
+##     -e SPRING_PROFILES_ACTIVE=prod \
+##     -e POSTGRES_PASSWORD=... \
+##     -e JWT_SECRET=... \
+##     juggleflow-backend:local
 ##
 
 FROM maven:3.9.9-eclipse-temurin-21 AS build
@@ -33,3 +40,4 @@ EXPOSE 8080
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
 
 ENTRYPOINT ["/bin/sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
+
