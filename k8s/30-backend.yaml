@@ -1,0 +1,101 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: juggleflow-backend
+spec:
+  selector:
+    app: juggleflow-backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: juggleflow-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: juggleflow-backend
+  template:
+    metadata:
+      labels:
+        app: juggleflow-backend
+    spec:
+      containers:
+        - name: backend
+          # À remplacer par une image poussée dans ton registry
+          image: juggleflow-backend:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: prod
+
+            - name: POSTGRES_DB
+              value: juggleflow_db
+            - name: POSTGRES_USER
+              value: juggleflow_user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: juggleflow-secrets
+                  key: POSTGRES_PASSWORD
+
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://juggleflow-postgres:5432/juggleflow_db
+
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: juggleflow-secrets
+                  key: JWT_SECRET
+
+            - name: CORS_ALLOWED_ORIGINS
+              valueFrom:
+                secretKeyRef:
+                  name: juggleflow-backend-env
+                  key: CORS_ALLOWED_ORIGINS
+
+            - name: COOKIE_SECURE
+              value: "true"
+
+            - name: APP_TRUSTED_PROXY
+              value: "true"
+
+            - name: REDIS_HOST
+              value: juggleflow-redis
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: juggleflow-secrets
+                  key: REDIS_PASSWORD
+                  optional: true
+
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1
+              memory: 1Gi
+
