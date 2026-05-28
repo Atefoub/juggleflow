@@ -296,6 +296,15 @@ npx nx build frontend
 
 Voir `PRODUCTION_CHECKLIST.md`.
 
+## Sécurité (GitHub Actions)
+
+Certains checks (Dependency Review / CodeQL) peuvent nécessiter l'activation de fonctionnalités GitHub côté dépôt :
+- `Settings → Security and analysis → Dependency graph` : **Enable**
+- `Settings → Security and analysis → Code scanning` : **Enable** (si disponible)
+
+Si ces fonctionnalités ne sont pas disponibles sur ton plan, la CI reste verte : les workflows exécutent les analyses
+sans upload des résultats.
+
 ### Healthcheck
 
 L'endpoint `/actuator/health` est exposé pour les sondes Kubernetes et Docker. Il ne retourne aucune information d'infrastructure.
