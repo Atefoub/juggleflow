@@ -1,11 +1,13 @@
 package com.juggleflow.backend.dto;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class UpdateStudentPreferencesRequest {
 
-    @NotNull
+    /** Absent ou null : ne pas modifier. */
     private Boolean practiceRemindersEnabled;
+
+    /** Absent ou null : ne pas modifier. */
+    private Boolean darkModeEnabled;
 }

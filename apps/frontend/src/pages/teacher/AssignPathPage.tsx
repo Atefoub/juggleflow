@@ -130,7 +130,7 @@ export default function AssignPathPage() {
   return (
     <div className="flex flex-1 flex-col w-full min-h-0 pb-28 lg:pb-24">
       {/* Header */}
-      <header className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-[#0D1235] border-b border-border">
+      <header className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-bg-header border-b border-border">
         <button
           onClick={() => navigate(-1)}
           aria-label="Retour"
@@ -176,7 +176,7 @@ export default function AssignPathPage() {
 
       <main className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 flex flex-col gap-4 lg:max-w-3xl">
         {error && (
-          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
+          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-alert-surface border border-alert">
             {error}
           </div>
         )}
@@ -313,7 +313,7 @@ export default function AssignPathPage() {
               </div>
             )}
 
-            <div className="rounded-xl border border-brand/30 bg-[#1A1028] p-3 text-xs text-brand-end">
+            <div className="rounded-xl border border-brand/30 bg-accent-surface p-3 text-xs text-brand-end">
               Le parcours sera assigné à toute la classe sélectionnée.
             </div>
           </>
@@ -344,7 +344,7 @@ export default function AssignPathPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-brand/30 bg-[#1A1028] p-3 text-xs text-brand-end">
+            <div className="rounded-xl border border-brand/30 bg-accent-surface p-3 text-xs text-brand-end">
               ⚡ Le parcours sera assigné à toute la classe.
             </div>
           </>

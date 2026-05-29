@@ -102,7 +102,7 @@ export default function StudentSessionPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
-      <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
+      <header className="px-5 pt-12 pb-4 bg-bg-header border-b border-border">
         <button
           onClick={() => navigate(-1)}
           aria-label="Retour"
@@ -125,7 +125,7 @@ export default function StudentSessionPage() {
             </div>
             <div className="text-right">
               <p className="text-xs text-text-muted">Temps</p>
-              <p className="font-display text-2xl font-bold text-white">{formatDuration(elapsed)}</p>
+              <p className="font-display text-2xl font-bold text-text-primary">{formatDuration(elapsed)}</p>
             </div>
           </div>
         ) : null}
@@ -135,7 +135,7 @@ export default function StudentSessionPage() {
         <OfflineBanner message="Hors connexion — tu peux pratiquer, et tes actions seront synchronisées plus tard." />
 
         {error && (
-          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
+          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-alert-surface border border-alert">
             {error}
           </div>
         )}
@@ -164,7 +164,7 @@ export default function StudentSessionPage() {
             </section>
 
             <section className="p-4 rounded-2xl bg-bg-card border border-border">
-              <h2 className="font-display font-bold text-white text-sm uppercase tracking-wider mb-3">
+              <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
                 Contrôles
               </h2>
               <div className="flex gap-3">

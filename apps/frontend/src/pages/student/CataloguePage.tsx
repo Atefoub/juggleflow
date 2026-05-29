@@ -183,8 +183,8 @@ export default function CataloguePage() {
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
 
-      <header className="px-5 pt-12 pb-4 sticky top-0 z-30 bg-[#0D1235] border-b border-border">
-        <h1 className="font-display text-xl font-bold text-white mb-4">Catalogue</h1>
+      <header className="px-5 pt-12 pb-4 sticky top-0 z-30 bg-bg-header border-b border-border">
+        <h1 className="font-display text-xl font-bold text-text-primary mb-4">Catalogue</h1>
 
         <OfflineBanner
           className="mb-3"
@@ -199,7 +199,7 @@ export default function CataloguePage() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher une figure…"
             aria-label="Rechercher une figure de jonglage"
-            className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-text-muted"
+            className="flex-1 bg-transparent outline-none text-sm text-text-primary placeholder:text-text-muted"
           />
           {search && (
             <button type="button" onClick={() => setSearch('')} aria-label="Effacer la recherche" className="text-xs text-text-muted">
@@ -249,14 +249,14 @@ export default function CataloguePage() {
       <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
 
         {error && !loading && (
-          <div className="p-4 rounded-2xl text-sm text-center bg-[#2A1020] border border-alert text-alert">
+          <div className="p-4 rounded-2xl text-sm text-center bg-alert-surface border border-alert text-alert">
             {!isOnline ? 'Hors connexion. Connecte-toi une première fois pour charger ces données.' : error}
           </div>
         )}
 
         {!loading && !error && activeFilter === 'Tous' && !debouncedSearch && popular.length > 0 && (
           <section>
-            <h2 className="font-display font-bold text-white text-sm uppercase tracking-wider mb-3">
+            <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
               <AppIcon name="tag-popular" size={14} className="inline shrink-0" label="Populaire" />{' '}
               Figures populaires
             </h2>
@@ -271,7 +271,7 @@ export default function CataloguePage() {
                 >
                   <AnimationPreview trick={trick} variant="tile" />
                   <div className="flex items-start justify-between gap-2 mb-1">
-                    <p className="font-bold text-white text-xs truncate" title={trick.name}>{trick.name}</p>
+                    <p className="font-bold text-text-primary text-xs truncate" title={trick.name}>{trick.name}</p>
                     <ProgressChip status={progressById[trick.id] ?? 'NOT_STARTED'} />
                   </div>
                   <DifficultyChip level={trick.levelName} />
@@ -283,7 +283,7 @@ export default function CataloguePage() {
 
         {!loading && !error && (
           <div className="flex items-center justify-between">
-            <h2 className="font-display font-bold text-white text-sm uppercase tracking-wider">
+            <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
               {debouncedSearch
                 ? `Résultats pour "${debouncedSearch}"`
                 : activeFilter === 'Tous'
@@ -309,7 +309,7 @@ export default function CataloguePage() {
             {tricks.length === 0 ? (
               <div className="p-8 rounded-2xl text-center bg-bg-card border border-border">
                 <div className="text-3xl mb-3" aria-hidden="true">🤷</div>
-                <p className="font-bold text-white text-sm mb-1">Aucune figure trouvée</p>
+                <p className="font-bold text-text-primary text-sm mb-1">Aucune figure trouvée</p>
                 <p className="text-xs text-text-muted">
                   {activeFilter === 'Favoris'
                     ? 'Ajoute des figures en favori depuis leur fiche détail (étoile).'

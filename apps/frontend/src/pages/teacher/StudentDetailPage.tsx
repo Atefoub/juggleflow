@@ -186,7 +186,7 @@ export default function StudentDetailPage() {
     <div className="flex flex-1 flex-col w-full min-h-0">
 
       {/* Header */}
-      <header className="px-5 pt-4 pb-5 lg:pt-6 lg:px-0 bg-[#0D1235] border-b border-border">
+      <header className="px-5 pt-4 pb-5 lg:pt-6 lg:px-0 bg-bg-header border-b border-border">
         <button
           onClick={() => navigate(-1)}
           aria-label="Retour"
@@ -243,7 +243,7 @@ export default function StudentDetailPage() {
       <main className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
 
         {error && (
-          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
+          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-alert-surface border border-alert">
             {error}
           </div>
         )}
@@ -260,7 +260,7 @@ export default function StudentDetailPage() {
           <>
             {blockage && (
               <section className="rounded-2xl border border-[#2A1A10] border-l-[3px] border-l-brand-end bg-[#1A1020] p-4">
-                <p className="text-sm font-bold text-white mb-1">
+                <p className="text-sm font-bold text-text-primary mb-1">
                   Blocage détecté sur « {blockage.trickName} »
                 </p>
                 <p className="text-xs text-text-secondary mb-3">
@@ -527,7 +527,7 @@ export default function StudentDetailPage() {
                   type="button"
                   disabled={removing}
                   onClick={() => void handleRemoveFromClass()}
-                  className="w-full min-h-11 rounded-2xl py-3 text-sm font-semibold text-alert border border-alert bg-[#2A1020] hover:opacity-80 transition-opacity disabled:opacity-60"
+                  className="w-full min-h-11 rounded-2xl py-3 text-sm font-semibold text-alert border border-alert bg-alert-surface hover:opacity-80 transition-opacity disabled:opacity-60"
                 >
                   {removing ? 'Retrait…' : 'Retirer de la classe'}
                 </button>

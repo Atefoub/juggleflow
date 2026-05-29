@@ -31,10 +31,10 @@ export default function SyncStatusBanner() {
   ) return null;
 
   const tone =
-    offlineSync.lastError ? 'border-alert text-alert bg-[#2A1020]' :
+    offlineSync.lastError ? 'border-alert text-alert bg-alert-surface' :
     recentSuccess && offlineSync.pendingCount === 0 ? 'border-success/30 text-success bg-success/10' :
     offlineSync.isSyncing ? 'border-border text-text-secondary bg-bg-card' :
-    !isOnline ? 'border-brand/35 bg-[#1A1028] text-brand-end' :
+    !isOnline ? 'border-brand/35 bg-accent-surface text-brand-end' :
     'border-success/30 text-success bg-success/10';
 
   const message =

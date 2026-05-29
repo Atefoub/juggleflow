@@ -172,7 +172,7 @@ export default function TrickDetailPage() {
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
 
       {/* Header */}
-      <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
+      <header className="px-5 pt-12 pb-4 bg-bg-header border-b border-border">
         <button
           onClick={() => navigate(-1)}
           aria-label="Retour au catalogue"
@@ -231,7 +231,7 @@ export default function TrickDetailPage() {
         <OfflineBanner message="Hors connexion — cette fiche peut être incomplète si elle n'a pas été consultée auparavant." />
 
         {error && (
-          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
+          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-alert-surface border border-alert">
             {!isOnline ? 'Hors connexion. Connecte-toi pour charger la fiche une première fois.' : error}
           </div>
         )}
@@ -388,7 +388,7 @@ export default function TrickDetailPage() {
 
             {/* Erreur sauvegarde */}
             {statusError && (
-              <div className="p-3 rounded-xl text-xs text-alert bg-[#2A1020] border border-alert">
+              <div className="p-3 rounded-xl text-xs text-alert bg-alert-surface border border-alert">
                 {statusError}
               </div>
             )}

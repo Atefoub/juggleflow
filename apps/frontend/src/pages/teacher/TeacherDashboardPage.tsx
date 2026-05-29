@@ -99,13 +99,13 @@ export default function TeacherDashboardPage() {
     <div className="flex flex-1 flex-col w-full min-h-0">
 
       {/* Header */}
-      <div className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-[#0D1235] border-b border-border">
+      <div className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-bg-header border-b border-border">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-brand to-brand-end text-xs font-bold text-white">
             Prof
           </div>
           <div className="flex-1">
-            <p className="font-display font-bold text-white text-sm">
+            <p className="font-display font-bold text-text-primary text-sm">
               {user ? `${user.firstName} ${user.lastName}` : '—'}
             </p>
             {selectedClass && (
@@ -149,7 +149,7 @@ export default function TeacherDashboardPage() {
 
         {/* Erreur */}
         {error && (
-          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert lg:col-span-2">
+          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-alert-surface border border-alert lg:col-span-2">
             {error}
           </div>
         )}
@@ -170,12 +170,12 @@ export default function TeacherDashboardPage() {
                 <p className="text-xs uppercase tracking-widest mb-1 text-text-muted">
                   Progression moyenne
                 </p>
-                <p className="font-display text-4xl font-bold text-white">{avgProgress}%</p>
+                <p className="font-display text-4xl font-bold text-text-primary">{avgProgress}%</p>
                 <p className="text-xs mt-1 text-text-secondary">
                   {students.length} élève{students.length > 1 ? 's' : ''} dans la classe
                 </p>
               </div>
-              <div className="flex items-center justify-center w-18 h-18 rounded-full shrink-0 border-4 border-brand text-xs font-bold text-white">
+              <div className="flex items-center justify-center w-18 h-18 rounded-full shrink-0 border-4 border-brand text-xs font-bold text-text-primary">
                 {avgProgress}%
               </div>
             </div>
@@ -184,7 +184,7 @@ export default function TeacherDashboardPage() {
             {students.length > 0 && (
               <div className="lg:col-span-1">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-display font-bold text-white text-sm uppercase tracking-wider">
+                  <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
                     Groupes d'élèves
                   </h2>
                   {selectedClass && (
@@ -223,7 +223,7 @@ export default function TeacherDashboardPage() {
                             style={{ backgroundColor: GROUP_COLOR_MAP[color] }}
                           />
                           <div className="flex-1">
-                            <p className="text-sm font-bold text-white">
+                            <p className="text-sm font-bold text-text-primary">
                               Groupe {color.charAt(0) + color.slice(1).toLowerCase()}
                             </p>
                             <p className="text-xs text-text-muted">
@@ -234,7 +234,7 @@ export default function TeacherDashboardPage() {
                             <div className="w-17.5">
                               <ProgressBar value={avg} color={GROUP_COLOR_MAP[color]} height="6px" />
                             </div>
-                            <span className="text-sm font-bold text-white min-w-8 text-right">
+                            <span className="text-sm font-bold text-text-primary min-w-8 text-right">
                               {avg}%
                             </span>
                           </div>
@@ -250,7 +250,7 @@ export default function TeacherDashboardPage() {
               <div className="flex items-start gap-3 rounded-2xl border border-[#2A1A10] border-l-[3px] border-l-brand-end bg-[#1A1020] p-4 lg:col-span-2">
                 <AppIcon name="alert-warning" size={20} className="shrink-0" label="Attention" />
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-white mb-1">
+                  <p className="text-sm font-bold text-text-primary mb-1">
                     {exerciseBlockedStudents.length} élève{exerciseBlockedStudents.length > 1 ? 's' : ''}{' '}
                     bloqué{exerciseBlockedStudents.length > 1 ? 's' : ''} sur une figure
                   </p>
@@ -280,7 +280,7 @@ export default function TeacherDashboardPage() {
               <div className="flex items-start gap-3 rounded-2xl border border-[#2A1A10] border-l-[3px] border-l-brand-end bg-[#1A1020] p-4 lg:col-span-2">
                 <AppIcon name="alert-warning" size={20} className="shrink-0" label="Attention" />
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-white mb-1">
+                  <p className="text-sm font-bold text-text-primary mb-1">
                     {blockedStudents.length} élève{blockedStudents.length > 1 ? 's' : ''} en difficulté
                   </p>
                   <p className="text-xs text-text-secondary">
@@ -309,7 +309,7 @@ export default function TeacherDashboardPage() {
             {selectedClass && (
               <section className="lg:col-span-2">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-display font-bold text-white text-sm uppercase tracking-wider">
+                  <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
                     Parcours assignés
                   </h2>
                   <button
@@ -322,7 +322,7 @@ export default function TeacherDashboardPage() {
                 </div>
 
                 {pathsError && (
-                  <div className="p-3 rounded-2xl text-xs text-alert bg-[#2A1020] border border-alert mb-3">
+                  <div className="p-3 rounded-2xl text-xs text-alert bg-alert-surface border border-alert mb-3">
                     {pathsError}
                   </div>
                 )}
@@ -345,7 +345,7 @@ export default function TeacherDashboardPage() {
                         className="p-4 rounded-2xl bg-bg-card border border-border flex items-start justify-between gap-3"
                       >
                         <div className="min-w-0">
-                          <p className="text-sm font-bold text-white truncate">{p.pathName}</p>
+                          <p className="text-sm font-bold text-text-primary truncate">{p.pathName}</p>
                           <p className="text-xs text-text-muted mt-0.5">
                             {p.stepCount} figure{p.stepCount > 1 ? 's' : ''}
                             {p.estimatedDurationDays ? ` · ~${p.estimatedDurationDays} jours` : ''}
@@ -385,7 +385,7 @@ export default function TeacherDashboardPage() {
 
             {/* Actions rapides */}
             <div className="lg:col-span-2">
-              <h2 className="font-display font-bold text-white text-sm uppercase tracking-wider mb-3">
+              <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
                 Actions rapides
               </h2>
               <div className="flex flex-wrap gap-2">
