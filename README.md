@@ -19,6 +19,7 @@ L'application fonctionne comme une **Progressive Web App (PWA)** : elle s'instal
 - [Comptes de démonstration](#comptes-de-démonstration)
 - [Structure du projet](#structure-du-projet)
 - [Tests](#tests)
+- [Stratégie de tests RNCP6](docs/RNCP6-TESTS.md)
 - [Déploiement](#déploiement)
 - [Production checklist](#production-checklist)
 - [Rôles et parcours utilisateurs](#rôles-et-parcours-utilisateurs)
@@ -84,7 +85,7 @@ L'application fonctionne comme une **Progressive Web App (PWA)** : elle s'instal
 - **Java** 21+
 - **PostgreSQL** 17 (local ou via Docker)
 - **Redis** 7 (recommandé, requis en multi-instances)
-- Docker ou Podman (optionnel, recommandé)
+- **Podman** ou Docker avec Compose (recommandé pour PostgreSQL, Redis et l’API)
 
 ---
 
@@ -125,14 +126,16 @@ Toutes les autres variables disposent de valeurs par défaut documentées dans `
 
 ## Démarrage
 
-### Avec Docker (recommandé)
+### Avec Podman ou Docker (recommandé)
+
+Les commandes ci-dessous utilisent `podman compose` ; remplacez par `docker compose` si vous utilisez Docker Desktop.
 
 ```bash
 # Démarrer PostgreSQL + Redis
-docker compose up -d postgres redis
+podman compose up -d postgres redis
 
 # Démarrer le backend (les migrations Flyway s'exécutent automatiquement)
-docker compose up backend
+podman compose up backend
 ```
 
 L'API est disponible sur `http://localhost:8080`.
@@ -225,6 +228,8 @@ juggleflow/
 
 ## Tests
 
+Stratégie détaillée pour le dossier RNCP6 : [docs/RNCP6-TESTS.md](docs/RNCP6-TESTS.md).
+
 ### Frontend
 
 ```bash
@@ -234,17 +239,27 @@ npx nx lint frontend       # Lint ESLint
 
 ### E2E (Playwright)
 
-Prérequis : PostgreSQL + API avec données démo (`DEMO_BOOTSTRAP_ENABLED=true`).
+Prérequis : PostgreSQL (+ Redis si `APP_JWT_REVOCATION_STORE=redis` / `APP_RATE_LIMIT_STORE=redis`) et API avec données démo (`DEMO_BOOTSTRAP_ENABLED=true`).
 
 ```bash
-docker compose up -d postgres
-docker compose up backend
-# autre terminal
+podman compose up -d postgres redis
+podman compose up backend
+# autre terminal, à la racine du monorepo
 npx playwright install chromium
 npm run e2e
 ```
 
-Le test smoke vérifie la connexion enseignant (`marie.dupont@ecole.fr` / `Demo2026!`) jusqu'au tableau de bord.
+(`docker compose` fonctionne de la même façon si vous préférez Docker.)
+
+| Variable | Défaut | Usage |
+|----------|--------|--------|
+| `E2E_PASSWORD` | `Demo2026!` | Mot de passe comptes `@ecole.fr` |
+| `E2E_TEACHER_EMAIL` | `marie.dupont@ecole.fr` | Enseignant CE1 |
+| `E2E_STUDENT_EMAIL` | `lucas.martin@ecole.fr` | Élève |
+| `E2E_ADMIN_EMAIL` | `admin@juggleflow.local` | Administrateur |
+| `E2E_ADMIN_PASSWORD` | `Admin2026!` | Mot de passe admin (CI : `ADMIN_BOOTSTRAP_PASSWORD`) |
+
+Scénarios dans `apps/frontend/e2e/` : smoke, session (refresh/logout), parcours élève, admin RGPD, parcours enseignant (blocage, CSV, assignation), rate limit API (`z-rate-limit.spec.ts`, exécuté en dernier).
 
 ### Backend
 
@@ -256,7 +271,7 @@ cd apps/backend
 
 ### CI
 
-Chaque push sur `master` et chaque pull request déclenchent automatiquement lint + tests + build (frontend et backend) et un **test E2E smoke** Playwright via GitHub Actions.
+Chaque push sur `master` et chaque pull request déclenchent lint + tests + build (frontend et backend) et la suite **E2E Playwright** (PostgreSQL + Redis + bootstrap démo) via GitHub Actions.
 
 ---
 

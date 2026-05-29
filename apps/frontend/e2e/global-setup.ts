@@ -1,6 +1,6 @@
 /**
  * Vérifie que l'API est joignable avant les tests E2E.
- * En local : `docker compose up -d postgres && docker compose up backend`
+ * En local : `podman compose up -d postgres redis` puis `podman compose up backend`
  */
 export default async function globalSetup(): Promise<void> {
   const backendBase = process.env.PLAYWRIGHT_BACKEND_URL ?? 'http://localhost:8080';
@@ -19,6 +19,6 @@ export default async function globalSetup(): Promise<void> {
 
   throw new Error(
     `Backend indisponible (${healthUrl}). ` +
-      'Démarrez PostgreSQL + API : docker compose up -d postgres && docker compose up backend',
+      'Démarrez PostgreSQL + API : podman compose up -d postgres redis && podman compose up backend',
   );
 }
