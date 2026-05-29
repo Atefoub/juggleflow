@@ -199,10 +199,10 @@ export default function TeacherDashboardPage() {
                     </button>
                   )}
                 </div>
-                <div className="rounded-2xl overflow-hidden border border-border">
+                <div className="rounded-2xl overflow-hidden border border-border divide-y divide-border">
                   {(['VERT', 'ORANGE', 'ROUGE'] as const)
                     .filter((color) => groups[color].length > 0)
-                    .map((color, index, arr) => {
+                    .map((color) => {
                       const group = groups[color];
                       const avg = averageProgress(group);
                       return (
@@ -215,8 +215,7 @@ export default function TeacherDashboardPage() {
                               `/teacher/groupes?classId=${selectedClass.id}&group=${color}`,
                             )
                           }
-                          className="flex w-full items-center gap-3 p-4 bg-bg-card text-left transition-colors hover:bg-[#121830]"
-                          style={{ borderBottom: index < arr.length - 1 ? '1px solid #1E2847' : 'none' }}
+                          className="flex w-full items-center gap-3 p-4 bg-bg-card text-left transition-colors hover:bg-surface-hover"
                         >
                           <div
                             className="w-2.5 h-2.5 rounded-full shrink-0"
@@ -247,7 +246,7 @@ export default function TeacherDashboardPage() {
 
             {/* Alerte blocage sur figure (parcours) */}
             {exerciseBlockedStudents.length > 0 && selectedClass && (
-              <div className="flex items-start gap-3 rounded-2xl border border-[#2A1A10] border-l-[3px] border-l-brand-end bg-[#1A1020] p-4 lg:col-span-2">
+              <div className="flex items-start gap-3 rounded-2xl border border-border border-l-[3px] border-l-brand-end bg-accent-surface p-4 lg:col-span-2">
                 <AppIcon name="alert-warning" size={20} className="shrink-0" label="Attention" />
                 <div className="flex-1">
                   <p className="text-sm font-bold text-text-primary mb-1">
@@ -277,7 +276,7 @@ export default function TeacherDashboardPage() {
 
             {/* Alerte élèves en difficulté (groupe rouge) */}
             {blockedStudents.length > 0 && (
-              <div className="flex items-start gap-3 rounded-2xl border border-[#2A1A10] border-l-[3px] border-l-brand-end bg-[#1A1020] p-4 lg:col-span-2">
+              <div className="flex items-start gap-3 rounded-2xl border border-border border-l-[3px] border-l-brand-end bg-accent-surface p-4 lg:col-span-2">
                 <AppIcon name="alert-warning" size={20} className="shrink-0" label="Attention" />
                 <div className="flex-1">
                   <p className="text-sm font-bold text-text-primary mb-1">
