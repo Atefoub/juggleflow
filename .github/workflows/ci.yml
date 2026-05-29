@@ -115,7 +115,7 @@ jobs:
           REDIS_PORT: "6379"
           APP_JWT_REVOCATION_STORE: redis
           APP_RATE_LIMIT_STORE: redis
-          APP_RATE_LIMIT_MAX_REQUESTS: "60"
+          APP_TRUSTED_PROXY: "true"
         run: |
           chmod +x mvnw
           ./mvnw -q spring-boot:run > ../../backend-e2e.log 2>&1 &

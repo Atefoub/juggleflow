@@ -2,9 +2,11 @@ import { test, expect } from '@playwright/test';
 import { backendUrl } from './helpers/auth';
 
 /**
- * Exécuté en dernier (préfixe z-) pour limiter l'impact sur les autres scénarios
- * qui consomment aussi le quota de login (10 req/min/IP).
+ * Exécuté en dernier (préfixe z-). IP isolée via X-Forwarded-For (CI : APP_TRUSTED_PROXY=true)
+ * pour ne pas partager le quota avec les logins UI des autres specs.
  */
+const RATE_LIMIT_TEST_IP = '203.0.113.77';
+
 test.describe('Rate limiting (API)', () => {
   test('login: trop de tentatives → HTTP 429', async ({ request }) => {
     const url = backendUrl('/api/auth/login');
@@ -16,7 +18,10 @@ test.describe('Rate limiting (API)', () => {
           email: 'rate-limit-e2e@ecole.fr',
           password: 'WrongPassword!',
         },
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Forwarded-For': RATE_LIMIT_TEST_IP,
+        },
       });
 
       if (response.status() === 429) {
