@@ -32,7 +32,7 @@ export default function OnboardingPage() {
         <div className="text-4xl mb-4">
           <AppIcon name="juggler" size={40} label="Jongleur" />
         </div>
-        <h1 className="font-display text-2xl font-bold text-white mb-2">
+        <h1 className="font-display text-2xl font-bold text-text-primary mb-2">
           Bienvenue sur JuggleFlow !
         </h1>
         <p className="text-text-secondary text-sm">
@@ -41,7 +41,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Question */}
-      <h2 className="font-display text-lg font-bold text-white mb-2">
+      <h2 className="font-display text-lg font-bold text-text-primary mb-2">
         Quel est ton niveau en jonglage ?
       </h2>
       <p className="mb-6 text-sm text-text-secondary">
@@ -59,7 +59,7 @@ export default function OnboardingPage() {
               className={[
                 'flex items-center gap-4 p-4 rounded-2xl text-left transition-all min-h-18',
                 isSelected
-                  ? 'bg-[#1A0E2E] border-2 border-brand'
+                  ? 'bg-accent-surface border-2 border-brand'
                   : 'bg-bg-card border-2 border-border',
               ].join(' ')}
             >
@@ -76,7 +76,7 @@ export default function OnboardingPage() {
                 />
               </div>
               <div className="flex-1">
-                <div className={`font-bold text-sm mb-1 ${isSelected ? 'text-white' : 'text-text-secondary'}`}>
+                <div className={`font-bold text-sm mb-1 ${isSelected ? 'text-text-primary' : 'text-text-secondary'}`}>
                   {level.label}
                 </div>
                 <div className="text-xs text-text-muted">{level.description}</div>

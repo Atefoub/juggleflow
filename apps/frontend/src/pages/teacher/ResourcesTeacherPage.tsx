@@ -73,7 +73,7 @@ export default function ResourcesTeacherPage() {
   return (
     <div className="flex flex-1 flex-col w-full min-h-0">
 
-      <header className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-[#0D1235] border-b border-border">
+      <header className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-bg-header border-b border-border">
         <h1 className="font-display font-bold text-text-primary text-2xl mb-4">Ressources</h1>
         <p className="text-xs text-text-secondary mb-4">Contenus pédagogiques et scientifiques</p>
 
@@ -202,7 +202,7 @@ function PdfCard({ res }: { res: PedagogicalResource }) {
   return (
     <div className="p-4 rounded-2xl bg-bg-card border border-border">
       <div className="flex items-start gap-3 mb-3">
-        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#2A1020] border border-alert/30 shrink-0">
+        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-alert-surface border border-alert/30 shrink-0">
           <AppIcon name="pdf-document" size={20} label="PDF" />
         </div>
         <div className="flex-1">

@@ -11,7 +11,7 @@ export default function OfflineBanner({
   if (isOnline) return null;
 
   return (
-    <div className={['rounded-xl border border-brand/35 bg-[#1A1028] p-3', className].join(' ')}>
+    <div className={['rounded-xl border border-brand/35 bg-accent-surface p-3', className].join(' ')}>
       <p className="text-xs text-brand-end">{message}</p>
     </div>
   );

@@ -113,7 +113,7 @@ export default function TeacherPathDetailPage() {
 
   return (
     <div className="flex flex-1 flex-col w-full min-h-0">
-      <header className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-[#0D1235] border-b border-border">
+      <header className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-bg-header border-b border-border">
         <div className="flex items-center justify-between gap-3 mb-3">
           <button
             onClick={() => navigate(-1)}
@@ -161,7 +161,7 @@ export default function TeacherPathDetailPage() {
           <div className="flex items-end justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-widest mb-1 text-text-muted">Progression moyenne</p>
-              <p className="font-display text-4xl font-bold text-white">{classAvg}%</p>
+              <p className="font-display text-4xl font-bold text-text-primary">{classAvg}%</p>
             </div>
             <div className="text-xs text-text-muted text-right">
               {path?.stepCount ? `${path.stepCount} figure${path.stepCount > 1 ? 's' : ''}` : '—'}
@@ -176,7 +176,7 @@ export default function TeacherPathDetailPage() {
 
       <main className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 flex flex-col gap-4">
         {error && (
-          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
+          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-alert-surface border border-alert">
             {error}
           </div>
         )}
@@ -207,14 +207,14 @@ export default function TeacherPathDetailPage() {
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-white truncate">
+                        <p className="text-sm font-bold text-text-primary truncate">
                           {s.firstName} {s.lastName}
                         </p>
                         <p className="text-xs text-text-muted">
                           {s.masteredCount} / {s.totalSteps} figures maîtrisées
                         </p>
                       </div>
-                      <div className="text-sm font-bold text-white shrink-0">{p}%</div>
+                      <div className="text-sm font-bold text-text-primary shrink-0">{p}%</div>
                     </div>
                     <div className="mt-3">
                       <ProgressBar value={p} color="#8B2BE2" height="6px" />

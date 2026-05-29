@@ -51,6 +51,10 @@ public class Student extends User {
     @Builder.Default
     private boolean practiceRemindersEnabled = true;
 
+    @Column(name = "dark_mode_enabled", nullable = false)
+    @Builder.Default
+    private boolean darkModeEnabled = true;
+
     @Override
     public String getRole() {
         return "ROLE_ELEVE";

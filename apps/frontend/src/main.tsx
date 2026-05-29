@@ -3,7 +3,9 @@ import * as ReactDOM from 'react-dom/client';
 import App from './app/app';
 import './index.css';
 import { registerPwa } from './lib/pwaRegister';
+import { initDocumentTheme } from './utils/theme';
 
+initDocumentTheme();
 registerPwa();
 
 // Import des polices Google Fonts
