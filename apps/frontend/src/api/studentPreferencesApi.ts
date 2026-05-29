@@ -2,7 +2,8 @@ import { api } from './authApi';
 
 export interface StudentPreferences {
   practiceRemindersEnabled: boolean;
-  darkModeEnabled: boolean;
+  /** Absent si le backend n’est pas à jour — ne pas forcer le sombre dans ce cas. */
+  darkModeEnabled?: boolean;
 }
 
 export type StudentPreferencesPatch = Partial<StudentPreferences>;
