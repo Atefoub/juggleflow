@@ -17,12 +17,15 @@ kubectl apply -f k8s/00-namespace.yaml
 kubectl -n juggleflow apply -f k8s/01-secrets.example.yaml
 ```
 
-2) Déployer PostgreSQL + Redis + Backend:
+2) Déployer PostgreSQL + Redis + Backend (+ sauvegardes / ingress optionnels) :
 
 ```bash
 kubectl -n juggleflow apply -f k8s/10-postgres.yaml
 kubectl -n juggleflow apply -f k8s/20-redis.yaml
 kubectl -n juggleflow apply -f k8s/30-backend.yaml
+# optionnel :
+# kubectl -n juggleflow apply -f k8s/40-ingress.yaml
+# kubectl -n juggleflow apply -f k8s/41-postgres-backup-cronjob.yaml
 ```
 
 3) Vérifier:
@@ -35,6 +38,8 @@ kubectl -n juggleflow logs deploy/juggleflow-backend
 ### Notes importantes
 
 - **Secrets**: remplace `k8s/01-secrets.example.yaml` par un vrai secret (SealedSecrets, ExternalSecrets, etc.).
-- **Ingress**: ajoute un Ingress adapté à ton infrastructure (TLS, host, CORS origins côté backend).
+- **Ingress**: exemple `k8s/40-ingress.yaml` (adapter host + TLS).
+- **Backups**: CronJob exemple `k8s/41-postgres-backup-cronjob.yaml` — tester une restauration hors prod.
+- **Inscription publique**: désactivée en profil `prod` ; comptes via console admin uniquement.
 - **Prod profile**: le backend doit tourner avec `SPRING_PROFILES_ACTIVE=prod` (défaut dans `30-backend.yaml`).
 

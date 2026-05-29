@@ -1,0 +1,31 @@
+# Exemple Ingress TLS (à adapter : host, cert-manager, classe ingress).
+# Prérequis : controller (nginx, traefik…) + certificat (cert-manager ou secret TLS manuel).
+#
+#   kubectl apply -f k8s/40-ingress.yaml
+#
+# Backend : APP_TRUSTED_PROXY=true, CORS_ALLOWED_ORIGINS=https://juggleflow.example.fr
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: juggleflow-api
+  annotations:
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "12m"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.juggleflow.example.fr
+      secretName: juggleflow-api-tls
+  rules:
+    - host: api.juggleflow.example.fr
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: juggleflow-backend
+                port:
+                  number: 8080

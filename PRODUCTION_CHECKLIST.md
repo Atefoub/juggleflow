@@ -31,6 +31,7 @@ Cette checklist vise un déploiement **sécurisé**, **reproductible** et **opé
 - `DEMO_BOOTSTRAP_ENABLED=false`
 - `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD` : vides après init
 - `SWAGGER_ENABLED=false` et `SWAGGER_PUBLIC=false`
+- `APP_PUBLIC_REGISTRATION_ENABLED=false` (inscription publique désactivée ; comptes créés par l'admin)
 
 > Le backend fail-fast en profil `prod` si une option dangereuse est activée.
 
