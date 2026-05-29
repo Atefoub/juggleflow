@@ -7,12 +7,15 @@ import { backendUrl } from './helpers/auth';
  */
 const RATE_LIMIT_TEST_IP = '203.0.113.77';
 
+/** CI élève le plafond auth (80) ; il faut dépasser ce quota sur l’IP de test isolée. */
+const PROBE_ATTEMPTS = Number(process.env.E2E_RATE_LIMIT_PROBE_ATTEMPTS ?? 15);
+
 test.describe('Rate limiting (API)', () => {
   test('login: trop de tentatives → HTTP 429', async ({ request }) => {
     const url = backendUrl('/api/auth/login');
     let saw429 = false;
 
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < PROBE_ATTEMPTS; i++) {
       const response = await request.post(url, {
         data: {
           email: 'rate-limit-e2e@ecole.fr',

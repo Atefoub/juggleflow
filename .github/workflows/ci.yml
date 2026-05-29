@@ -147,6 +147,7 @@ jobs:
         env:
           CI: true
           PLAYWRIGHT_BACKEND_URL: http://localhost:8080
+          E2E_RATE_LIMIT_PROBE_ATTEMPTS: "85"
           E2E_PASSWORD: Demo2026!
           E2E_TEACHER_EMAIL: marie.dupont@ecole.fr
           E2E_STUDENT_EMAIL: lucas.martin@ecole.fr
