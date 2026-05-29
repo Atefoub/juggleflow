@@ -36,6 +36,9 @@ public class ProdSafetyChecks {
   @Value("${app.rate-limit.store:memory}")
   private String rateLimitStore;
 
+  @Value("${app.auth.public-registration.enabled:false}")
+  private boolean publicRegistrationEnabled;
+
   @PostConstruct
   void validate() {
     if (!StringUtils.hasText(jwtSecret) || jwtSecret.length() < 32) {
@@ -56,6 +59,11 @@ public class ProdSafetyChecks {
 
     if (!"redis".equalsIgnoreCase(revocationStore) || !"redis".equalsIgnoreCase(rateLimitStore)) {
       throw new IllegalStateException("En production, app.jwt.revocation.store et app.rate-limit.store doivent être à 'redis'.");
+    }
+
+    if (publicRegistrationEnabled) {
+      throw new IllegalStateException(
+        "app.auth.public-registration.enabled doit être false en production.");
     }
   }
 }

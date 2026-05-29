@@ -79,6 +79,13 @@ spec:
                   key: REDIS_PASSWORD
                   optional: true
 
+            - name: APP_JWT_REVOCATION_STORE
+              value: redis
+            - name: APP_RATE_LIMIT_STORE
+              value: redis
+            - name: APP_PUBLIC_REGISTRATION_ENABLED
+              value: "false"
+
           readinessProbe:
             httpGet:
               path: /actuator/health

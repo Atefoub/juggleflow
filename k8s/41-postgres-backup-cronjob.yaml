@@ -1,0 +1,71 @@
+# Sauvegarde quotidienne PostgreSQL (pg_dump) — point de départ ops.
+# Adapter : schedule, rétention, stockage (PVC/S3) et test de restauration documenté.
+#
+# Prérequis : secret juggleflow-secrets avec POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+# (aligné sur k8s/01-secrets.example.yaml).
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: juggleflow-postgres-backup
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: postgres:17-alpine
+              env:
+                - name: PGHOST
+                  value: juggleflow-postgres
+                - name: PGPORT
+                  value: "5432"
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: juggleflow-secrets
+                      key: POSTGRES_USER
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: juggleflow-secrets
+                      key: POSTGRES_PASSWORD
+                - name: PGDATABASE
+                  valueFrom:
+                    secretKeyRef:
+                      name: juggleflow-secrets
+                      key: POSTGRES_DB
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+                  FILE="/backups/juggleflow-${STAMP}.sql.gz"
+                  pg_dump --no-owner --format=plain | gzip -c > "${FILE}"
+                  echo "Backup written: ${FILE}"
+                  ls -la /backups/
+              volumeMounts:
+                - name: backup-data
+                  mountPath: /backups
+          volumes:
+            - name: backup-data
+              persistentVolumeClaim:
+                claimName: juggleflow-postgres-backup
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: juggleflow-postgres-backup
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

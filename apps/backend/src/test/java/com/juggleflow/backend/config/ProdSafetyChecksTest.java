@@ -27,9 +27,35 @@ class ProdSafetyChecksTest {
         "springdoc.swagger-ui.enabled=false",
         "springdoc.api-docs.enabled=false",
         "app.jwt.revocation.store=redis",
-        "app.rate-limit.store=redis"
+        "app.rate-limit.store=redis",
+        "app.auth.public-registration.enabled=false"
       )
       .run(context -> assertThat(context).hasNotFailed());
+  }
+
+  @Test
+  @DisplayName("prod safety checks → fail si inscription publique activée")
+  void shouldFailWhenPublicRegistrationEnabled() {
+    runner
+      .withPropertyValues(
+        "spring.profiles.active=prod",
+        "jwt.secret=TestSecretKeyTresLongueMinimum32CaractersPourLesTests2026!!",
+        "cookie.secure=true",
+        "demo.bootstrap.enabled=false",
+        "springdoc.swagger-ui.enabled=false",
+        "springdoc.api-docs.enabled=false",
+        "app.jwt.revocation.store=redis",
+        "app.rate-limit.store=redis",
+        "app.auth.public-registration.enabled=true"
+      )
+      .run(context -> {
+        assertThat(context).hasFailed();
+        Throwable root = context.getStartupFailure();
+        while (root != null && root.getCause() != null) {
+          root = root.getCause();
+        }
+        assertThat(root).hasMessageContaining("public-registration.enabled");
+      });
   }
 
   @Test
