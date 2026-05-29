@@ -7,10 +7,13 @@ const THEME_COLOR = {
   light: '#F7F8FA',
 } as const;
 
-/** Applique le thème sur `<html>` (sombre par défaut). */
+/**
+ * Applique le thème sur `<html>`.
+ * Sombre par défaut (pas d’attribut `data-theme`) ; clair uniquement si `darkMode === false`.
+ */
 export function applyDocumentTheme(darkMode: boolean): void {
   const root = document.documentElement;
-  if (darkMode) {
+  if (darkMode !== false) {
     root.removeAttribute('data-theme');
   } else {
     root.setAttribute('data-theme', 'light');
