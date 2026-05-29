@@ -23,10 +23,10 @@ const PILL_CHIP_CLASS: Record<string, string> = {
 };
 
 const CATALOGUE_CHIP_CLASS: Record<string, string> = {
-  Beginner: 'text-[#22C55E] bg-[rgba(34,197,94,0.12)]',
-  Intermediate: 'text-[#C724B1] bg-[rgba(139,43,226,0.14)]',
-  Advanced: 'text-[#8B2BE2] bg-[rgba(139,43,226,0.12)]',
-  Expert: 'text-[#FF4D4D] bg-[rgba(255,77,77,0.12)]',
+  Beginner: 'text-success bg-success/10',
+  Intermediate: 'text-brand-end bg-brand/12',
+  Advanced: 'text-brand bg-brand/10',
+  Expert: 'text-alert bg-alert/10',
 };
 
 export type LevelChipVariant = 'pill' | 'catalogue';

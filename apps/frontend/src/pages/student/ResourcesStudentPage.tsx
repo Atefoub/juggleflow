@@ -355,7 +355,7 @@ export default function ResourcesStudentPage() {
                             type="button"
                             onClick={() => openExternalResource(src.resourceUrl)}
                             disabled={!src.resourceUrl}
-                            className="flex items-center justify-between gap-2 rounded-lg border border-border bg-bg-primary/50 px-3 py-2 text-left hover:opacity-90 disabled:opacity-50"
+                            className="flex items-center justify-between gap-2 rounded-lg border border-border bg-bg-input px-3 py-2 text-left hover:bg-surface-hover transition-colors disabled:opacity-50"
                           >
                             <div>
                               <p className="text-xs font-semibold text-text-primary">{src.title}</p>

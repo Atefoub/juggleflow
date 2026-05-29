@@ -203,7 +203,7 @@ export default function TeacherPathDetailPage() {
                     key={s.studentId}
                     type="button"
                     onClick={() => navigate(`/teacher/eleve/${s.studentId}?classId=${classId}&pathId=${pathId}`)}
-                    className="p-4 rounded-2xl bg-bg-card border border-border text-left hover:bg-white/5 transition-colors"
+                    className="p-4 rounded-2xl bg-bg-card border border-border text-left hover:bg-surface-hover transition-colors"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">

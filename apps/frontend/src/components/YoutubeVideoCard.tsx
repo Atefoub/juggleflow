@@ -75,7 +75,7 @@ export default function YoutubeVideoCard({
             <div
               className="absolute inset-0 flex items-center justify-center"
               style={{
-                background: `linear-gradient(135deg, ${fallbackAccent}40, #111638)`,
+                background: `linear-gradient(135deg, ${fallbackAccent}40, var(--color-bg-card))`,
               }}
             >
               <AppIcon name={fallbackIcon} size={56} label={title} />
