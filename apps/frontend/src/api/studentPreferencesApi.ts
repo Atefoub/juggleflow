@@ -2,7 +2,10 @@ import { api } from './authApi';
 
 export interface StudentPreferences {
   practiceRemindersEnabled: boolean;
+  darkModeEnabled: boolean;
 }
+
+export type StudentPreferencesPatch = Partial<StudentPreferences>;
 
 export const studentPreferencesApi = {
   get: async (): Promise<StudentPreferences> => {
@@ -10,10 +13,8 @@ export const studentPreferencesApi = {
     return data;
   },
 
-  update: async (practiceRemindersEnabled: boolean): Promise<StudentPreferences> => {
-    const { data } = await api.patch<StudentPreferences>('/eleve/preferences', {
-      practiceRemindersEnabled,
-    });
+  update: async (patch: StudentPreferencesPatch): Promise<StudentPreferences> => {
+    const { data } = await api.patch<StudentPreferences>('/eleve/preferences', patch);
     return data;
   },
 };

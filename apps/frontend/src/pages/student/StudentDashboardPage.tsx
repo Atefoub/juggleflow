@@ -129,7 +129,7 @@ export default function StudentDashboardPage() {
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
 
       {/* ── Header ── */}
-      <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
+      <header className="px-5 pt-12 pb-4 bg-bg-header border-b border-border">
 
         <div className="flex items-center gap-3 mb-4">
           <div className="flex items-center justify-center w-11 h-11 rounded-full font-bold text-sm text-text-primary shrink-0 bg-linear-to-br from-brand to-brand-end">
@@ -166,7 +166,7 @@ export default function StudentDashboardPage() {
 
         {/* Erreur */}
         {error && (
-          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
+          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-alert-surface border border-alert">
             {error}
           </div>
         )}

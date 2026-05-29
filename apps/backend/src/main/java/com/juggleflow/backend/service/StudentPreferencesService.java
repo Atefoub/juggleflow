@@ -20,6 +20,7 @@ public class StudentPreferencesService {
         Student student = findStudent(studentEmail);
         return StudentPreferencesResponse.builder()
             .practiceRemindersEnabled(student.isPracticeRemindersEnabled())
+            .darkModeEnabled(student.isDarkModeEnabled())
             .build();
     }
 
@@ -28,7 +29,12 @@ public class StudentPreferencesService {
         String studentEmail,
         UpdateStudentPreferencesRequest request) {
         Student student = findStudent(studentEmail);
-        student.setPracticeRemindersEnabled(Boolean.TRUE.equals(request.getPracticeRemindersEnabled()));
+        if (request.getPracticeRemindersEnabled() != null) {
+            student.setPracticeRemindersEnabled(request.getPracticeRemindersEnabled());
+        }
+        if (request.getDarkModeEnabled() != null) {
+            student.setDarkModeEnabled(request.getDarkModeEnabled());
+        }
         studentRepository.save(student);
         return getPreferences(studentEmail);
     }

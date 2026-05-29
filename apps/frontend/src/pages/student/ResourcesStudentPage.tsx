@@ -152,7 +152,7 @@ export default function ResourcesStudentPage() {
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
 
       {/* Header */}
-      <header className="px-5 pt-12 pb-4 bg-[#0D1235] border-b border-border">
+      <header className="px-5 pt-12 pb-4 bg-bg-header border-b border-border">
         <h1 className="font-display font-bold text-text-primary text-2xl mb-1">À explorer</h1>
         <p className="text-xs text-text-secondary mb-4">Vidéos, exercices et modules pour progresser</p>
 
@@ -259,7 +259,7 @@ export default function ResourcesStudentPage() {
             {/* Module card */}
             <div className="rounded-2xl overflow-hidden bg-bg-card border border-border">
               {/* Illustration */}
-              <div className="h-32 flex items-center justify-center bg-linear-to-br from-[#1A0A2E] to-bg-primary border-b border-border">
+              <div className="h-32 flex items-center justify-center bg-linear-to-br from-accent-surface to-bg-primary border-b border-border">
                 <AppIcon name="brain" size={56} className="text-brand-end" label="Module cerveau" />
               </div>
               <div className="p-4">

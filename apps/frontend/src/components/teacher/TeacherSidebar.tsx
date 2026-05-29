@@ -1,5 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import AppIcon from '../icons/AppIcon';
+import DarkModeToggle from '../DarkModeToggle';
 import { TEACHER_NAV_ITEMS, isTeacherNavItemActive } from './teacherNav';
 
 interface TeacherSidebarProps {
@@ -7,6 +9,7 @@ interface TeacherSidebarProps {
 }
 
 export default function TeacherSidebar({ onItemClick }: TeacherSidebarProps) {
+  const { user } = useAuth();
   const { pathname } = useLocation();
 
   return (
@@ -51,6 +54,10 @@ export default function TeacherSidebar({ onItemClick }: TeacherSidebarProps) {
           })}
         </ul>
       </nav>
+
+      <div className="border-t border-border px-4 py-3">
+        <DarkModeToggle userId={user?.id} className="px-1" />
+      </div>
 
       <div className="border-t border-border px-5 py-4">
         <p className="text-[0.6875rem] leading-relaxed text-text-muted">

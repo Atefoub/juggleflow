@@ -8,4 +8,5 @@ import lombok.Data;
 public class StudentPreferencesResponse {
 
     private boolean practiceRemindersEnabled;
+    private boolean darkModeEnabled;
 }
