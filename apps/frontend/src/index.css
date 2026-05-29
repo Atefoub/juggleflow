@@ -17,6 +17,7 @@
   --color-bg-header: #0D1235;
   --color-accent-surface: #1A1028;
   --color-alert-surface: #2A1020;
+  --color-surface-hover: #121830;
 
   /* Marque */
   --color-brand: #8B2BE2;
@@ -27,6 +28,7 @@
   --color-info: #00B4D8;
   --color-alert: #FF4D4D;
   --color-success: #0CC896;
+  --color-favorite: #FBBF24;
 
   /* Rôles */
   --color-student: #C724B1;
@@ -112,6 +114,7 @@
     --color-bg-header: #FFFFFF;
     --color-accent-surface: #F3E8FF;
     --color-alert-surface: #FEE2E2;
+    --color-surface-hover: #F1F5F9;
 
     --color-text-primary: #0F172A;
     --color-text-secondary: #475569;
@@ -121,6 +124,7 @@
     --color-border-active: #7C3AED;
 
     --color-alert: #DC2626;
+    --color-favorite: #CA8A04;
   }
 
   h1, h2, h3, h4 {

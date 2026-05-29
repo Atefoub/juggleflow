@@ -15,7 +15,7 @@ export default function PwaUpdateBanner() {
   return (
     <div
       role="status"
-      className="fixed top-0 inset-x-0 z-50 flex items-center justify-between gap-3 px-4 py-3 bg-[#1A1028] border-b border-brand/40 shadow-lg max-w-107.5 mx-auto"
+      className="fixed top-0 inset-x-0 z-50 flex items-center justify-between gap-3 px-4 py-3 bg-accent-surface border-b border-brand/40 shadow-lg max-w-107.5 mx-auto"
     >
       <p className="text-xs text-brand-end">Une nouvelle version de JuggleFlow est disponible.</p>
       <button

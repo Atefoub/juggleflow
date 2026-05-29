@@ -43,7 +43,7 @@ const VARIANT: Record<AnimationPreviewVariant, VariantConfig> = {
     placeholderIcon: 48,
     emptyFrameClass:
       'rounded-2xl bg-bg-card border border-border h-48 flex flex-col items-center justify-center gap-2',
-    imgClass: 'w-full max-h-72 object-contain bg-black/30',
+    imgClass: 'w-full max-h-72 object-contain bg-bg-input',
     iframeClass: 'w-full h-48 border-none',
     wrapper: 'card',
   },
@@ -52,7 +52,7 @@ const VARIANT: Record<AnimationPreviewVariant, VariantConfig> = {
     pointerEventsNone: false,
     emptyFallback: 'hidden',
     placeholderIcon: 40,
-    imgClass: 'w-full max-h-44 object-contain bg-black/30',
+    imgClass: 'w-full max-h-44 object-contain bg-bg-input',
     iframeClass: 'w-full h-40 border-none',
     wrapper: 'session-section',
   },
