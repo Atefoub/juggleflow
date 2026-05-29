@@ -49,7 +49,7 @@ export function TrickCard({ trick, status, onOpen }: TrickCardProps) {
         type="button"
         onClick={() => onOpen(trick)}
         aria-label={`Voir la figure ${trick.name}`}
-        className="shrink-0 flex items-center justify-center w-9 h-9 rounded-xl text-xs font-bold text-white bg-linear-to-br from-[#8B2BE2] to-[#C724B1] transition-opacity hover:opacity-80"
+        className="shrink-0 flex items-center justify-center w-9 h-9 rounded-xl text-xs font-bold text-white bg-linear-to-br from-brand to-brand-end transition-opacity hover:opacity-80"
       >
         →
       </button>

@@ -301,7 +301,7 @@ export default function GroupManagementPage() {
                             'flex items-center gap-2 rounded-xl border px-2 py-1.5 text-left cursor-grab active:cursor-grabbing',
                             dragStudentId === s.id
                               ? 'opacity-50 border-brand/50'
-                              : 'border-border bg-[#121830]',
+                              : 'border-border bg-surface-hover',
                             savingId === s.id ? 'pointer-events-none' : '',
                           ].join(' ')}
                         >
@@ -378,7 +378,7 @@ export default function GroupManagementPage() {
                 Élèves
               </h2>
               <div className="rounded-2xl overflow-hidden border border-border">
-                <div className="hidden sm:grid grid-cols-[1fr_80px_100px] gap-2 px-4 py-2 bg-[#121830] text-[0.65rem] font-semibold uppercase tracking-wider text-text-muted">
+                <div className="hidden sm:grid grid-cols-[1fr_80px_100px] gap-2 px-4 py-2 bg-bg-header text-[0.65rem] font-semibold uppercase tracking-wider text-text-muted">
                   <span>Élève</span>
                   <span className="text-right">Progression</span>
                   <span className="text-right">Dernière co.</span>

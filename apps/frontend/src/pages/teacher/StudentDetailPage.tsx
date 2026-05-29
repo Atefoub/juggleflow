@@ -259,7 +259,7 @@ export default function StudentDetailPage() {
         {!loading && !error && student && (
           <>
             {blockage && (
-              <section className="rounded-2xl border border-[#2A1A10] border-l-[3px] border-l-brand-end bg-[#1A1020] p-4">
+              <section className="rounded-2xl border border-border border-l-[3px] border-l-brand-end bg-accent-surface p-4">
                 <p className="text-sm font-bold text-text-primary mb-1">
                   Blocage détecté sur « {blockage.trickName} »
                 </p>

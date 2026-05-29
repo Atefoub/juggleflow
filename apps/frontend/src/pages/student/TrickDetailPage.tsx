@@ -204,15 +204,15 @@ export default function TrickDetailPage() {
                 className={[
                   'w-10 h-10 rounded-xl border flex items-center justify-center text-lg transition-colors',
                   isFavorite
-                    ? 'border-[#FBBF24] bg-[rgba(251,191,36,0.15)] text-[#FBBF24]'
-                    : 'border-border bg-bg-card text-text-muted hover:text-[#FBBF24]',
+                    ? 'border-favorite bg-favorite/15 text-favorite'
+                    : 'border-border bg-bg-card text-text-muted hover:text-favorite',
                   favoriteBusy ? 'opacity-50' : '',
                 ].join(' ')}
               >
                 <AppIcon
                   name={isFavorite ? 'star-filled' : 'star-outline'}
                   size={20}
-                  className={isFavorite ? 'text-[#FBBF24]' : undefined}
+                  className={isFavorite ? 'text-favorite' : undefined}
                   label={isFavorite ? 'Favori' : 'Ajouter aux favoris'}
                 />
               </button>

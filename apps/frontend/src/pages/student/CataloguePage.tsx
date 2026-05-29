@@ -40,12 +40,12 @@ const PAGE_SIZE = 10;
 
 
 const FILTER_ACTIVE_CLASS: Record<FilterLevel, string> = {
-  Tous:         'bg-linear-to-br from-[#8B2BE2] to-[#C724B1] text-white border-[#8B2BE2]',
-  Beginner:     'bg-[rgba(34,197,94,0.12)] text-[#22C55E] border-[#22C55E]',
-  Intermediate: 'bg-[rgba(139,43,226,0.14)] text-[#C724B1] border-[#8B2BE2]',
-  Advanced:     'bg-[rgba(139,43,226,0.12)] text-[#8B2BE2] border-[#8B2BE2]',
-  Expert:       'bg-[rgba(255,77,77,0.12)] text-[#FF4D4D] border-[#FF4D4D]',
-  Favoris:      'bg-[rgba(255,193,7,0.15)] text-[#FBBF24] border-[#FBBF24]',
+  Tous:         'bg-linear-to-br from-brand to-brand-end text-white border-brand',
+  Beginner:     'text-success bg-success/10 border border-success/30',
+  Intermediate: 'text-brand-end bg-brand/12 border border-brand/35',
+  Advanced:     'text-brand bg-brand/10 border border-brand/30',
+  Expert:       'text-alert bg-alert/10 border border-alert/30',
+  Favoris:      'text-favorite bg-favorite/15 border border-favorite/40',
 };
 
 
