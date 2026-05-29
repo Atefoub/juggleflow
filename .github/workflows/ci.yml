@@ -56,7 +56,7 @@ jobs:
         ports:
           - 6379:6379
         options: >-
-          --health-cmd "redis-cli ping | grep -q PONG"
+          --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -80,6 +80,23 @@ jobs:
       - name: Install Playwright (Chromium)
         run: npx playwright install --with-deps chromium
 
+      - name: Wait for Postgres and Redis
+        run: |
+          wait_for_port() {
+            local port="$1" name="$2"
+            for _ in $(seq 1 30); do
+              if bash -c "echo > /dev/tcp/127.0.0.1/${port}" 2>/dev/null; then
+                echo "${name} reachable on port ${port}"
+                return 0
+              fi
+              sleep 2
+            done
+            echo "${name} not reachable on port ${port}"
+            return 1
+          }
+          wait_for_port 5432 Postgres
+          wait_for_port 6379 Redis
+
       - name: Start API with demo data
         working-directory: apps/backend
         env:
@@ -100,26 +117,47 @@ jobs:
           APP_RATE_LIMIT_STORE: redis
         run: |
           chmod +x mvnw
-          ./mvnw -q spring-boot:run &
-          for i in $(seq 1 60); do
-            if curl -sf http://localhost:8080/actuator/health > /dev/null; then
-              echo "Backend ready"
-              exit 0
+          ./mvnw -q spring-boot:run > ../../backend-e2e.log 2>&1 &
+          BACKEND_PID=$!
+          for _ in $(seq 1 60); do
+            if ! kill -0 "${BACKEND_PID}" 2>/dev/null; then
+              echo "Backend process exited early"
+              tail -n 120 ../../backend-e2e.log || true
+              exit 1
+            fi
+            if curl -sf http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
+              if curl -sf -X POST http://localhost:8080/api/auth/login \
+                -H 'Content-Type: application/json' \
+                -d '{"email":"marie.dupont@ecole.fr","password":"Demo2026!"}' \
+                | grep -q 'accessToken'; then
+                echo "Backend ready (health + login OK)"
+                exit 0
+              fi
             fi
             sleep 5
           done
-          echo "Backend failed to start"
+          echo "Backend failed to start in time"
+          tail -n 120 ../../backend-e2e.log || true
           exit 1
 
       - name: Run E2E tests
         env:
           CI: true
+          PLAYWRIGHT_BACKEND_URL: http://localhost:8080
           E2E_PASSWORD: Demo2026!
           E2E_TEACHER_EMAIL: marie.dupont@ecole.fr
           E2E_STUDENT_EMAIL: lucas.martin@ecole.fr
           E2E_ADMIN_EMAIL: admin@juggleflow.local
           E2E_ADMIN_PASSWORD: Admin2026!
         run: npm run e2e
+
+      - name: Upload backend log on E2E failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-e2e-log
+          path: backend-e2e.log
+          retention-days: 3
 
       - name: Upload Playwright report
         if: failure()

@@ -8,6 +8,7 @@
     "frontend:serve": "nx serve @juggleflow/frontend",
     "frontend:preview:pwa": "nx build @juggleflow/frontend && nx preview @juggleflow/frontend --host",
     "e2e": "playwright test --config=apps/frontend/playwright.config.mts",
+    "test:e2e": "npm run e2e",
     "e2e:ui": "playwright test --config=apps/frontend/playwright.config.mts --ui"
   },
   "private": true,
