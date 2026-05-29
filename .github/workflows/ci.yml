@@ -185,6 +185,8 @@ jobs:
 
       - name: Run tests
         working-directory: apps/backend
+        env:
+          SPRING_PROFILES_ACTIVE: test
         run: ./mvnw -q test
 
       - name: Build jar
