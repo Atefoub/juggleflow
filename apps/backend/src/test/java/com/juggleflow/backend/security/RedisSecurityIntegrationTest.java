@@ -1,6 +1,7 @@
 package com.juggleflow.backend.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.juggleflow.backend.dto.ForgotPasswordRequest;
 import com.juggleflow.backend.dto.LoginRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -121,6 +122,30 @@ class RedisSecurityIntegrationTest {
         .contentType(MediaType.APPLICATION_JSON)
         .content(json))
       .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @DisplayName("Rate limit (Redis) → forgot-password partage le quota auth par IP")
+  void rateLimitRedis_shouldApplyToForgotPassword() throws Exception {
+    ForgotPasswordRequest req = new ForgotPasswordRequest();
+    req.setEmail("probe@example.com");
+    String json = objectMapper.writeValueAsString(req);
+
+    for (int i = 0; i < 2; i++) {
+      mockMvc.perform(post("/api/auth/forgot-password")
+          .with(remoteAddr("10.0.0.1"))
+          .header("X-Forwarded-For", "5.5.5.5, 7.7.7.7")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content(json))
+        .andExpect(status().isAccepted());
+    }
+
+    mockMvc.perform(post("/api/auth/forgot-password")
+        .with(remoteAddr("10.0.0.2"))
+        .header("X-Forwarded-For", "6.6.6.6, 7.7.7.7")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(json))
+      .andExpect(status().isTooManyRequests());
   }
 
   private static RequestPostProcessor remoteAddr(String ip) {

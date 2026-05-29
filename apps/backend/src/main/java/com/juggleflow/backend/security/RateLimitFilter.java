@@ -22,7 +22,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Rate limiting sur login, register et refresh.
+ * Rate limiting sur login, register, refresh et forgot-password.
  * IP via {@code getRemoteAddr()} sauf si {@code app.trusted-proxy=true} (dernière entrée XFF).
  * Map bornée ; en prod multi-nœuds : Redis (compteur TTL).
  */
@@ -35,7 +35,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
   private static final Set<String> RATE_LIMITED_PATHS = Set.of(
     "/api/auth/login",
     "/api/auth/register",
-    "/api/auth/refresh"
+    "/api/auth/refresh",
+    "/api/auth/forgot-password"
   );
 
   @Value("${app.trusted-proxy:false}")

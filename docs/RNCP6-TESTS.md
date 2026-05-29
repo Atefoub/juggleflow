@@ -21,7 +21,7 @@ Document de synthèse pour le dossier professionnel : objectifs, périmètre et 
 |--------|--------|------------------|
 | **Unitaire backend** | JUnit 5, Mockito | Règles métier (badges, streaks, JWT, handlers d’erreurs, contrôleurs isolés). |
 | **Intégration sécurité** | Testcontainers Redis | Révocation JWT (JTI) et rate limiting distribués identiques en prod multi-instances. |
-| **Unitaire frontend** | Vitest, Testing Library | Utilitaires (offline, parcours, onboarding) et composants ciblés. |
+| **Unitaire frontend** | Vitest, Testing Library | Utilitaires (offline, parcours, onboarding), `ErrorBoundary`, composants ciblés. |
 | **E2E** | Playwright (Chromium) | Chaîne complète navigateur → API → PostgreSQL : auth, rôles, RGPD admin, parcours enseignant. |
 
 ## Scénarios E2E (Playwright)
@@ -35,6 +35,7 @@ Répertoire : `apps/frontend/e2e/`
 | `student-journey.spec.ts` | Connexion élève → dashboard (onboarding si besoin) | `lucas.martin@ecole.fr` |
 | `admin-rgpd.spec.ts` | Admin → page RGPD, section consentements | `admin@juggleflow.local` |
 | `teacher-journey.spec.ts` | Alerte blocage, export CSV, assignation parcours | Enseignant CE1 |
+| `role-guard.spec.ts` | Redirection selon le rôle (élève / enseignant / admin) | Comptes démo |
 | `z-rate-limit.spec.ts` | Trop de POST `/api/auth/login` → HTTP 429 | API seule (exécuté en dernier) |
 
 Mot de passe démo : `Demo2026!` (`E2E_PASSWORD`). Admin CI : `Admin2026!` (`E2E_ADMIN_PASSWORD`).
