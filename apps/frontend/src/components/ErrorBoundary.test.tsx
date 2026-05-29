@@ -12,7 +12,7 @@ function ThrowOnce({ shouldThrow }: { shouldThrow: boolean }) {
 
 describe('ErrorBoundary', () => {
   beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(vi.fn());
   });
 
   afterEach(() => {
