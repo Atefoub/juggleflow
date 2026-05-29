@@ -18,11 +18,11 @@ export function TrickCard({ trick, status, onOpen }: TrickCardProps) {
       <AnimationPreview trick={trick} variant="list" />
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <p className="font-bold text-white text-sm leading-tight truncate">{trick.name}</p>
+          <p className="font-bold text-text-primary text-sm leading-tight truncate">{trick.name}</p>
           <div className="flex items-center gap-2 shrink-0">
             <ProgressChip status={status} />
             {trick.popular && (
-              <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full bg-[#1A1028] text-brand-end border border-brand/35">
+              <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full bg-accent-surface text-brand-end border border-brand/35">
                 <AppIcon name="tag-popular" size={12} className="inline shrink-0" label="Populaire" />{' '}
                 Populaire
               </span>

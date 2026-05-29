@@ -14,6 +14,9 @@
   --color-bg-secondary: #F0F2FF;
   --color-bg-card: #111638;
   --color-bg-input: #1A2040;
+  --color-bg-header: #0D1235;
+  --color-accent-surface: #1A1028;
+  --color-alert-surface: #2A1020;
 
   /* Marque */
   --color-brand: #8B2BE2;
@@ -84,11 +87,32 @@
   }
 
   html, body {
-    background-color: #0A0E2A;
-    color: #FFFFFF;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
     font-family: 'DM Sans', sans-serif;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Thème clair (zone élève via data-theme="light" sur <html>) ───────────
+     Palette alignée sur l’admin (slate + surfaces blanches, contrastes AA).  */
+  html[data-theme="light"] {
+    --color-bg-primary: #F7F8FA;
+    --color-bg-secondary: #EDE9FE;
+    --color-bg-card: #FFFFFF;
+    --color-bg-input: #FFFFFF;
+    --color-bg-header: #FFFFFF;
+    --color-accent-surface: #F3E8FF;
+    --color-alert-surface: #FEE2E2;
+
+    --color-text-primary: #0F172A;
+    --color-text-secondary: #475569;
+    --color-text-muted: #64748B;
+
+    --color-border: #E2E8F0;
+    --color-border-active: #7C3AED;
+
+    --color-alert: #DC2626;
   }
 
   h1, h2, h3, h4 {

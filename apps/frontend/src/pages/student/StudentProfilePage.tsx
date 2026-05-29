@@ -8,6 +8,7 @@ import {
   type IconName,
 } from '../../components/icons/iconRegistry';
 import BottomNav from '../../components/BottomNav';
+import DarkModeToggle from '../../components/DarkModeToggle';
 import ToggleSwitch from '../../components/ToggleSwitch';
 import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
@@ -34,9 +35,11 @@ import {
 import {
   getOfflineMode,
   getPracticeRemindersEnabled,
+  setDarkModeEnabled,
   setOfflineMode,
   setPracticeRemindersEnabled,
 } from '../../utils/preferences';
+import { applyDocumentTheme, notifyThemeChange } from '../../utils/theme';
 import { studentPreferencesApi } from '../../api/studentPreferencesApi';
 import { prefetchOfflineContent } from '../../utils/prefetchOfflineContent';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
@@ -64,7 +67,6 @@ export default function StudentProfilePage() {
   );
   const [notificationsBusy, setNotificationsBusy] = useState(false);
   const [notificationsHint, setNotificationsHint] = useState<string | null>(null);
-  const [darkMode, setDarkMode]               = useState(true);
   const [offlineMode, setOfflineModeState]    = useState(() => getOfflineMode(user?.id));
   const [offlinePrefetching, setOfflinePrefetching] = useState(false);
   const [offlineHint, setOfflineHint]         = useState<string | null>(null);
@@ -117,6 +119,9 @@ export default function StudentProfilePage() {
           if (cancelled) return;
           setNotificationsOn(prefs.practiceRemindersEnabled);
           setPracticeRemindersEnabled(prefs.practiceRemindersEnabled, user.id);
+          setDarkModeEnabled(prefs.darkModeEnabled, user.id);
+          applyDocumentTheme(prefs.darkModeEnabled);
+          notifyThemeChange();
         } catch {
           if (!cancelled) {
             setNotificationsOn(getPracticeRemindersEnabled(user.id));
@@ -192,7 +197,7 @@ export default function StudentProfilePage() {
     <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
 
       {/* Header */}
-      <header className="px-5 pt-12 pb-6 bg-[#0D1235] border-b border-border flex flex-col items-center gap-3">
+      <header className="px-5 pt-12 pb-6 bg-bg-header border-b border-border flex flex-col items-center gap-3">
         <div className="flex items-center justify-center w-20 h-20 rounded-full font-bold text-2xl text-text-primary bg-linear-to-br from-brand to-brand-end">
           {initials}
         </div>
@@ -218,7 +223,7 @@ export default function StudentProfilePage() {
       <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
 
         {error && (
-          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-[#2A1020] border border-alert">
+          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-alert-surface border border-alert">
             {error}
           </div>
         )}
@@ -407,7 +412,9 @@ export default function StudentProfilePage() {
                     setPracticeRemindersEnabled(next, user.id);
                     try {
                       if (isOnline) {
-                        const prefs = await studentPreferencesApi.update(next);
+                        const prefs = await studentPreferencesApi.update({
+                          practiceRemindersEnabled: next,
+                        });
                         setNotificationsOn(prefs.practiceRemindersEnabled);
                         setPracticeRemindersEnabled(prefs.practiceRemindersEnabled, user.id);
                       }
@@ -428,19 +435,15 @@ export default function StudentProfilePage() {
               <p className="px-4 pb-3 text-xs text-alert bg-bg-card">{notificationsHint}</p>
             )}
 
-            {/* Dark mode */}
-            <div className="flex items-center justify-between p-4 bg-bg-card">
-              <div className="flex items-center gap-3">
-                <AppIcon name="moon" size={20} label="Mode foncé" />
-                <div>
-                  <p className="text-sm font-semibold text-text-primary">Mode foncé</p>
-                  <p className="text-xs text-text-muted">Thème sombre actif</p>
-                </div>
-              </div>
-              <ToggleSwitch
-                checked={darkMode}
-                aria-label={darkMode ? 'Désactiver le mode foncé' : 'Activer le mode foncé'}
-                onChange={() => setDarkMode((v) => !v)}
+            <div className="p-4 bg-bg-card">
+              <DarkModeToggle
+                userId={user?.id}
+                persistOnline={
+                  isOnline
+                    ? (enabled) =>
+                        studentPreferencesApi.update({ darkModeEnabled: enabled })
+                    : undefined
+                }
               />
             </div>
 
@@ -503,7 +506,7 @@ export default function StudentProfilePage() {
         <section>
           <button
             onClick={logout}
-            className="w-full py-3 rounded-2xl text-sm font-semibold text-alert border border-alert bg-[#2A1020] hover:opacity-80 transition-opacity min-h-11"
+            className="w-full py-3 rounded-2xl text-sm font-semibold text-alert border border-alert bg-alert-surface hover:opacity-80 transition-opacity min-h-11"
           >
             Se déconnecter
           </button>
