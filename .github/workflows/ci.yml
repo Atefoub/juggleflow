@@ -116,6 +116,8 @@ jobs:
           APP_JWT_REVOCATION_STORE: redis
           APP_RATE_LIMIT_STORE: redis
           APP_TRUSTED_PROXY: "true"
+          # Chaque visite de /login appelle aussi /auth/refresh (compté dans le quota).
+          APP_RATE_LIMIT_MAX_REQUESTS: "80"
         run: |
           chmod +x mvnw
           ./mvnw -q spring-boot:run > ../../backend-e2e.log 2>&1 &
