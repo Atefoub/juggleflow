@@ -28,7 +28,16 @@ export async function loginViaUi(
   await expect(page.getByText('Plateforme pédagogique de jonglage')).toBeVisible();
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill(password);
+
+  const loginResponse = page.waitForResponse(
+    (res) =>
+      res.url().includes('/api/auth/login') &&
+      res.request().method() === 'POST' &&
+      res.ok(),
+    { timeout: 20_000 },
+  );
   await page.getByRole('button', { name: /Se connecter/i }).click();
+  await loginResponse;
 }
 
 /** Complète l'onboarding élève si la page s'affiche (données démo déjà onboardées en général). */

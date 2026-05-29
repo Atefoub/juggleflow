@@ -14,6 +14,8 @@ test.describe('Admin RGPD', () => {
     await page.getByRole('link', { name: 'RGPD' }).click();
     await expect(page).toHaveURL(/\/admin\/rgpd/);
     await expect(page.getByRole('heading', { name: /RGPD/i })).toBeVisible();
-    await expect(page.getByText('Consentements parentaux')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Consentements parentaux' }),
+    ).toBeVisible();
   });
 });
