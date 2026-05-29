@@ -8,7 +8,7 @@ import {
   type IconName,
 } from '../../components/icons/iconRegistry';
 import BottomNav from '../../components/BottomNav';
-import DarkModeToggle from '../../components/DarkModeToggle';
+import ThemeSwitcher from '../../components/ThemeSwitcher';
 import ToggleSwitch from '../../components/ToggleSwitch';
 import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
@@ -33,6 +33,7 @@ import {
   ONBOARDING_LEVEL_LABELS,
 } from '../../utils/onboarding';
 import {
+  getDarkModeEnabled,
   getOfflineMode,
   getPracticeRemindersEnabled,
   setDarkModeEnabled,
@@ -119,16 +120,22 @@ export default function StudentProfilePage() {
           if (cancelled) return;
           setNotificationsOn(prefs.practiceRemindersEnabled);
           setPracticeRemindersEnabled(prefs.practiceRemindersEnabled, user.id);
-          setDarkModeEnabled(prefs.darkModeEnabled, user.id);
-          applyDocumentTheme(prefs.darkModeEnabled);
-          notifyThemeChange();
+          if (typeof prefs.darkModeEnabled === 'boolean') {
+            setDarkModeEnabled(prefs.darkModeEnabled, user.id);
+            applyDocumentTheme(prefs.darkModeEnabled);
+            notifyThemeChange();
+          }
         } catch {
           if (!cancelled) {
             setNotificationsOn(getPracticeRemindersEnabled(user.id));
+            applyDocumentTheme(getDarkModeEnabled(user.id));
+            notifyThemeChange();
           }
         }
       } else {
         setNotificationsOn(getPracticeRemindersEnabled(user.id));
+        applyDocumentTheme(getDarkModeEnabled(user.id));
+        notifyThemeChange();
       }
     };
 
@@ -414,6 +421,7 @@ export default function StudentProfilePage() {
                       if (isOnline) {
                         const prefs = await studentPreferencesApi.update({
                           practiceRemindersEnabled: next,
+                          darkModeEnabled: getDarkModeEnabled(user.id),
                         });
                         setNotificationsOn(prefs.practiceRemindersEnabled);
                         setPracticeRemindersEnabled(prefs.practiceRemindersEnabled, user.id);
@@ -435,17 +443,18 @@ export default function StudentProfilePage() {
               <p className="px-4 pb-3 text-xs text-alert bg-bg-card">{notificationsHint}</p>
             )}
 
-            <div className="p-4 bg-bg-card">
-              <DarkModeToggle
-                userId={user?.id}
-                persistOnline={
-                  isOnline
-                    ? (enabled) =>
-                        studentPreferencesApi.update({ darkModeEnabled: enabled })
-                    : undefined
-                }
-              />
-            </div>
+            <ThemeSwitcher
+              userId={user?.id}
+              persistOnline={
+                isOnline
+                  ? (darkModeEnabled) =>
+                      studentPreferencesApi.update({
+                        darkModeEnabled,
+                        practiceRemindersEnabled: notificationsOn,
+                      })
+                  : undefined
+              }
+            />
 
             <div className="flex items-center justify-between p-4 bg-bg-card">
               <div className="flex items-center gap-3">
