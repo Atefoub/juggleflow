@@ -33,6 +33,8 @@ export default function DarkModeToggle({
     notifyThemeChange();
   };
 
+  const lightMode = !darkMode;
+
   return (
     <div
       className={[
@@ -41,31 +43,36 @@ export default function DarkModeToggle({
       ].join(' ')}
     >
       <div className="flex items-center gap-3 min-w-0">
-        <AppIcon name="moon" size={20} label="Mode foncé" />
+        <AppIcon name="moon" size={20} label="Apparence" />
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-text-primary">Mode foncé</p>
+          <p className="text-sm font-semibold text-text-primary">Thème clair</p>
           <p className="text-xs text-text-muted">
-            {darkMode ? 'Thème sombre actif' : 'Thème clair actif'}
+            {lightMode
+              ? 'Mode clair activé'
+              : 'Thème sombre par défaut'}
           </p>
         </div>
       </div>
       <ToggleSwitch
-        checked={darkMode}
+        checked={lightMode}
         disabled={busy}
-        aria-label={darkMode ? 'Désactiver le mode foncé' : 'Activer le mode foncé'}
+        aria-label={
+          lightMode ? 'Revenir au thème sombre' : 'Activer le thème clair'
+        }
         onChange={() => {
           void (async () => {
             if (busy) return;
-            const next = !darkMode;
+            const enableLight = !lightMode;
+            const nextDarkMode = !enableLight;
             setBusy(true);
-            applyLocal(next);
+            applyLocal(nextDarkMode);
             try {
               if (persistOnline) {
-                const prefs = await persistOnline(next);
+                const prefs = await persistOnline(nextDarkMode);
                 applyLocal(prefs.darkModeEnabled);
               }
             } catch {
-              applyLocal(!next);
+              applyLocal(!nextDarkMode);
             } finally {
               setBusy(false);
             }
