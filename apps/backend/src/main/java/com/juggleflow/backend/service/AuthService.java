@@ -3,6 +3,7 @@ package com.juggleflow.backend.service;
 import com.juggleflow.backend.dto.ForgotPasswordResponse;
 import com.juggleflow.backend.dto.LoginRequest;
 import com.juggleflow.backend.dto.LoginResponse;
+import com.juggleflow.backend.config.AuthRegistrationProperties;
 import com.juggleflow.backend.dto.RegisterRequest;
 import com.juggleflow.backend.model.Student;
 import com.juggleflow.backend.model.Teacher;
@@ -16,8 +17,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Authentification : login timing-safe, inscription limitée aux rôles élève/enseignant, refresh avec rotation. */
 @Service
@@ -31,6 +34,7 @@ public class AuthService {
   private final UserDetailsService           userDetailsService;
   private final EstablishmentLicenseService establishmentLicenseService;
   private final AdminAuditService adminAuditService;
+  private final AuthRegistrationProperties authRegistrationProperties;
 
   private static final String FORGOT_PASSWORD_GENERIC_MESSAGE =
     "Si un compte est associé à cette adresse, votre établissement a été informé. "
@@ -54,6 +58,20 @@ public class AuthService {
 
   @Transactional
   public LoginResponse register(RegisterRequest request) {
+    if (!authRegistrationProperties.isEnabled()) {
+      throw new ResponseStatusException(
+        HttpStatus.FORBIDDEN,
+        "Inscription publique désactivée. Contactez votre établissement.");
+    }
+
+    String rawRole = request.getRole() != null ? request.getRole().toUpperCase().trim() : "";
+    boolean isTeacher = rawRole.equals("ROLE_ENSEIGNANT") || rawRole.equals("TEACHER");
+    if (isTeacher && !authRegistrationProperties.isAllowTeacherRole()) {
+      throw new ResponseStatusException(
+        HttpStatus.FORBIDDEN,
+        "Inscription enseignant non autorisée. Contactez votre administrateur.");
+    }
+
     if (userRepository.existsByEmail(request.getEmail())) {
       throw new BadCredentialsException("Identifiants invalides");
     }
