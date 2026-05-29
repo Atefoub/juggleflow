@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AppIcon from '../icons/AppIcon';
-import DarkModeToggle from '../DarkModeToggle';
+import ThemeSwitcher from '../ThemeSwitcher';
 import { TEACHER_NAV_ITEMS, isTeacherNavItemActive } from './teacherNav';
 
 interface TeacherSidebarProps {
@@ -55,8 +55,8 @@ export default function TeacherSidebar({ onItemClick }: TeacherSidebarProps) {
         </ul>
       </nav>
 
-      <div className="border-t border-border px-4 py-3">
-        <DarkModeToggle userId={user?.id} className="px-1" />
+      <div className="border-t border-border">
+        <ThemeSwitcher userId={user?.id} embedded />
       </div>
 
       <div className="border-t border-border px-5 py-4">
