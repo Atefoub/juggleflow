@@ -64,8 +64,10 @@ interface ProtectedRouteProps {
 }
 
 function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const location = useLocation();
+
+  if (isLoading) return <AppFallback />;
 
   if (!user) return <Navigate to="/login" replace />;
 
@@ -82,13 +84,15 @@ function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
 }
 
 function DefaultRedirect() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <AppFallback />;
   if (!user) return <Navigate to="/login" replace />;
   return <Navigate to={redirectForRole(user.role, user)} replace />;
 }
 
 function OnboardingRoute() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <AppFallback />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== 'ROLE_ELEVE') return <Navigate to={redirectForRole(user.role, user)} replace />;
   if (isStudentOnboardingDone(user)) return <Navigate to="/student/dashboard" replace />;
