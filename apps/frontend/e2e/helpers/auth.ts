@@ -31,13 +31,20 @@ export async function loginViaUi(
 
   const loginResponse = page.waitForResponse(
     (res) =>
-      res.url().includes('/api/auth/login') &&
-      res.request().method() === 'POST' &&
-      res.ok(),
+      res.url().includes('/api/auth/login') && res.request().method() === 'POST',
     { timeout: 20_000 },
   );
   await page.getByRole('button', { name: /Se connecter/i }).click();
-  await loginResponse;
+  const response = await loginResponse;
+
+  if (response.status() !== 200) {
+    const body = await response.text().catch(() => '');
+    throw new Error(
+      `POST /api/auth/login → ${response.status()}${body ? `: ${body}` : ''}`,
+    );
+  }
+
+  await expect(page).not.toHaveURL(/\/login$/, { timeout: 20_000 });
 }
 
 /** Complète l'onboarding élève si la page s'affiche (données démo déjà onboardées en général). */

@@ -115,7 +115,9 @@ jobs:
           REDIS_PORT: "6379"
           APP_JWT_REVOCATION_STORE: redis
           APP_RATE_LIMIT_STORE: redis
-          APP_RATE_LIMIT_MAX_REQUESTS: "60"
+          APP_TRUSTED_PROXY: "true"
+          # Chaque visite de /login appelle aussi /auth/refresh (compté dans le quota).
+          APP_RATE_LIMIT_MAX_REQUESTS: "80"
         run: |
           chmod +x mvnw
           ./mvnw -q spring-boot:run > ../../backend-e2e.log 2>&1 &
@@ -145,6 +147,7 @@ jobs:
         env:
           CI: true
           PLAYWRIGHT_BACKEND_URL: http://localhost:8080
+          E2E_RATE_LIMIT_PROBE_ATTEMPTS: "85"
           E2E_PASSWORD: Demo2026!
           E2E_TEACHER_EMAIL: marie.dupont@ecole.fr
           E2E_STUDENT_EMAIL: lucas.martin@ecole.fr
