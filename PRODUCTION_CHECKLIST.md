@@ -56,7 +56,7 @@ Cette checklist vise un déploiement **sécurisé**, **reproductible** et **opé
   - **/actuator/health**
   - taux 4xx/5xx
   - latence P95/P99
-  - saturation rate limiting (429)
+  - saturation rate limiting (429) sur `/api/auth/login`, `register`, `refresh`, `forgot-password`
 
 ### Vérifications avant mise en prod
 
