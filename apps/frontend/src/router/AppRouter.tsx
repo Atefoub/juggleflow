@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Role } from '../types/auth';
 import { isStudentOnboardingDone } from '../utils/onboarding';
 import AdminLayout from '../components/admin/AdminLayout';
+import AppThemeSync from '../components/AppThemeSync';
 import TeacherLayout from '../components/teacher/TeacherLayout';
 
 // Lazy pages (code-splitting)
@@ -116,6 +117,7 @@ const admin = (el: React.ReactNode) => (
 export default function AppRouter() {
   return (
     <BrowserRouter>
+      <AppThemeSync />
       <Suspense fallback={<AppFallback />}>
         <Routes>
           {/* ── Public ── */}
