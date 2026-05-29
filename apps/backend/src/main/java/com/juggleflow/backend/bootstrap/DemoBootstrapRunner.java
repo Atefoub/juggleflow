@@ -80,7 +80,10 @@ public class DemoBootstrapRunner implements ApplicationRunner {
 
         String encoded = passwordEncoder.encode(demoPassword);
         int schoolYear = LocalDate.now().getYear();
+        Trick echange = requireTrick("Échange 2 balles");
+        Trick colonnes = requireTrick("Colonnes (2 balles)");
         Trick cascade = requireTrick("Cascade (3 balles)");
+        Trick deuxEnUneMain = requireTrick("Deux en une main");
         Trick shower = requireTrick("Fontaine");
         Trick halfShower = requireTrick("Demi-fontaine");
 
@@ -89,7 +92,14 @@ public class DemoBootstrapRunner implements ApplicationRunner {
         assignPath(ce1, "Fondamentaux — 3 balles");
         int n1 = seedStudents(encoded, ce1, List.of(
                 new DemoStudent("lucas.martin@ecole.fr", "Lucas", "Martin", "CE1", "BEGINNER",
-                        List.of(mastered(cascade), inProgress(shower, 3, 15)), null),
+                        List.of(
+                                mastered(echange),
+                                mastered(colonnes),
+                                mastered(cascade),
+                                mastered(deuxEnUneMain),
+                                mastered(halfShower),
+                                inProgress(shower, 3, 15)),
+                        null),
                 new DemoStudent("emma.rousseau@ecole.fr", "Emma", "Rousseau", "CE1", "BEGINNER",
                         List.of(mastered(cascade), mastered(shower)), "VERT"),
                 new DemoStudent("noah.lambert@ecole.fr", "Noah", "Lambert", "CE1", "BEGINNER",
