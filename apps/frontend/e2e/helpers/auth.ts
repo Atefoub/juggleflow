@@ -44,3 +44,10 @@ export async function expectOnLoginPage(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/login/);
   await expect(page.getByText('Plateforme pédagogique de jonglage')).toBeVisible();
 }
+
+/** Connexion enseignant puis attente du tableau de bord. */
+export async function loginAsTeacher(page: Page): Promise<void> {
+  await loginViaUi(page, TEACHER_EMAIL, E2E_PASSWORD);
+  await expect(page).toHaveURL(/\/teacher\/dashboard/);
+  await expect(page.getByText('Progression moyenne')).toBeVisible();
+}

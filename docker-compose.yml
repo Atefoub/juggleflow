@@ -1,8 +1,9 @@
 # Stack locale JuggleFlow (PostgreSQL + API Spring Boot).
 # Usage :
 #   cp apps/backend/.env.example apps/backend/.env
-#   docker compose up -d postgres
-#   docker compose up backend
+#   podman compose up -d postgres redis
+#   podman compose up backend
+#   (ou docker compose …)
 #
 # Frontend (hors compose) : npm ci && npx nx serve frontend
 # Puis CORS_ALLOWED_ORIGINS=http://localhost:4200 dans apps/backend/.env
