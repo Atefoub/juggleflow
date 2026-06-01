@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>redis-jwt-revocation</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 32px 32px;
+      background: #0d1117;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-width: 1200px;
+    }
+    .path {
+      color: #8b949e;
+      font-size: 14px;
+      margin-bottom: 12px;
+      font-family: Consolas, 'Cascadia Code', monospace;
+    }
+    .path strong { color: #58a6ff; font-weight: 600; }
+    .frame {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #161b22;
+    }
+    .gutter {
+      padding: 16px 12px 16px 16px;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      color: #6e7681;
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre;
+      user-select: none;
+    }
+    pre {
+      margin: 0;
+      padding: 16px 20px;
+      overflow: visible;
+    }
+    pre code {
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      background: transparent !important;
+      padding: 0 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="path"><strong>apps/backend/src/main/java/com/juggleflow/backend/security/JwtUtils.java</strong> · lignes 191–228</div>
+  <div class="frame">
+    <div class="gutter"><span class="ln"> 191</span>
+<span class="ln"> 192</span>
+<span class="ln"> 193</span>
+<span class="ln"> 194</span>
+<span class="ln"> 195</span>
+<span class="ln"> 196</span>
+<span class="ln"> 197</span>
+<span class="ln"> 198</span>
+<span class="ln"> 199</span>
+<span class="ln"> 200</span>
+<span class="ln"> 201</span>
+<span class="ln"> 202</span>
+<span class="ln"> 203</span>
+<span class="ln"> 204</span>
+<span class="ln"> 205</span>
+<span class="ln"> 206</span>
+<span class="ln"> 207</span>
+<span class="ln"> 208</span>
+<span class="ln"> 209</span>
+<span class="ln"> 210</span>
+<span class="ln"> 211</span>
+<span class="ln"> 212</span>
+<span class="ln"> 213</span>
+<span class="ln"> 214</span>
+<span class="ln"> 215</span>
+<span class="ln"> 216</span>
+<span class="ln"> 217</span>
+<span class="ln"> 218</span>
+<span class="ln"> 219</span>
+<span class="ln"> 220</span>
+<span class="ln"> 221</span>
+<span class="ln"> 222</span>
+<span class="ln"> 223</span>
+<span class="ln"> 224</span>
+<span class="ln"> 225</span>
+<span class="ln"> 226</span>
+<span class="ln"> 227</span>
+<span class="ln"> 228</span></div>
+    <pre><code class="language-java">  /**
+   * Révoque un token en ajoutant son JTI en blacklist (logout, rotation).
+   */
+  public void revokeToken(String token) {
+    try {
+      String jti = extractClaim(token, Claims::getId);
+      if (!StringUtils.hasText(jti)) {
+        return;
+      }
+
+      Date exp = extractExpiration(token);
+      long ttlMs = exp.getTime() - System.currentTimeMillis();
+      if (ttlMs &lt;= 0) {
+        return;
+      }
+
+      if ("redis".equalsIgnoreCase(revocationStore) &amp;&amp; redis != null) {
+        redis.opsForValue().set(REDIS_KEY_PREFIX + jti, "1", Duration.ofMillis(ttlMs));
+      } else {
+        revokedTokenIds.add(jti);
+      }
+    } catch (JwtException | IllegalArgumentException ignored) {
+      // Token déjà invalide — pas besoin de le révoquer
+    }
+  }
+
+  private boolean isRevoked(String jti) {
+    if (!StringUtils.hasText(jti)) {
+      return false;
+    }
+
+    if ("redis".equalsIgnoreCase(revocationStore) &amp;&amp; redis != null) {
+      Boolean exists = redis.hasKey(REDIS_KEY_PREFIX + jti);
+      return Boolean.TRUE.equals(exists);
+    }
+
+    return revokedTokenIds.contains(jti);
+  }</code></pre>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>

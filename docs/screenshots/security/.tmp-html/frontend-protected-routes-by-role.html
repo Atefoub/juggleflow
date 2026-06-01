@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>frontend-protected-routes-by-role</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 32px 32px;
+      background: #0d1117;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-width: 1200px;
+    }
+    .path {
+      color: #8b949e;
+      font-size: 14px;
+      margin-bottom: 12px;
+      font-family: Consolas, 'Cascadia Code', monospace;
+    }
+    .path strong { color: #58a6ff; font-weight: 600; }
+    .frame {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #161b22;
+    }
+    .gutter {
+      padding: 16px 12px 16px 16px;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      color: #6e7681;
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre;
+      user-select: none;
+    }
+    pre {
+      margin: 0;
+      padding: 16px 20px;
+      overflow: visible;
+    }
+    pre code {
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      background: transparent !important;
+      padding: 0 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="path"><strong>apps/frontend/src/router/AppRouter.tsx</strong> · lignes 62–115</div>
+  <div class="frame">
+    <div class="gutter"><span class="ln">  62</span>
+<span class="ln">  63</span>
+<span class="ln">  64</span>
+<span class="ln">  65</span>
+<span class="ln">  66</span>
+<span class="ln">  67</span>
+<span class="ln">  68</span>
+<span class="ln">  69</span>
+<span class="ln">  70</span>
+<span class="ln">  71</span>
+<span class="ln">  72</span>
+<span class="ln">  73</span>
+<span class="ln">  74</span>
+<span class="ln">  75</span>
+<span class="ln">  76</span>
+<span class="ln">  77</span>
+<span class="ln">  78</span>
+<span class="ln">  79</span>
+<span class="ln">  80</span>
+<span class="ln">  81</span>
+<span class="ln">  82</span>
+<span class="ln">  83</span>
+<span class="ln">  84</span>
+<span class="ln">  85</span>
+<span class="ln">  86</span>
+<span class="ln">  87</span>
+<span class="ln">  88</span>
+<span class="ln">  89</span>
+<span class="ln">  90</span>
+<span class="ln">  91</span>
+<span class="ln">  92</span>
+<span class="ln">  93</span>
+<span class="ln">  94</span>
+<span class="ln">  95</span>
+<span class="ln">  96</span>
+<span class="ln">  97</span>
+<span class="ln">  98</span>
+<span class="ln">  99</span>
+<span class="ln"> 100</span>
+<span class="ln"> 101</span>
+<span class="ln"> 102</span>
+<span class="ln"> 103</span>
+<span class="ln"> 104</span>
+<span class="ln"> 105</span>
+<span class="ln"> 106</span>
+<span class="ln"> 107</span>
+<span class="ln"> 108</span>
+<span class="ln"> 109</span>
+<span class="ln"> 110</span>
+<span class="ln"> 111</span>
+<span class="ln"> 112</span>
+<span class="ln"> 113</span>
+<span class="ln"> 114</span>
+<span class="ln"> 115</span></div>
+    <pre><code class="language-typescript">interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requiredRole?: Role;
+}
+
+function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+  const { user, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) return &lt;AppFallback /&gt;;
+
+  if (!user) return &lt;Navigate to="/login" replace /&gt;;
+
+  if (requiredRole !== undefined &amp;&amp; user.role !== requiredRole)
+    return &lt;Navigate to={redirectForRole(user.role, user)} replace /&gt;;
+
+  if (
+    user.role === 'ROLE_ELEVE' &amp;&amp;
+    !isStudentOnboardingDone(user) &amp;&amp;
+    location.pathname !== '/onboarding'
+  ) return &lt;Navigate to="/onboarding" replace /&gt;;
+
+  return children;
+}
+
+function DefaultRedirect() {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return &lt;AppFallback /&gt;;
+  if (!user) return &lt;Navigate to="/login" replace /&gt;;
+  return &lt;Navigate to={redirectForRole(user.role, user)} replace /&gt;;
+}
+
+function OnboardingRoute() {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return &lt;AppFallback /&gt;;
+  if (!user) return &lt;Navigate to="/login" replace /&gt;;
+  if (user.role !== 'ROLE_ELEVE') return &lt;Navigate to={redirectForRole(user.role, user)} replace /&gt;;
+  if (isStudentOnboardingDone(user)) return &lt;Navigate to="/student/dashboard" replace /&gt;;
+  return &lt;OnboardingPage /&gt;;
+}
+
+const student = (el: React.ReactNode) =&gt; (
+  &lt;ProtectedRoute requiredRole="ROLE_ELEVE"&gt;{el}&lt;/ProtectedRoute&gt;
+);
+const teacher = (el: React.ReactNode) =&gt; (
+  &lt;ProtectedRoute requiredRole="ROLE_ENSEIGNANT"&gt;
+    &lt;TeacherLayout&gt;{el}&lt;/TeacherLayout&gt;
+  &lt;/ProtectedRoute&gt;
+);
+const admin = (el: React.ReactNode) =&gt; (
+  &lt;ProtectedRoute requiredRole="ROLE_ADMINISTRATEUR"&gt;
+    &lt;AdminLayout&gt;{el}&lt;/AdminLayout&gt;
+  &lt;/ProtectedRoute&gt;
+);</code></pre>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>

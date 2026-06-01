@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>jwt-filter-authentication</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 32px 32px;
+      background: #0d1117;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-width: 1200px;
+    }
+    .path {
+      color: #8b949e;
+      font-size: 14px;
+      margin-bottom: 12px;
+      font-family: Consolas, 'Cascadia Code', monospace;
+    }
+    .path strong { color: #58a6ff; font-weight: 600; }
+    .frame {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #161b22;
+    }
+    .gutter {
+      padding: 16px 12px 16px 16px;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      color: #6e7681;
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre;
+      user-select: none;
+    }
+    pre {
+      margin: 0;
+      padding: 16px 20px;
+      overflow: visible;
+    }
+    pre code {
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      background: transparent !important;
+      padding: 0 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="path"><strong>apps/backend/src/main/java/com/juggleflow/backend/security/JwtFilter.java</strong> · lignes 32–75</div>
+  <div class="frame">
+    <div class="gutter"><span class="ln">  32</span>
+<span class="ln">  33</span>
+<span class="ln">  34</span>
+<span class="ln">  35</span>
+<span class="ln">  36</span>
+<span class="ln">  37</span>
+<span class="ln">  38</span>
+<span class="ln">  39</span>
+<span class="ln">  40</span>
+<span class="ln">  41</span>
+<span class="ln">  42</span>
+<span class="ln">  43</span>
+<span class="ln">  44</span>
+<span class="ln">  45</span>
+<span class="ln">  46</span>
+<span class="ln">  47</span>
+<span class="ln">  48</span>
+<span class="ln">  49</span>
+<span class="ln">  50</span>
+<span class="ln">  51</span>
+<span class="ln">  52</span>
+<span class="ln">  53</span>
+<span class="ln">  54</span>
+<span class="ln">  55</span>
+<span class="ln">  56</span>
+<span class="ln">  57</span>
+<span class="ln">  58</span>
+<span class="ln">  59</span>
+<span class="ln">  60</span>
+<span class="ln">  61</span>
+<span class="ln">  62</span>
+<span class="ln">  63</span>
+<span class="ln">  64</span>
+<span class="ln">  65</span>
+<span class="ln">  66</span>
+<span class="ln">  67</span>
+<span class="ln">  68</span>
+<span class="ln">  69</span>
+<span class="ln">  70</span>
+<span class="ln">  71</span>
+<span class="ln">  72</span>
+<span class="ln">  73</span>
+<span class="ln">  74</span>
+<span class="ln">  75</span></div>
+    <pre><code class="language-java">  @Override
+  protected void doFilterInternal(HttpServletRequest request,
+                                  HttpServletResponse response,
+                                  FilterChain filterChain)
+    throws ServletException, IOException {
+
+    final String authHeader = request.getHeader("Authorization");
+
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+      filterChain.doFilter(request, response);
+      return;
+    }
+
+    String jwt = authHeader.substring(7);
+
+    try {
+      String email = jwtUtils.extractEmail(jwt);
+
+      if (email != null &amp;&amp; SecurityContextHolder.getContext().getAuthentication() == null) {
+        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+
+        if (jwtUtils.isTokenValid(jwt, userDetails)) {
+          UsernamePasswordAuthenticationToken authToken =
+            new UsernamePasswordAuthenticationToken(
+              userDetails, null, userDetails.getAuthorities());
+          authToken.setDetails(
+            new WebAuthenticationDetailsSource().buildDetails(request));
+          SecurityContextHolder.getContext().setAuthentication(authToken);
+        } else {
+          log.debug("Token JWT invalide ou révoqué pour la requête sur {}",
+            request.getRequestURI());
+        }
+      }
+    } catch (io.jsonwebtoken.ExpiredJwtException e) {
+      log.debug("Token JWT expiré — requête sur {}", request.getRequestURI());
+    } catch (io.jsonwebtoken.JwtException e) {
+      log.warn("Token JWT malformé sur {} : {}", request.getRequestURI(), e.getMessage());
+    } catch (Exception e) {
+      log.error("Erreur inattendue dans JwtFilter sur {} : {}",
+        request.getRequestURI(), e.getMessage());
+    }
+
+    filterChain.doFilter(request, response);
+  }</code></pre>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
