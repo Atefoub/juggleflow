@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>jwt-utils-token-validation</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 32px 32px;
+      background: #0d1117;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-width: 1200px;
+    }
+    .path {
+      color: #8b949e;
+      font-size: 14px;
+      margin-bottom: 12px;
+      font-family: Consolas, 'Cascadia Code', monospace;
+    }
+    .path strong { color: #58a6ff; font-weight: 600; }
+    .frame {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #161b22;
+    }
+    .gutter {
+      padding: 16px 12px 16px 16px;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      color: #6e7681;
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre;
+      user-select: none;
+    }
+    pre {
+      margin: 0;
+      padding: 16px 20px;
+      overflow: visible;
+    }
+    pre code {
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      background: transparent !important;
+      padding: 0 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="path"><strong>apps/backend/src/main/java/com/juggleflow/backend/security/JwtUtils.java</strong> · lignes 26–92</div>
+  <div class="frame">
+    <div class="gutter"><span class="ln">  26</span>
+<span class="ln">  27</span>
+<span class="ln">  28</span>
+<span class="ln">  29</span>
+<span class="ln">  30</span>
+<span class="ln">  31</span>
+<span class="ln">  32</span>
+<span class="ln">  33</span>
+<span class="ln">  34</span>
+<span class="ln">  35</span>
+<span class="ln">  36</span>
+<span class="ln">  37</span>
+<span class="ln">  38</span>
+<span class="ln">  39</span>
+<span class="ln">  40</span>
+<span class="ln">  41</span>
+<span class="ln">  42</span>
+<span class="ln">  43</span>
+<span class="ln">  44</span>
+<span class="ln">  45</span>
+<span class="ln">  46</span>
+<span class="ln">  47</span>
+<span class="ln">  48</span>
+<span class="ln">  49</span>
+<span class="ln">  50</span>
+<span class="ln">  51</span>
+<span class="ln">  52</span>
+<span class="ln">  53</span>
+<span class="ln">  54</span>
+<span class="ln">  55</span>
+<span class="ln">  56</span>
+<span class="ln">  57</span>
+<span class="ln">  58</span>
+<span class="ln">  59</span>
+<span class="ln">  60</span>
+<span class="ln">  61</span>
+<span class="ln">  62</span>
+<span class="ln">  63</span>
+<span class="ln">  64</span>
+<span class="ln">  65</span>
+<span class="ln">  66</span>
+<span class="ln">  67</span>
+<span class="ln">  68</span>
+<span class="ln">  69</span>
+<span class="ln">  70</span>
+<span class="ln">  71</span>
+<span class="ln">  72</span>
+<span class="ln">  73</span>
+<span class="ln">  74</span>
+<span class="ln">  75</span>
+<span class="ln">  76</span>
+<span class="ln">  77</span>
+<span class="ln">  78</span>
+<span class="ln">  79</span>
+<span class="ln">  80</span>
+<span class="ln">  81</span>
+<span class="ln">  82</span>
+<span class="ln">  83</span>
+<span class="ln">  84</span>
+<span class="ln">  85</span>
+<span class="ln">  86</span>
+<span class="ln">  87</span>
+<span class="ln">  88</span>
+<span class="ln">  89</span>
+<span class="ln">  90</span>
+<span class="ln">  91</span>
+<span class="ln">  92</span></div>
+    <pre><code class="language-java">/**
+ * Gestion des tokens JWT (access + refresh).
+ * Access et refresh sont distingués par le claim {@code typ}, l'issuer est vérifié,
+ * chaque token a un JTI pour la révocation (logout). Stockage "memory" (dev) ou Redis (prod).
+ */
+@Component
+public class JwtUtils {
+
+  private static final String ISSUER           = "juggleflow";
+  private static final String CLAIM_TOKEN_TYPE = "typ";
+  private static final String TYPE_ACCESS      = "access";
+  private static final String TYPE_REFRESH     = "refresh";
+  private static final String REDIS_KEY_PREFIX = "jwt:revoked:jti:";
+
+  /**
+   * Blacklist des JTI révoqués.
+   * Chaque entrée est un UUID v4 unique généré à l'émission du token.
+   * À remplacer par Redis en prod (TTL = expiration du token concerné).
+   */
+  private final Set&lt;String&gt; revokedTokenIds = ConcurrentHashMap.newKeySet();
+
+  /**
+   * Store de révocation :
+   * - memory : Set en mémoire (dev uniquement, perdu au redémarrage)
+   * - redis  : clés TTL en Redis (prod / multi-instances)
+   */
+  @Value("${app.jwt.revocation.store:memory}")
+  private String revocationStore;
+
+  @Autowired(required = false)
+  private StringRedisTemplate redis;
+
+  @Value("${jwt.secret}")
+  private String secret;
+
+  @Value("${jwt.expiration-ms}")
+  private long expirationMs;
+
+  @Value("${jwt.refresh-expiration-ms}")
+  private long refreshExpirationMs;
+
+  private SecretKey key;
+
+  public JwtUtils() {}
+
+  public JwtUtils(String secret, long expirationMs, long refreshExpirationMs) {
+    this.secret = secret;
+    this.expirationMs = expirationMs;
+    this.refreshExpirationMs = refreshExpirationMs;
+    init();
+  }
+
+  @PostConstruct
+  public void init() {
+    if (secret == null || secret.length() &lt; 32) {
+      throw new IllegalStateException(
+        "jwt.secret doit contenir au moins 32 caractères. " +
+          "Générez-en un avec : openssl rand -base64 64");
+    }
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] keyBytes = digest.digest(secret.getBytes(StandardCharsets.UTF_8));
+      this.key = Keys.hmacShaKeyFor(keyBytes);
+    } catch (Exception e) {
+      throw new RuntimeException("Erreur lors de l'initialisation de la clé JWT", e);
+    }
+  }</code></pre>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>

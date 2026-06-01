@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>test-rate-limit-429</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 32px 32px;
+      background: #0d1117;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-width: 1200px;
+    }
+    .path {
+      color: #8b949e;
+      font-size: 14px;
+      margin-bottom: 12px;
+      font-family: Consolas, 'Cascadia Code', monospace;
+    }
+    .path strong { color: #58a6ff; font-weight: 600; }
+    .frame {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #161b22;
+    }
+    .gutter {
+      padding: 16px 12px 16px 16px;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      color: #6e7681;
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre;
+      user-select: none;
+    }
+    pre {
+      margin: 0;
+      padding: 16px 20px;
+      overflow: visible;
+    }
+    pre code {
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      background: transparent !important;
+      padding: 0 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="path"><strong>apps/frontend/e2e/z-rate-limit.spec.ts</strong> · lignes 1–41</div>
+  <div class="frame">
+    <div class="gutter"><span class="ln">   1</span>
+<span class="ln">   2</span>
+<span class="ln">   3</span>
+<span class="ln">   4</span>
+<span class="ln">   5</span>
+<span class="ln">   6</span>
+<span class="ln">   7</span>
+<span class="ln">   8</span>
+<span class="ln">   9</span>
+<span class="ln">  10</span>
+<span class="ln">  11</span>
+<span class="ln">  12</span>
+<span class="ln">  13</span>
+<span class="ln">  14</span>
+<span class="ln">  15</span>
+<span class="ln">  16</span>
+<span class="ln">  17</span>
+<span class="ln">  18</span>
+<span class="ln">  19</span>
+<span class="ln">  20</span>
+<span class="ln">  21</span>
+<span class="ln">  22</span>
+<span class="ln">  23</span>
+<span class="ln">  24</span>
+<span class="ln">  25</span>
+<span class="ln">  26</span>
+<span class="ln">  27</span>
+<span class="ln">  28</span>
+<span class="ln">  29</span>
+<span class="ln">  30</span>
+<span class="ln">  31</span>
+<span class="ln">  32</span>
+<span class="ln">  33</span>
+<span class="ln">  34</span>
+<span class="ln">  35</span>
+<span class="ln">  36</span>
+<span class="ln">  37</span>
+<span class="ln">  38</span>
+<span class="ln">  39</span>
+<span class="ln">  40</span>
+<span class="ln">  41</span></div>
+    <pre><code class="language-typescript">import { test, expect } from '@playwright/test';
+import { backendUrl } from './helpers/auth';
+
+/**
+ * Exécuté en dernier (préfixe z-). IP isolée via X-Forwarded-For (CI : APP_TRUSTED_PROXY=true)
+ * pour ne pas partager le quota avec les logins UI des autres specs.
+ */
+const RATE_LIMIT_TEST_IP = '203.0.113.77';
+
+/** CI élève le plafond auth (80) ; il faut dépasser ce quota sur l’IP de test isolée. */
+const PROBE_ATTEMPTS = Number(process.env.E2E_RATE_LIMIT_PROBE_ATTEMPTS ?? 15);
+
+test.describe('Rate limiting (API)', () =&gt; {
+  test('login: trop de tentatives → HTTP 429', async ({ request }) =&gt; {
+    const url = backendUrl('/api/auth/login');
+    let saw429 = false;
+
+    for (let i = 0; i &lt; PROBE_ATTEMPTS; i++) {
+      const response = await request.post(url, {
+        data: {
+          email: 'rate-limit-e2e@ecole.fr',
+          password: 'WrongPassword!',
+        },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Forwarded-For': RATE_LIMIT_TEST_IP,
+        },
+      });
+
+      if (response.status() === 429) {
+        saw429 = true;
+        const body = await response.text();
+        expect(body).toMatch(/Too Many Requests|trop de tentatives/i);
+        break;
+      }
+
+      expect([401, 429]).toContain(response.status());
+    }
+
+    expect(saw429).toBe(true);
+  });</code></pre>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>

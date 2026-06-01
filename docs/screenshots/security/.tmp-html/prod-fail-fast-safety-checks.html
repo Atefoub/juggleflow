@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>prod-fail-fast-safety-checks</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 32px 32px;
+      background: #0d1117;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-width: 1200px;
+    }
+    .path {
+      color: #8b949e;
+      font-size: 14px;
+      margin-bottom: 12px;
+      font-family: Consolas, 'Cascadia Code', monospace;
+    }
+    .path strong { color: #58a6ff; font-weight: 600; }
+    .frame {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #161b22;
+    }
+    .gutter {
+      padding: 16px 12px 16px 16px;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      color: #6e7681;
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre;
+      user-select: none;
+    }
+    pre {
+      margin: 0;
+      padding: 16px 20px;
+      overflow: visible;
+    }
+    pre code {
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      background: transparent !important;
+      padding: 0 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="path"><strong>apps/backend/src/main/java/com/juggleflow/backend/config/ProdSafetyChecks.java</strong> · lignes 10–68</div>
+  <div class="frame">
+    <div class="gutter"><span class="ln">  10</span>
+<span class="ln">  11</span>
+<span class="ln">  12</span>
+<span class="ln">  13</span>
+<span class="ln">  14</span>
+<span class="ln">  15</span>
+<span class="ln">  16</span>
+<span class="ln">  17</span>
+<span class="ln">  18</span>
+<span class="ln">  19</span>
+<span class="ln">  20</span>
+<span class="ln">  21</span>
+<span class="ln">  22</span>
+<span class="ln">  23</span>
+<span class="ln">  24</span>
+<span class="ln">  25</span>
+<span class="ln">  26</span>
+<span class="ln">  27</span>
+<span class="ln">  28</span>
+<span class="ln">  29</span>
+<span class="ln">  30</span>
+<span class="ln">  31</span>
+<span class="ln">  32</span>
+<span class="ln">  33</span>
+<span class="ln">  34</span>
+<span class="ln">  35</span>
+<span class="ln">  36</span>
+<span class="ln">  37</span>
+<span class="ln">  38</span>
+<span class="ln">  39</span>
+<span class="ln">  40</span>
+<span class="ln">  41</span>
+<span class="ln">  42</span>
+<span class="ln">  43</span>
+<span class="ln">  44</span>
+<span class="ln">  45</span>
+<span class="ln">  46</span>
+<span class="ln">  47</span>
+<span class="ln">  48</span>
+<span class="ln">  49</span>
+<span class="ln">  50</span>
+<span class="ln">  51</span>
+<span class="ln">  52</span>
+<span class="ln">  53</span>
+<span class="ln">  54</span>
+<span class="ln">  55</span>
+<span class="ln">  56</span>
+<span class="ln">  57</span>
+<span class="ln">  58</span>
+<span class="ln">  59</span>
+<span class="ln">  60</span>
+<span class="ln">  61</span>
+<span class="ln">  62</span>
+<span class="ln">  63</span>
+<span class="ln">  64</span>
+<span class="ln">  65</span>
+<span class="ln">  66</span>
+<span class="ln">  67</span>
+<span class="ln">  68</span></div>
+    <pre><code class="language-java">/**
+ * Fail-fast en production : empêche un déploiement avec des réglages "dev"
+ * (bootstrap démo, secrets faibles, stores non distribués, etc.).
+ */
+@Component
+@Profile("prod")
+public class ProdSafetyChecks {
+
+  @Value("${jwt.secret:}")
+  private String jwtSecret;
+
+  @Value("${cookie.secure:true}")
+  private boolean cookieSecure;
+
+  @Value("${demo.bootstrap.enabled:false}")
+  private boolean demoBootstrapEnabled;
+
+  @Value("${springdoc.swagger-ui.enabled:false}")
+  private boolean swaggerUiEnabled;
+
+  @Value("${springdoc.api-docs.enabled:false}")
+  private boolean apiDocsEnabled;
+
+  @Value("${app.jwt.revocation.store:memory}")
+  private String revocationStore;
+
+  @Value("${app.rate-limit.store:memory}")
+  private String rateLimitStore;
+
+  @Value("${app.auth.public-registration.enabled:false}")
+  private boolean publicRegistrationEnabled;
+
+  @PostConstruct
+  void validate() {
+    if (!StringUtils.hasText(jwtSecret) || jwtSecret.length() &lt; 32) {
+      throw new IllegalStateException("JWT_SECRET doit être défini (&gt;= 32 caractères) en production.");
+    }
+
+    if (!cookieSecure) {
+      throw new IllegalStateException("COOKIE_SECURE doit être true en production (HTTPS obligatoire).");
+    }
+
+    if (demoBootstrapEnabled) {
+      throw new IllegalStateException("DEMO_BOOTSTRAP_ENABLED ne doit jamais être true en production.");
+    }
+
+    if (swaggerUiEnabled || apiDocsEnabled) {
+      throw new IllegalStateException("Swagger/OpenAPI doit rester désactivé en production.");
+    }
+
+    if (!"redis".equalsIgnoreCase(revocationStore) || !"redis".equalsIgnoreCase(rateLimitStore)) {
+      throw new IllegalStateException("En production, app.jwt.revocation.store et app.rate-limit.store doivent être à 'redis'.");
+    }
+
+    if (publicRegistrationEnabled) {
+      throw new IllegalStateException(
+        "app.auth.public-registration.enabled doit être false en production.");
+    }
+  }</code></pre>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
