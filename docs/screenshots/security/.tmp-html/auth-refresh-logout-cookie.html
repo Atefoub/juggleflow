@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>auth-refresh-logout-cookie</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 32px 32px;
+      background: #0d1117;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-width: 1200px;
+    }
+    .path {
+      color: #8b949e;
+      font-size: 14px;
+      margin-bottom: 12px;
+      font-family: Consolas, 'Cascadia Code', monospace;
+    }
+    .path strong { color: #58a6ff; font-weight: 600; }
+    .frame {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #161b22;
+    }
+    .gutter {
+      padding: 16px 12px 16px 16px;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      color: #6e7681;
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre;
+      user-select: none;
+    }
+    pre {
+      margin: 0;
+      padding: 16px 20px;
+      overflow: visible;
+    }
+    pre code {
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      background: transparent !important;
+      padding: 0 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="path"><strong>apps/backend/src/main/java/com/juggleflow/backend/controller/AuthController.java</strong> · lignes 84–109</div>
+  <div class="frame">
+    <div class="gutter"><span class="ln">  84</span>
+<span class="ln">  85</span>
+<span class="ln">  86</span>
+<span class="ln">  87</span>
+<span class="ln">  88</span>
+<span class="ln">  89</span>
+<span class="ln">  90</span>
+<span class="ln">  91</span>
+<span class="ln">  92</span>
+<span class="ln">  93</span>
+<span class="ln">  94</span>
+<span class="ln">  95</span>
+<span class="ln">  96</span>
+<span class="ln">  97</span>
+<span class="ln">  98</span>
+<span class="ln">  99</span>
+<span class="ln"> 100</span>
+<span class="ln"> 101</span>
+<span class="ln"> 102</span>
+<span class="ln"> 103</span>
+<span class="ln"> 104</span>
+<span class="ln"> 105</span>
+<span class="ln"> 106</span>
+<span class="ln"> 107</span>
+<span class="ln"> 108</span>
+<span class="ln"> 109</span></div>
+    <pre><code class="language-java">  /** Refresh via cookie httpOnly ; rotation du refresh token en cas de succès. */
+  @PostMapping("/refresh")
+  public ResponseEntity&lt;LoginResponse&gt; refresh(
+    HttpServletRequest request,
+    HttpServletResponse response) {
+
+    String refreshToken = cookieUtils.extractRefreshToken(request)
+      .orElseThrow(() -&gt; new BadCredentialsException("Cookie refresh_token absent ou expiré"));
+
+    LoginResponse loginResponse = authService.refresh(refreshToken);
+    cookieUtils.addRefreshTokenCookie(response, loginResponse.getRefreshToken());
+    return ResponseEntity.ok(loginResponse.withoutRefreshToken());
+  }
+
+  /** Logout sans Bearer requis (révocation refresh + suppression cookie). */
+  @PostMapping("/logout")
+  public ResponseEntity&lt;Void&gt; logout(
+    HttpServletRequest request,
+    HttpServletResponse response) {
+
+    cookieUtils.extractRefreshToken(request)
+      .ifPresent(authService::revokeRefreshToken);
+
+    cookieUtils.clearRefreshTokenCookie(response);
+    return ResponseEntity.noContent().build();
+  }</code></pre>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>

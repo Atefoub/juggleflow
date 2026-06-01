@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>refresh-token-httponly-cookie</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 32px 32px;
+      background: #0d1117;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-width: 1200px;
+    }
+    .path {
+      color: #8b949e;
+      font-size: 14px;
+      margin-bottom: 12px;
+      font-family: Consolas, 'Cascadia Code', monospace;
+    }
+    .path strong { color: #58a6ff; font-weight: 600; }
+    .frame {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #161b22;
+    }
+    .gutter {
+      padding: 16px 12px 16px 16px;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      color: #6e7681;
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre;
+      user-select: none;
+    }
+    pre {
+      margin: 0;
+      padding: 16px 20px;
+      overflow: visible;
+    }
+    pre code {
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      background: transparent !important;
+      padding: 0 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="path"><strong>apps/backend/src/main/java/com/juggleflow/backend/security/CookieUtils.java</strong> · lignes 13–93</div>
+  <div class="frame">
+    <div class="gutter"><span class="ln">  13</span>
+<span class="ln">  14</span>
+<span class="ln">  15</span>
+<span class="ln">  16</span>
+<span class="ln">  17</span>
+<span class="ln">  18</span>
+<span class="ln">  19</span>
+<span class="ln">  20</span>
+<span class="ln">  21</span>
+<span class="ln">  22</span>
+<span class="ln">  23</span>
+<span class="ln">  24</span>
+<span class="ln">  25</span>
+<span class="ln">  26</span>
+<span class="ln">  27</span>
+<span class="ln">  28</span>
+<span class="ln">  29</span>
+<span class="ln">  30</span>
+<span class="ln">  31</span>
+<span class="ln">  32</span>
+<span class="ln">  33</span>
+<span class="ln">  34</span>
+<span class="ln">  35</span>
+<span class="ln">  36</span>
+<span class="ln">  37</span>
+<span class="ln">  38</span>
+<span class="ln">  39</span>
+<span class="ln">  40</span>
+<span class="ln">  41</span>
+<span class="ln">  42</span>
+<span class="ln">  43</span>
+<span class="ln">  44</span>
+<span class="ln">  45</span>
+<span class="ln">  46</span>
+<span class="ln">  47</span>
+<span class="ln">  48</span>
+<span class="ln">  49</span>
+<span class="ln">  50</span>
+<span class="ln">  51</span>
+<span class="ln">  52</span>
+<span class="ln">  53</span>
+<span class="ln">  54</span>
+<span class="ln">  55</span>
+<span class="ln">  56</span>
+<span class="ln">  57</span>
+<span class="ln">  58</span>
+<span class="ln">  59</span>
+<span class="ln">  60</span>
+<span class="ln">  61</span>
+<span class="ln">  62</span>
+<span class="ln">  63</span>
+<span class="ln">  64</span>
+<span class="ln">  65</span>
+<span class="ln">  66</span>
+<span class="ln">  67</span>
+<span class="ln">  68</span>
+<span class="ln">  69</span>
+<span class="ln">  70</span>
+<span class="ln">  71</span>
+<span class="ln">  72</span>
+<span class="ln">  73</span>
+<span class="ln">  74</span>
+<span class="ln">  75</span>
+<span class="ln">  76</span>
+<span class="ln">  77</span>
+<span class="ln">  78</span>
+<span class="ln">  79</span>
+<span class="ln">  80</span>
+<span class="ln">  81</span>
+<span class="ln">  82</span>
+<span class="ln">  83</span>
+<span class="ln">  84</span>
+<span class="ln">  85</span>
+<span class="ln">  86</span>
+<span class="ln">  87</span>
+<span class="ln">  88</span>
+<span class="ln">  89</span>
+<span class="ln">  90</span>
+<span class="ln">  91</span>
+<span class="ln">  92</span>
+<span class="ln">  93</span></div>
+    <pre><code class="language-java">/**
+ * Utilitaire centralisé pour la gestion du cookie httpOnly du refresh token.
+ *
+ * Architecture de sécurité des tokens (2026) :
+ *   - Access token  → body JSON (mémoire JS côté client, durée courte ~15 min)
+ *   - Refresh token → cookie httpOnly/Secure/SameSite=Strict (inaccessible à JS)
+ *
+ * Avantages du cookie httpOnly pour le refresh token :
+ *   - Un XSS ne peut pas lire ni exfiltrer le refresh token.
+ *   - SameSite=Strict bloque les requêtes cross-site (protection CSRF native).
+ *   - Le Secure flag garantit HTTPS en production.
+ *
+ * Toute la logique de création, lecture et suppression du cookie est
+ * centralisée ici pour éviter toute duplication et garantir des attributs
+ * cohérents dans toute l'application.
+ */
+@Component
+public class CookieUtils {
+
+  /** Nom du cookie — identique côté frontend (withCredentials=true). */
+  public static final String REFRESH_TOKEN_COOKIE = "refresh_token";
+
+  /** Path restreint : le cookie n'est envoyé qu'aux endpoints /api/auth/. */
+  private static final String COOKIE_PATH = "/api/auth";
+
+  @Value("${jwt.refresh-expiration-ms}")
+  private long refreshExpirationMs;
+
+  /**
+   * Par défaut, on met Secure=true (prod) mais on permet de le désactiver en dev
+   * pour que les cookies fonctionnent sur http://localhost.
+   *
+   * À activer en prod: COOKIE_SECURE=true (recommandé).
+   */
+  @Value("${cookie.secure:true}")
+  private boolean cookieSecure;
+
+  /**
+   * Écrit le refresh token dans un cookie httpOnly sur la réponse HTTP.
+   * Appelé après login et après rotation du refresh token.
+   */
+  public void addRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
+    ResponseCookie cookie = buildResponseCookie(refreshToken, (int) (refreshExpirationMs / 1000));
+    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+  }
+
+  /**
+   * Lit le refresh token depuis les cookies de la requête.
+   *
+   * @return le refresh token, ou empty si le cookie est absent
+   */
+  public Optional&lt;String&gt; extractRefreshToken(HttpServletRequest request) {
+    if (request.getCookies() == null) {
+      return Optional.empty();
+    }
+    return Arrays.stream(request.getCookies())
+      .filter(c -&gt; REFRESH_TOKEN_COOKIE.equals(c.getName()))
+      .map(jakarta.servlet.http.Cookie::getValue)
+      .filter(v -&gt; v != null &amp;&amp; !v.isBlank())
+      .findFirst();
+  }
+
+  /**
+   * Supprime le cookie refresh token côté navigateur (Max-Age=0).
+   * Appelé lors du logout.
+   */
+  public void clearRefreshTokenCookie(HttpServletResponse response) {
+    ResponseCookie cookie = buildResponseCookie("", 0);
+    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+  }
+
+
+  private ResponseCookie buildResponseCookie(String value, int maxAgeSeconds) {
+    return ResponseCookie.from(REFRESH_TOKEN_COOKIE, value)
+      .httpOnly(true)
+      .secure(cookieSecure)
+      .path(COOKIE_PATH)
+      .maxAge(maxAgeSeconds)
+      .sameSite("Strict")
+      .build();
+  }</code></pre>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>

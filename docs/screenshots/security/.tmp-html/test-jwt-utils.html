@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>test-jwt-utils</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 32px 32px;
+      background: #0d1117;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-width: 1200px;
+    }
+    .path {
+      color: #8b949e;
+      font-size: 14px;
+      margin-bottom: 12px;
+      font-family: Consolas, 'Cascadia Code', monospace;
+    }
+    .path strong { color: #58a6ff; font-weight: 600; }
+    .frame {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #161b22;
+    }
+    .gutter {
+      padding: 16px 12px 16px 16px;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      color: #6e7681;
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre;
+      user-select: none;
+    }
+    pre {
+      margin: 0;
+      padding: 16px 20px;
+      overflow: visible;
+    }
+    pre code {
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      background: transparent !important;
+      padding: 0 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="path"><strong>apps/backend/src/test/java/com/juggleflow/backend/security/JwtUtilsTest.java</strong> · lignes 27–58</div>
+  <div class="frame">
+    <div class="gutter"><span class="ln">  27</span>
+<span class="ln">  28</span>
+<span class="ln">  29</span>
+<span class="ln">  30</span>
+<span class="ln">  31</span>
+<span class="ln">  32</span>
+<span class="ln">  33</span>
+<span class="ln">  34</span>
+<span class="ln">  35</span>
+<span class="ln">  36</span>
+<span class="ln">  37</span>
+<span class="ln">  38</span>
+<span class="ln">  39</span>
+<span class="ln">  40</span>
+<span class="ln">  41</span>
+<span class="ln">  42</span>
+<span class="ln">  43</span>
+<span class="ln">  44</span>
+<span class="ln">  45</span>
+<span class="ln">  46</span>
+<span class="ln">  47</span>
+<span class="ln">  48</span>
+<span class="ln">  49</span>
+<span class="ln">  50</span>
+<span class="ln">  51</span>
+<span class="ln">  52</span>
+<span class="ln">  53</span>
+<span class="ln">  54</span>
+<span class="ln">  55</span>
+<span class="ln">  56</span>
+<span class="ln">  57</span>
+<span class="ln">  58</span></div>
+    <pre><code class="language-java">    @Test
+    @DisplayName("generateToken → token JWT valide débutant par eyJ")
+    void generateToken_shouldReturnValidJwt() {
+        UserDetails user = buildUser("alice@test.fr", "ROLE_ELEVE");
+        String token = jwtUtils.generateToken(user);
+        assertThat(token).isNotBlank().startsWith("eyJ");
+    }
+
+    @Test
+    @DisplayName("extractEmail → retourne l'email du subject")
+    void extractEmail_shouldReturnCorrectEmail() {
+        UserDetails user = buildUser("bob@test.fr", "ROLE_ENSEIGNANT");
+        String token = jwtUtils.generateToken(user);
+        assertThat(jwtUtils.extractEmail(token)).isEqualTo("bob@test.fr");
+    }
+
+    @Test
+    @DisplayName("isTokenValid → true pour token valide")
+    void isTokenValid_shouldReturnTrue_forValidToken() {
+        UserDetails user = buildUser("carol@test.fr", "ROLE_ADMIN");
+        String token = jwtUtils.generateToken(user);
+        assertThat(jwtUtils.isTokenValid(token, user)).isTrue();
+    }
+
+    @Test
+    @DisplayName("isTokenValid → false si email ne correspond pas")
+    void isTokenValid_shouldReturnFalse_whenEmailMismatch() {
+        UserDetails user1 = buildUser("user1@test.fr", "ROLE_ELEVE");
+        UserDetails user2 = buildUser("user2@test.fr", "ROLE_ELEVE");
+        String token = jwtUtils.generateToken(user1);
+        assertThat(jwtUtils.isTokenValid(token, user2)).isFalse();
+    }</code></pre>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>

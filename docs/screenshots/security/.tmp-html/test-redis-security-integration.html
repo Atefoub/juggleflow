@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>test-redis-security-integration</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 32px 32px;
+      background: #0d1117;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-width: 1200px;
+    }
+    .path {
+      color: #8b949e;
+      font-size: 14px;
+      margin-bottom: 12px;
+      font-family: Consolas, 'Cascadia Code', monospace;
+    }
+    .path strong { color: #58a6ff; font-weight: 600; }
+    .frame {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #161b22;
+    }
+    .gutter {
+      padding: 16px 12px 16px 16px;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      color: #6e7681;
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre;
+      user-select: none;
+    }
+    pre {
+      margin: 0;
+      padding: 16px 20px;
+      overflow: visible;
+    }
+    pre code {
+      font-family: Consolas, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      background: transparent !important;
+      padding: 0 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="path"><strong>apps/backend/src/test/java/com/juggleflow/backend/security/RedisSecurityIntegrationTest.java</strong> · lignes 32–116</div>
+  <div class="frame">
+    <div class="gutter"><span class="ln">  32</span>
+<span class="ln">  33</span>
+<span class="ln">  34</span>
+<span class="ln">  35</span>
+<span class="ln">  36</span>
+<span class="ln">  37</span>
+<span class="ln">  38</span>
+<span class="ln">  39</span>
+<span class="ln">  40</span>
+<span class="ln">  41</span>
+<span class="ln">  42</span>
+<span class="ln">  43</span>
+<span class="ln">  44</span>
+<span class="ln">  45</span>
+<span class="ln">  46</span>
+<span class="ln">  47</span>
+<span class="ln">  48</span>
+<span class="ln">  49</span>
+<span class="ln">  50</span>
+<span class="ln">  51</span>
+<span class="ln">  52</span>
+<span class="ln">  53</span>
+<span class="ln">  54</span>
+<span class="ln">  55</span>
+<span class="ln">  56</span>
+<span class="ln">  57</span>
+<span class="ln">  58</span>
+<span class="ln">  59</span>
+<span class="ln">  60</span>
+<span class="ln">  61</span>
+<span class="ln">  62</span>
+<span class="ln">  63</span>
+<span class="ln">  64</span>
+<span class="ln">  65</span>
+<span class="ln">  66</span>
+<span class="ln">  67</span>
+<span class="ln">  68</span>
+<span class="ln">  69</span>
+<span class="ln">  70</span>
+<span class="ln">  71</span>
+<span class="ln">  72</span>
+<span class="ln">  73</span>
+<span class="ln">  74</span>
+<span class="ln">  75</span>
+<span class="ln">  76</span>
+<span class="ln">  77</span>
+<span class="ln">  78</span>
+<span class="ln">  79</span>
+<span class="ln">  80</span>
+<span class="ln">  81</span>
+<span class="ln">  82</span>
+<span class="ln">  83</span>
+<span class="ln">  84</span>
+<span class="ln">  85</span>
+<span class="ln">  86</span>
+<span class="ln">  87</span>
+<span class="ln">  88</span>
+<span class="ln">  89</span>
+<span class="ln">  90</span>
+<span class="ln">  91</span>
+<span class="ln">  92</span>
+<span class="ln">  93</span>
+<span class="ln">  94</span>
+<span class="ln">  95</span>
+<span class="ln">  96</span>
+<span class="ln">  97</span>
+<span class="ln">  98</span>
+<span class="ln">  99</span>
+<span class="ln"> 100</span>
+<span class="ln"> 101</span>
+<span class="ln"> 102</span>
+<span class="ln"> 103</span>
+<span class="ln"> 104</span>
+<span class="ln"> 105</span>
+<span class="ln"> 106</span>
+<span class="ln"> 107</span>
+<span class="ln"> 108</span>
+<span class="ln"> 109</span>
+<span class="ln"> 110</span>
+<span class="ln"> 111</span>
+<span class="ln"> 112</span>
+<span class="ln"> 113</span>
+<span class="ln"> 114</span>
+<span class="ln"> 115</span>
+<span class="ln"> 116</span></div>
+    <pre><code class="language-java">@Testcontainers
+@SpringBootTest(properties = {
+  "app.jwt.revocation.store=redis",
+  "app.rate-limit.store=redis",
+  "app.rate-limit.enabled=true",
+  "app.rate-limit.max-requests=2",
+  "app.rate-limit.window-seconds=60",
+  "app.trusted-proxy=true"
+})
+@ActiveProfiles("test")
+class RedisSecurityIntegrationTest {
+
+  @Container
+  static final GenericContainer&lt;?&gt; redisContainer = new GenericContainer&lt;&gt;(
+    DockerImageName.parse("redis:7.4-alpine")
+  ).withExposedPorts(6379);
+
+  @DynamicPropertySource
+  static void registerRedisProps(DynamicPropertyRegistry registry) {
+    registry.add("spring.data.redis.host", redisContainer::getHost);
+    registry.add("spring.data.redis.port", () -&gt; redisContainer.getMappedPort(6379));
+  }
+
+  @Autowired private JwtUtils jwtUtils;
+  @Autowired private StringRedisTemplate redis;
+  @Autowired private WebApplicationContext context;
+  @Autowired private ObjectMapper objectMapper;
+
+  private MockMvc mockMvc;
+
+  @BeforeEach
+  void setUp() {
+    mockMvc = MockMvcBuilders
+      .webAppContextSetup(context)
+      .apply(SecurityMockMvcConfigurers.springSecurity())
+      .build();
+    redis.getConnectionFactory().getConnection().serverCommands().flushAll();
+  }
+
+  @Test
+  @DisplayName("JWT revocation (Redis) → un refresh token révoqué devient invalide")
+  void jwtRevocationRedis_shouldInvalidateRefreshToken() {
+    UserDetails user = User.withUsername("[email protected]")
+      .password("hashed")
+      .authorities("ROLE_ELEVE")
+      .build();
+
+    String refresh = jwtUtils.generateRefreshToken(user);
+    assertThat(jwtUtils.isRefreshTokenValid(refresh, user)).isTrue();
+
+    jwtUtils.revokeToken(refresh);
+
+    assertThat(jwtUtils.isRefreshTokenValid(refresh, user)).isFalse();
+  }
+
+  @Test
+  @DisplayName("Rate limit (Redis) + trusted proxy → compte par dernière IP X-Forwarded-For")
+  void rateLimitRedis_shouldUseLastXForwardedForWhenTrustedProxy() throws Exception {
+    LoginRequest req = new LoginRequest();
+    req.setEmail("unknown@test.fr");
+    req.setPassword("wrong-password");
+
+    String json = objectMapper.writeValueAsString(req);
+
+    // XFF last hop = 9.9.9.9 → 2 requêtes autorisées, 3e bloquée
+    mockMvc.perform(post("/api/auth/login")
+        .with(remoteAddr("10.0.0.1"))
+        .header("X-Forwarded-For", "1.1.1.1, 9.9.9.9")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(json))
+      .andExpect(status().isUnauthorized());
+
+    mockMvc.perform(post("/api/auth/login")
+        .with(remoteAddr("10.0.0.2"))
+        .header("X-Forwarded-For", "2.2.2.2, 9.9.9.9")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(json))
+      .andExpect(status().isUnauthorized());
+
+    mockMvc.perform(post("/api/auth/login")
+        .with(remoteAddr("10.0.0.3"))
+        .header("X-Forwarded-For", "3.3.3.3, 9.9.9.9")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(json))
+      .andExpect(status().isTooManyRequests());</code></pre>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
