@@ -6,7 +6,9 @@ import com.juggleflow.backend.dto.SchoolClassRequest;
 import com.juggleflow.backend.dto.TeacherCreateStudentRequest;
 import com.juggleflow.backend.dto.UpdateStudentGroupRequest;
 import com.juggleflow.backend.dto.StudentSummaryResponse;
+import com.juggleflow.backend.repository.ClassLearningPathRepository;
 import com.juggleflow.backend.repository.SchoolClassRepository;
+import com.juggleflow.backend.repository.StudentLearningPathRepository;
 import com.juggleflow.backend.repository.StudentRepository;
 import com.juggleflow.backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +40,8 @@ class SchoolClassControllerTest {
     @Autowired private UserRepository userRepository;
     @Autowired private SchoolClassRepository schoolClassRepository;
     @Autowired private StudentRepository studentRepository;
+    @Autowired private ClassLearningPathRepository classLearningPathRepository;
+    @Autowired private StudentLearningPathRepository studentLearningPathRepository;
 
     private MockMvc mockMvc;
 
@@ -47,6 +51,8 @@ class SchoolClassControllerTest {
                 .webAppContextSetup(context)
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
+        studentLearningPathRepository.deleteAll();
+        classLearningPathRepository.deleteAll();
         studentRepository.deleteAll();
         schoolClassRepository.deleteAll();
         userRepository.deleteAll();
