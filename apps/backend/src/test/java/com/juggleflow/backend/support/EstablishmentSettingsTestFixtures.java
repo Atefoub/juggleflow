@@ -12,7 +12,8 @@ import java.time.LocalDate;
 public final class EstablishmentSettingsTestFixtures {
 
     public static final int DEFAULT_SEAT_CAP = 60;
-    public static final LocalDate DEFAULT_LICENSE_EXPIRES = LocalDate.of(2026, 6, 30);
+    /** Date lointaine pour éviter les 403 licence expirée en CI (horloge runner). */
+    public static final LocalDate DEFAULT_LICENSE_EXPIRES = LocalDate.of(2099, 12, 31);
     public static final String DEFAULT_ESTABLISHMENT_NAME = "École Jules Ferry";
 
     private EstablishmentSettingsTestFixtures() {}
