@@ -108,7 +108,7 @@ export default function AssignPathPage() {
         if (!cancelled) setLoadingStudents(false);
       });
     return () => { cancelled = true; };
-  }, [selectedClass?.id, step, preselect.studentId]);
+  }, [selectedClass, step, preselect.studentId]);
 
   // Filtrage des parcours
   const uniqueLevels = [
