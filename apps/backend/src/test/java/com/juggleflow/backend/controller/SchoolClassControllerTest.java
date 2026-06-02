@@ -3,6 +3,7 @@ package com.juggleflow.backend.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.juggleflow.backend.dto.RegisterRequest;
 import com.juggleflow.backend.dto.SchoolClassRequest;
+import com.juggleflow.backend.dto.TeacherCreateStudentRequest;
 import com.juggleflow.backend.dto.UpdateStudentGroupRequest;
 import com.juggleflow.backend.dto.StudentSummaryResponse;
 import com.juggleflow.backend.repository.SchoolClassRepository;
@@ -175,6 +176,42 @@ class SchoolClassControllerTest {
                         .content(objectMapper.writeValueAsString(reset)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.groupColorManual").value(false));
+    }
+
+    @Test
+    @DisplayName("createStudentInClass → 201 et renvoie generatedPassword (enseignant)")
+    void createStudentInClass_shouldReturn201_andGeneratedPassword() throws Exception {
+        String teacherToken = registerAndGetToken("teacher_create_student@test.fr", "teacher");
+
+        MvcResult classResult = mockMvc.perform(post("/api/enseignant/classes")
+                        .header("Authorization", "Bearer " + teacherToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(buildClassRequest())))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        Long classId = objectMapper.readTree(
+                classResult.getResponse().getContentAsString()).get("id").asLong();
+
+        TeacherCreateStudentRequest req = new TeacherCreateStudentRequest();
+        req.setEmail("eleve.cree@test.fr");
+        req.setFirstName("Eleve");
+        req.setLastName("Cree");
+
+        mockMvc.perform(post("/api/enseignant/classes/" + classId + "/students")
+                        .header("Authorization", "Bearer " + teacherToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.classId").value(classId))
+                .andExpect(jsonPath("$.generatedPassword").isNotEmpty());
+
+        mockMvc.perform(get("/api/enseignant/classes/" + classId + "/students")
+                        .header("Authorization", "Bearer " + teacherToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].firstName").value("Eleve"));
     }
 
     @Test
