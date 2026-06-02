@@ -3,6 +3,8 @@ package com.juggleflow.backend.controller;
 import com.juggleflow.backend.dto.SchoolClassRequest;
 import com.juggleflow.backend.dto.SchoolClassResponse;
 import com.juggleflow.backend.dto.StudentSummaryResponse;
+import com.juggleflow.backend.dto.TeacherCreateStudentRequest;
+import com.juggleflow.backend.dto.TeacherCreateStudentResponse;
 import com.juggleflow.backend.dto.UpdateStudentGroupRequest;
 import com.juggleflow.backend.service.SchoolClassService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -106,6 +108,22 @@ public class SchoolClassController {
 
         schoolClassService.addStudentToClass(classId, studentId, userDetails.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    /**
+     * POST /api/enseignant/classes/{classId}/students
+     * Crée un compte élève et le rattache immédiatement à la classe.
+     */
+    @PostMapping("/{classId}/students")
+    @Operation(summary = "Créer un élève dans une classe (enseignant)")
+    public ResponseEntity<TeacherCreateStudentResponse> createStudentInClass(
+            @PathVariable Long classId,
+            @Valid @RequestBody TeacherCreateStudentRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        TeacherCreateStudentResponse created =
+                schoolClassService.createStudentInClass(classId, request, userDetails.getUsername());
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     /**
