@@ -1,11 +1,15 @@
 package com.juggleflow.backend.service;
 
 import com.juggleflow.backend.dto.AssignPathRequest;
+import com.juggleflow.backend.dto.AssignPathToStudentRequest;
+import com.juggleflow.backend.dto.ClassStudentPathOverviewResponse;
 import com.juggleflow.backend.dto.LearningPathResponse;
+import com.juggleflow.backend.dto.StudentPathAssignmentResponse;
 import com.juggleflow.backend.dto.StudentPathProgressResponse;
 import com.juggleflow.backend.exception.ResourceNotFoundException;
 import com.juggleflow.backend.model.ClassLearningPath;
 import com.juggleflow.backend.model.LearningPath;
+import com.juggleflow.backend.model.StudentLearningPath;
 import com.juggleflow.backend.model.LearningPathStep;
 import com.juggleflow.backend.model.SchoolClass;
 import com.juggleflow.backend.model.Student;
@@ -13,6 +17,7 @@ import com.juggleflow.backend.model.Teacher;
 import com.juggleflow.backend.model.UserProgress;
 import com.juggleflow.backend.repository.ClassLearningPathRepository;
 import com.juggleflow.backend.repository.LearningPathRepository;
+import com.juggleflow.backend.repository.StudentLearningPathRepository;
 import com.juggleflow.backend.repository.SchoolClassRepository;
 import com.juggleflow.backend.repository.StudentRepository;
 import com.juggleflow.backend.repository.TeacherRepository;
@@ -35,6 +40,8 @@ public class LearningPathService {
 
     private final LearningPathRepository learningPathRepository;
     private final ClassLearningPathRepository classLearningPathRepository;
+    private final StudentLearningPathRepository studentLearningPathRepository;
+    private final PathAssignmentResolver pathAssignmentResolver;
     private final SchoolClassRepository schoolClassRepository;
     private final StudentRepository studentRepository;
     private final TeacherRepository teacherRepository;
@@ -65,22 +72,18 @@ public class LearningPathService {
      * Retourne les parcours assignés à la classe de l'élève connecté.
      * Si l'élève n'a pas de classe rattachée, retourne une liste vide.
      *
-     * Note: l'assignation se fait au niveau classe (class_learning_path).
+     * Parcours effectifs : assignation individuelle si présente, sinon classe.
      */
     public List<LearningPathResponse> getMyAssignedPaths(String studentEmail) {
         Student student = studentRepository.findByEmail(studentEmail)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Élève introuvable ou accès non autorisé"));
 
-        if (student.getSchoolClass() == null) {
-            return List.of();
-        }
+        Long classId = student.getSchoolClass() != null
+                ? student.getSchoolClass().getId()
+                : null;
 
-        Long classId = student.getSchoolClass().getId();
-
-        return classLearningPathRepository.findBySchoolClass_Id(classId).stream()
-                .map(ClassLearningPath::getLearningPath)
-                .distinct()
+        return pathAssignmentResolver.resolveAllPathsForStudent(student.getId(), classId).stream()
                 .map(LearningPathResponse::from)
                 .toList();
     }
@@ -182,6 +185,133 @@ public class LearningPathService {
     }
 
     /**
+     * Parcours assignés à un élève (individuellement ou via la classe).
+     */
+    public List<LearningPathResponse> getAssignedPathsForStudent(
+            Long classId, Long studentId, String teacherEmail) {
+        Teacher teacher = findTeacherByEmail(teacherEmail);
+        assertClassOwnership(classId, teacher.getId());
+        assertStudentInClass(studentId, classId);
+        return pathAssignmentResolver.resolveAllPathsForStudent(studentId, classId).stream()
+                .map(LearningPathResponse::from)
+                .toList();
+    }
+
+    /**
+     * Parcours effectif principal d'un élève (individuel prioritaire sur classe).
+     */
+    public StudentPathAssignmentResponse getEffectiveAssignmentForStudent(
+            Long classId, Long studentId, String teacherEmail) {
+        Teacher teacher = findTeacherByEmail(teacherEmail);
+        assertClassOwnership(classId, teacher.getId());
+        assertStudentInClass(studentId, classId);
+
+        return pathAssignmentResolver.resolvePrimaryPath(studentId, classId)
+                .map(resolved -> StudentPathAssignmentResponse.builder()
+                        .studentId(studentId)
+                        .learningPathId(resolved.path().getId())
+                        .pathName(resolved.path().getPathName())
+                        .startDate(resolved.startDate())
+                        .expectedEndDate(resolved.expectedEndDate())
+                        .assignmentSource(resolved.source().name())
+                        .build())
+                .orElse(null);
+    }
+
+    @Transactional
+    public LearningPathResponse assignToStudent(
+            Long classId,
+            AssignPathToStudentRequest request,
+            String teacherEmail) {
+
+        Teacher teacher = findTeacherByEmail(teacherEmail);
+        assertClassOwnership(classId, teacher.getId());
+        Student student = assertStudentInClass(request.getStudentId(), classId);
+
+        LearningPath path = learningPathRepository.findById(request.getLearningPathId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Parcours", request.getLearningPathId()));
+
+        Optional<StudentLearningPath> existing =
+                studentLearningPathRepository.findByLearningPath_IdAndStudent_Id(
+                        path.getId(), student.getId());
+
+        if (existing.isPresent()) {
+            throw new IllegalArgumentException(
+                    "Le parcours '" + path.getPathName()
+                    + "' est déjà assigné à cet élève.");
+        }
+
+        StudentLearningPath assignment = StudentLearningPath.builder()
+                .student(student)
+                .learningPath(path)
+                .startDate(request.getStartDate())
+                .expectedEndDate(request.getExpectedEndDate())
+                .build();
+
+        studentLearningPathRepository.save(assignment);
+        log.info("Parcours '{}' assigné à l'élève {} (classe {}) par {}",
+                path.getPathName(), student.getId(), classId, teacherEmail);
+
+        return LearningPathResponse.from(path);
+    }
+
+    @Transactional
+    public void unassignFromStudent(
+            Long classId, Long studentId, Long pathId, String teacherEmail) {
+
+        Teacher teacher = findTeacherByEmail(teacherEmail);
+        assertClassOwnership(classId, teacher.getId());
+        assertStudentInClass(studentId, classId);
+
+        studentLearningPathRepository.findByLearningPath_IdAndStudent_Id(pathId, studentId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Assignation introuvable pour l'élève " + studentId
+                        + " et le parcours " + pathId));
+
+        studentLearningPathRepository.deleteByLearningPath_IdAndStudent_Id(pathId, studentId);
+        log.info("Parcours {} désassigné de l'élève {} par {}", pathId, studentId, teacherEmail);
+    }
+
+    /**
+     * Vue synthétique : parcours effectif et progression par élève de la classe.
+     */
+    public List<ClassStudentPathOverviewResponse> getClassPathOverview(
+            Long classId, String teacherEmail) {
+
+        Teacher teacher = findTeacherByEmail(teacherEmail);
+        assertClassOwnership(classId, teacher.getId());
+
+        List<Student> students = studentRepository.findBySchoolClass_Id(classId);
+
+        return students.stream().map(student -> {
+            var resolved = pathAssignmentResolver.resolvePrimaryPath(student.getId(), classId);
+            if (resolved.isEmpty()) {
+                return ClassStudentPathOverviewResponse.builder()
+                        .studentId(student.getId())
+                        .firstName(student.getFirstName())
+                        .lastName(student.getLastName())
+                        .completionPercent(0)
+                        .build();
+            }
+
+            var path = resolved.get().path();
+            List<LearningPathStep> steps = path.getSteps();
+            int percent = computeCompletionPercent(student.getId(), steps);
+
+            return ClassStudentPathOverviewResponse.builder()
+                    .studentId(student.getId())
+                    .firstName(student.getFirstName())
+                    .lastName(student.getLastName())
+                    .learningPathId(path.getId())
+                    .pathName(path.getPathName())
+                    .completionPercent(percent)
+                    .assignmentSource(resolved.get().source().name())
+                    .build();
+        }).toList();
+    }
+
+    /**
      * Calcule la progression de chaque élève d'une classe sur un parcours donné.
      * Pour chaque élève, calcule le pourcentage de figures du parcours
      * marquées MASTERED dans user_progress.
@@ -205,7 +335,9 @@ public class LearningPathService {
                 .map(s -> s.getTrick().getId())
                 .toList();
 
-        List<Student> students = studentRepository.findBySchoolClass_Id(classId);
+        List<Student> students = studentRepository.findBySchoolClass_Id(classId).stream()
+                .filter(student -> isStudentOnPath(student.getId(), classId, pathId))
+                .toList();
 
         return students.stream().map(student -> {
             // Charger toute la progression de l'élève et filtrer sur les figures du parcours
@@ -313,6 +445,31 @@ public class LearningPathService {
                 .masteryPercentage(progress != null ? progress.getMasteryPercentage() : null)
                 .blocked(StudentBlockageService.isBlocked(progress))
                 .build();
+    }
+
+    private boolean isStudentOnPath(Long studentId, Long classId, Long pathId) {
+        return pathAssignmentResolver.resolveAllPathsForStudent(studentId, classId).stream()
+                .anyMatch(p -> p.getId().equals(pathId));
+    }
+
+    private int computeCompletionPercent(Long studentId, List<LearningPathStep> steps) {
+        if (steps.isEmpty()) {
+            return 0;
+        }
+        List<Long> trickIds = steps.stream()
+                .map(s -> s.getTrick().getId())
+                .toList();
+        long masteredCount = userProgressRepository.findByUser_Id(studentId).stream()
+                .filter(p -> trickIds.contains(p.getTrick().getId()))
+                .filter(p -> p.getStatus() == UserProgress.ProgressStatus.MASTERED)
+                .count();
+        return (int) ((masteredCount * 100L) / steps.size());
+    }
+
+    private Student assertStudentInClass(Long studentId, Long classId) {
+        return studentRepository.findByIdAndSchoolClass_Id(studentId, classId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Élève introuvable dans cette classe : " + studentId));
     }
 
     private Teacher findTeacherByEmail(String email) {

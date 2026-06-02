@@ -3,14 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ProgressBar from '../../components/ProgressBar';
 import AppIcon from '../../components/icons/AppIcon';
+import StudentPathSummary from '../../components/teacher/StudentPathSummary';
 import {
   teacherApi,
   GROUP_COLOR_MAP,
   GROUP_LABEL_MAP,
+  type ClassStudentPathOverview,
   type SchoolClass,
   type StudentSummary,
   type LearningPathSummary,
 } from '../../api/teacherApi';
+import { pathOverviewByStudentId } from '../../utils/pathOverview';
 
 function groupStudents(students: StudentSummary[]) {
   const groups: Record<StudentSummary['groupColor'], StudentSummary[]> = {
@@ -39,6 +42,10 @@ export default function TeacherDashboardPage() {
   const [selectedClass, setSelectedClass] = useState<SchoolClass | null>(null);
   const [loading, setLoading]   = useState(true);
   const [loadingPaths, setLoadingPaths] = useState(false);
+  const [loadingPathOverview, setLoadingPathOverview] = useState(false);
+  const [pathOverview, setPathOverview] = useState<Map<number, ClassStudentPathOverview>>(
+    () => new Map(),
+  );
   const [pathsError, setPathsError] = useState<string | null>(null);
   const [error, setError]       = useState<string | null>(null);
   const [reportPickerOpen, setReportPickerOpen] = useState(false);
@@ -58,8 +65,11 @@ export default function TeacherDashboardPage() {
     if (!selectedClass) return;
     setStudents([]);
     setAssignedPaths([]);
+    setPathOverview(new Map());
     setLoadingPaths(true);
+    setLoadingPathOverview(true);
     setPathsError(null);
+
     teacherApi
       .getClassStudents(selectedClass.id)
       .then(setStudents)
@@ -70,6 +80,12 @@ export default function TeacherDashboardPage() {
       .then(setAssignedPaths)
       .catch(() => setPathsError("Impossible de charger les parcours de cette classe."))
       .finally(() => setLoadingPaths(false));
+
+    teacherApi
+      .getClassPathOverview(selectedClass.id)
+      .then((rows) => setPathOverview(pathOverviewByStudentId(rows)))
+      .catch(() => setPathsError((prev) => prev ?? 'Impossible de charger les parcours par élève.'))
+      .finally(() => setLoadingPathOverview(false));
   }, [selectedClass]);
 
   async function handleUnassign(pathId: number) {
@@ -302,6 +318,71 @@ export default function TeacherDashboardPage() {
                   </button>
                 )}
               </div>
+            )}
+
+            {/* Parcours effectif par élève */}
+            {selectedClass && students.length > 0 && (
+              <section className="lg:col-span-2">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
+                    Parcours par élève
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/teacher/eleves?classId=${selectedClass.id}`)}
+                    className="text-xs font-semibold text-brand-end underline underline-offset-2"
+                  >
+                    Liste complète →
+                  </button>
+                </div>
+
+                {loadingPathOverview ? (
+                  <div className="flex flex-col gap-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-12 rounded-xl animate-pulse bg-bg-card" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl overflow-hidden border border-border divide-y divide-border max-h-64 overflow-y-auto">
+                    {students.map((s) => {
+                      const row = pathOverview.get(s.id);
+                      const chipColor = GROUP_COLOR_MAP[s.groupColor];
+                      const pct = row?.pathName ? row.completionPercent : s.progressionPercent;
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() =>
+                            navigate(`/teacher/eleve/${s.id}?classId=${selectedClass.id}`)
+                          }
+                          className="flex w-full items-center gap-3 px-4 py-3 bg-bg-card text-left transition-colors hover:bg-surface-hover"
+                        >
+                          <span
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                            style={{ backgroundColor: chipColor }}
+                          >
+                            {s.firstName[0]}{s.lastName[0]}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-text-primary truncate">
+                              {s.firstName} {s.lastName}
+                            </p>
+                            <StudentPathSummary overview={row} />
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <div className="w-16 hidden sm:block">
+                              <ProgressBar value={pct} color={chipColor} height="4px" />
+                            </div>
+                            <span className="text-sm font-bold text-text-primary min-w-9 text-right">
+                              {pct}%
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
             )}
 
             {/* Parcours assignés */}

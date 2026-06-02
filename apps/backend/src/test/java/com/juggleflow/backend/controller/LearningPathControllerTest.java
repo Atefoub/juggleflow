@@ -2,10 +2,12 @@ package com.juggleflow.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.juggleflow.backend.dto.AssignPathRequest;
+import com.juggleflow.backend.dto.AssignPathToStudentRequest;
 import com.juggleflow.backend.dto.RegisterRequest;
 import com.juggleflow.backend.dto.SchoolClassRequest;
 import com.juggleflow.backend.model.LearningPath;
 import com.juggleflow.backend.repository.ClassLearningPathRepository;
+import com.juggleflow.backend.repository.StudentLearningPathRepository;
 import com.juggleflow.backend.repository.LearningPathRepository;
 import com.juggleflow.backend.repository.SchoolClassRepository;
 import com.juggleflow.backend.repository.StudentRepository;
@@ -45,6 +47,7 @@ class LearningPathControllerTest {
   @Autowired private UserRepository userRepository;
   @Autowired private LearningPathRepository learningPathRepository;
   @Autowired private ClassLearningPathRepository classLearningPathRepository;
+  @Autowired private StudentLearningPathRepository studentLearningPathRepository;
   @Autowired private SchoolClassRepository schoolClassRepository;
   @Autowired private StudentRepository studentRepository;
   @Autowired private TeacherRepository teacherRepository;
@@ -58,6 +61,7 @@ class LearningPathControllerTest {
       .apply(SecurityMockMvcConfigurers.springSecurity())
       .build();
 
+    studentLearningPathRepository.deleteAll();
     classLearningPathRepository.deleteAll();
     studentRepository.deleteAll();
     schoolClassRepository.deleteAll();
@@ -234,6 +238,57 @@ class LearningPathControllerTest {
       .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
       .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment")))
       .andExpect(content().string(org.hamcrest.Matchers.containsString("studentId,firstName,lastName")));
+  }
+
+  @Test
+  @DisplayName("assignPathToStudent → priorité sur assignation classe pour l'élève")
+  void assignPathToStudent_shouldOverrideClassAssignment() throws Exception {
+    String teacherToken = registerAndGetToken("teacher@studentpath.fr", "teacher");
+    Long classId = createClass(teacherToken);
+
+    String studentToken = registerAndGetToken("eleve@studentpath.fr", "student");
+    Long studentId = objectMapper.readTree(
+        mockMvc.perform(get("/api/auth/me")
+            .header("Authorization", "Bearer " + studentToken))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString()
+    ).get("id").asLong();
+
+    Student student = studentRepository.findById(studentId).orElseThrow();
+    student.setSchoolClass(schoolClassRepository.findById(classId).orElseThrow());
+    studentRepository.save(student);
+
+    LearningPath classPath = learningPathRepository.save(
+        buildPath("Classe", LearningPath.TargetLevel.BEGINNER));
+    LearningPath studentPath = learningPathRepository.save(
+        buildPath("Individuel", LearningPath.TargetLevel.INTERMEDIATE));
+
+    mockMvc.perform(post("/api/enseignant/classes/" + classId + "/paths")
+            .header("Authorization", "Bearer " + teacherToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(buildAssignRequest(classPath.getId(), classId))))
+        .andExpect(status().isCreated());
+
+    AssignPathToStudentRequest studentReq = new AssignPathToStudentRequest();
+    studentReq.setStudentId(studentId);
+    studentReq.setLearningPathId(studentPath.getId());
+    studentReq.setStartDate(LocalDate.now());
+
+    mockMvc.perform(post("/api/enseignant/classes/" + classId
+            + "/students/" + studentId + "/paths")
+            .header("Authorization", "Bearer " + teacherToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(studentReq)))
+        .andExpect(status().isCreated());
+
+    mockMvc.perform(get("/api/enseignant/classes/" + classId
+            + "/students/" + studentId + "/paths/effective")
+            .header("Authorization", "Bearer " + teacherToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.learningPathId").value(studentPath.getId()))
+        .andExpect(jsonPath("$.assignmentSource").value("STUDENT"));
   }
 
   @Test
