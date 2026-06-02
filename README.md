@@ -46,7 +46,7 @@ L'application fonctionne comme une **Progressive Web App (PWA)** : elle s'instal
 
 ### Enseignant
 - Gestion de classes et de groupes colorés (Vert / Orange / Rouge)
-- Assignation de parcours à une classe
+- Assignation de parcours à une classe ou individuellement par élève (l'assignation élève est prioritaire sur celle de la classe)
 - Tableau de bord : progression moyenne, alertes de blocage par figure
 - Fiche individuelle par élève avec historique de progression
 - Export CSV de la progression par parcours

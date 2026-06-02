@@ -1,7 +1,10 @@
 package com.juggleflow.backend.controller;
 
 import com.juggleflow.backend.dto.AssignPathRequest;
+import com.juggleflow.backend.dto.AssignPathToStudentRequest;
+import com.juggleflow.backend.dto.ClassStudentPathOverviewResponse;
 import com.juggleflow.backend.dto.LearningPathResponse;
+import com.juggleflow.backend.dto.StudentPathAssignmentResponse;
 import com.juggleflow.backend.dto.StudentPathProgressResponse;
 import com.juggleflow.backend.service.LearningPathService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -106,6 +109,69 @@ public class LearningPathController {
      * Désassigne un parcours d'une classe.
      * Réservé à ROLE_ENSEIGNANT et ROLE_ADMINISTRATEUR.
      */
+    @GetMapping("/api/enseignant/classes/{classId}/paths/overview")
+    @Operation(summary = "Vue parcours effectif par élève de la classe")
+    public ResponseEntity<List<ClassStudentPathOverviewResponse>> getClassPathOverview(
+            @PathVariable Long classId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(
+                learningPathService.getClassPathOverview(classId, userDetails.getUsername()));
+    }
+
+    @GetMapping("/api/enseignant/classes/{classId}/students/{studentId}/paths")
+    @Operation(summary = "Lister les parcours assignés à un élève")
+    public ResponseEntity<List<LearningPathResponse>> getAssignedPathsForStudent(
+            @PathVariable Long classId,
+            @PathVariable Long studentId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(
+                learningPathService.getAssignedPathsForStudent(
+                        classId, studentId, userDetails.getUsername()));
+    }
+
+    @GetMapping("/api/enseignant/classes/{classId}/students/{studentId}/paths/effective")
+    @Operation(summary = "Parcours effectif principal d'un élève")
+    public ResponseEntity<StudentPathAssignmentResponse> getEffectiveAssignmentForStudent(
+            @PathVariable Long classId,
+            @PathVariable Long studentId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        StudentPathAssignmentResponse assignment =
+                learningPathService.getEffectiveAssignmentForStudent(
+                        classId, studentId, userDetails.getUsername());
+        if (assignment == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(assignment);
+    }
+
+    @PostMapping("/api/enseignant/classes/{classId}/students/{studentId}/paths")
+    @Operation(summary = "Assigner un parcours à un élève")
+    public ResponseEntity<LearningPathResponse> assignPathToStudent(
+            @PathVariable Long classId,
+            @PathVariable Long studentId,
+            @Valid @RequestBody AssignPathToStudentRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        request.setStudentId(studentId);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(learningPathService.assignToStudent(
+                        classId, request, userDetails.getUsername()));
+    }
+
+    @DeleteMapping("/api/enseignant/classes/{classId}/students/{studentId}/paths/{pathId}")
+    @Operation(summary = "Désassigner un parcours d'un élève")
+    public ResponseEntity<Void> unassignPathFromStudent(
+            @PathVariable Long classId,
+            @PathVariable Long studentId,
+            @PathVariable Long pathId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        learningPathService.unassignFromStudent(
+                classId, studentId, pathId, userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/api/enseignant/classes/{classId}/paths/{pathId}")
     @Operation(summary = "Désassigner un parcours d'une classe")
     public ResponseEntity<Void> unassignPath(

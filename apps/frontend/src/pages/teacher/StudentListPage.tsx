@@ -2,16 +2,19 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AppIcon from '../../components/icons/AppIcon';
 import ProgressBar from '../../components/ProgressBar';
+import StudentPathSummary from '../../components/teacher/StudentPathSummary';
 import {
   teacherApi,
   GROUP_COLOR_MAP,
   GROUP_LABEL_MAP,
+  type ClassStudentPathOverview,
   type SchoolClass,
   type StudentLookup,
   type StudentSummary,
   type TeacherCreateStudentResponse,
 } from '../../api/teacherApi';
 import { apiErrorMessage } from '../../utils/apiErrorMessage';
+import { pathOverviewByStudentId } from '../../utils/pathOverview';
 
 type GroupFilter = 'Tous' | 'VERT' | 'ORANGE' | 'ROUGE';
 
@@ -38,6 +41,9 @@ export default function StudentListPage() {
 
   const [classes, setClasses]           = useState<SchoolClass[]>([]);
   const [students, setStudents]         = useState<StudentSummary[]>([]);
+  const [pathOverview, setPathOverview] = useState<Map<number, ClassStudentPathOverview>>(
+    () => new Map(),
+  );
   const [selectedClass, setSelectedClass] = useState<SchoolClass | null>(null);
   const [groupFilter, setGroupFilter]   = useState<GroupFilter>('Tous');
   const [search, setSearch]             = useState('');
@@ -75,14 +81,23 @@ export default function StudentListPage() {
     if (preselect.group) setGroupFilter(preselect.group);
   }, [preselect.group]);
 
+  async function refreshClassRoster(classId: number) {
+    const [studentList, overview] = await Promise.all([
+      teacherApi.getClassStudents(classId),
+      teacherApi.getClassPathOverview(classId),
+    ]);
+    setStudents(studentList);
+    setPathOverview(pathOverviewByStudentId(overview));
+  }
+
   // Load students when class changes
   useEffect(() => {
     if (!selectedClass) return;
     setStudents([]);
-    teacherApi
-      .getClassStudents(selectedClass.id)
-      .then(setStudents)
-      .catch(() => setError('Impossible de charger les élèves de cette classe.'));
+    setPathOverview(new Map());
+    refreshClassRoster(selectedClass.id).catch(() =>
+      setError('Impossible de charger les élèves de cette classe.'),
+    );
   }, [selectedClass]);
 
   useEffect(() => {
@@ -144,8 +159,7 @@ export default function StudentListPage() {
     setError(null);
     try {
       await teacherApi.addStudentToClass(selectedClass.id, studentId);
-      const updated = await teacherApi.getClassStudents(selectedClass.id);
-      setStudents(updated);
+      await refreshClassRoster(selectedClass.id);
       setAddQuery('');
       setLookupPreview(null);
     } catch (err) {
@@ -167,8 +181,7 @@ export default function StudentListPage() {
         lastName: newStudentLastName.trim(),
       });
       setCreatedStudent(created);
-      const updated = await teacherApi.getClassStudents(selectedClass.id);
-      setStudents(updated);
+      await refreshClassRoster(selectedClass.id);
       setNewStudentEmail('');
       setNewStudentFirstName('');
       setNewStudentLastName('');
@@ -448,6 +461,10 @@ export default function StudentListPage() {
           <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
             {filteredStudents.map((student) => {
               const chipColor = GROUP_COLOR_MAP[student.groupColor];
+              const pathRow = pathOverview.get(student.id);
+              const barValue = pathRow?.pathName
+                ? pathRow.completionPercent
+                : student.progressionPercent;
               return (
                 <button
                   key={student.id}
@@ -477,15 +494,15 @@ export default function StudentListPage() {
                           <span className="text-brand-end"> · Bloqué</span>
                         )}
                       </p>
+                      <StudentPathSummary overview={pathRow} className="mt-0.5" />
                     </div>
 
                     <span className="text-xs font-bold text-text-primary shrink-0">
-                      {student.progressionPercent}%
+                      {barValue}%
                     </span>
                   </div>
 
-                  {/* Progress bar — color prop is dynamic from API */}
-                  <ProgressBar value={student.progressionPercent} color={chipColor} height="6px" />
+                  <ProgressBar value={barValue} color={chipColor} height="6px" />
                 </button>
               );
             })}
