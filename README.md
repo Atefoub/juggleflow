@@ -197,6 +197,18 @@ DEMO_BOOTSTRAP_PASSWORD=<mot-de-passe-demo>
 
 ---
 
+## Création des comptes (hors bootstrap)
+
+Par défaut (sans `DEMO_BOOTSTRAP_ENABLED` / `ADMIN_BOOTSTRAP_*`), les comptes sont gérés via l’interface **Admin** :
+
+- **Admin** : crée des comptes (élèves / enseignants / administrateurs) via `Admin → Utilisateurs`.
+  - Si aucun mot de passe n’est fourni, le serveur en **génère** un et le renvoie **une seule fois**.
+- **Enseignant (Option B)** : peut créer un compte élève directement depuis `Enseignant → Élèves` (section **Créer un élève**).
+  - Le mot de passe est **généré** par le serveur et doit être transmis à l’élève (affiché une seule fois).
+  - L’élève est rattaché immédiatement à la classe sélectionnée.
+
+---
+
 ## Structure du projet
 
 ```
