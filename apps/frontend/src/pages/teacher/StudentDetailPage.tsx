@@ -10,6 +10,7 @@ import {
   type StudentSummary,
   type LearningPathSummary,
   type StudentPathProgress,
+  type StudentPathAssignment,
 } from '../../api/teacherApi';
 import { catalogueApi } from '../../api/catalogueApi';
 import { apiErrorMessage } from '../../utils/apiErrorMessage';
@@ -46,6 +47,8 @@ export default function StudentDetailPage() {
   const [error, setError]       = useState<string | null>(null);
   const [blockagePrerequisites, setBlockagePrerequisites] = useState<string[]>([]);
   const [removing, setRemoving] = useState(false);
+  const [effectiveAssignment, setEffectiveAssignment] = useState<StudentPathAssignment | null>(null);
+  const [unassigningPath, setUnassigningPath] = useState(false);
 
   // Groupe de couleur
   const groupColor  = student?.groupColor ?? 'VERT';
@@ -123,11 +126,21 @@ export default function StudentDetailPage() {
 
         setEffectiveClassId(resolvedClassId);
 
-        // 3. Charger les parcours assignés à cette classe
+        // 3. Parcours effectifs de l'élève (individuel prioritaire sur classe)
         let assigned: LearningPathSummary[] = [];
         if (resolvedClassId != null) {
-          assigned = await teacherApi.getAssignedPathsForClass(resolvedClassId);
+          assigned = await teacherApi.getAssignedPathsForStudent(
+            resolvedClassId,
+            Number(id),
+          );
           setAssignedPaths(assigned);
+          const effective = await teacherApi.getEffectiveAssignmentForStudent(
+            resolvedClassId,
+            Number(id),
+          );
+          setEffectiveAssignment(effective);
+        } else {
+          setEffectiveAssignment(null);
         }
 
         // 4. Choix du parcours: query > premier assigné > rien
@@ -362,11 +375,67 @@ export default function StudentDetailPage() {
               </div>
             </section>
 
+            {effectiveAssignment && (
+              <section className="p-4 rounded-2xl bg-bg-card border border-border">
+                <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-2">
+                  Parcours actif
+                </h2>
+                <p className="font-bold text-text-primary text-sm">{effectiveAssignment.pathName}</p>
+                <p className="text-xs text-text-muted mt-1">
+                  {effectiveAssignment.assignmentSource === 'STUDENT'
+                    ? 'Assignation individuelle'
+                    : 'Hérité de la classe'}
+                  {effectiveAssignment.startDate
+                    ? ` · depuis le ${new Date(effectiveAssignment.startDate).toLocaleDateString('fr-FR')}`
+                    : ''}
+                </p>
+                {effectiveAssignment.assignmentSource === 'STUDENT' && effectiveClassId && (
+                  <button
+                    type="button"
+                    disabled={unassigningPath}
+                    onClick={async () => {
+                      if (!window.confirm('Retirer l\'assignation individuelle ? L\'élève repassera sur le parcours de classe.')) {
+                        return;
+                      }
+                      setUnassigningPath(true);
+                      setError(null);
+                      try {
+                        await teacherApi.unassignPathFromStudent(
+                          effectiveClassId,
+                          Number(id),
+                          effectiveAssignment.learningPathId,
+                        );
+                        const refreshed = await teacherApi.getAssignedPathsForStudent(
+                          effectiveClassId,
+                          Number(id),
+                        );
+                        setAssignedPaths(refreshed);
+                        const effective = await teacherApi.getEffectiveAssignmentForStudent(
+                          effectiveClassId,
+                          Number(id),
+                        );
+                        setEffectiveAssignment(effective);
+                        const nextPathId = effective?.learningPathId ?? refreshed[0]?.id ?? null;
+                        setSelectedPathId(nextPathId);
+                      } catch (err) {
+                        setError(apiErrorMessage(err, 'Impossible de retirer le parcours.'));
+                      } finally {
+                        setUnassigningPath(false);
+                      }
+                    }}
+                    className="mt-3 text-xs font-semibold text-alert underline underline-offset-2 disabled:opacity-60"
+                  >
+                    {unassigningPath ? 'Retrait…' : 'Retirer l\'assignation individuelle'}
+                  </button>
+                )}
+              </section>
+            )}
+
             {/* Parcours disponibles */}
             {paths.length > 0 && (
               <section>
                 <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
-                  Parcours disponibles
+                  Catalogue des parcours
                 </h2>
                 <div className="flex flex-col gap-3">
                   {paths.slice(0, 3).map((path) => (

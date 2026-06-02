@@ -2,7 +2,6 @@ package com.juggleflow.backend.service;
 
 import com.juggleflow.backend.model.LearningPathStep;
 import com.juggleflow.backend.model.UserProgress;
-import com.juggleflow.backend.repository.ClassLearningPathRepository;
 import com.juggleflow.backend.repository.UserProgressRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,13 +23,13 @@ public class StudentBlockageService {
 
     public static final int MIN_ATTEMPTS_FOR_BLOCKAGE = 3;
 
-    private final ClassLearningPathRepository classLearningPathRepository;
+    private final PathAssignmentResolver pathAssignmentResolver;
     private final UserProgressRepository userProgressRepository;
 
     public record BlockageInfo(Long trickId, String trickName, int attemptCount) {}
 
     public Optional<BlockageInfo> findBlockageForStudentInClass(Long studentId, Long classId) {
-        List<LearningPathStep> steps = resolvePrimaryPathSteps(classId);
+        List<LearningPathStep> steps = resolvePrimaryPathSteps(studentId, classId);
         if (steps.isEmpty()) {
             return Optional.empty();
         }
@@ -73,14 +72,7 @@ public class StudentBlockageService {
                 && progress.getAttemptCount() >= MIN_ATTEMPTS_FOR_BLOCKAGE;
     }
 
-    private List<LearningPathStep> resolvePrimaryPathSteps(Long classId) {
-        return classLearningPathRepository.findBySchoolClass_Id(classId).stream()
-                .findFirst()
-                .map(assignment -> {
-                    var path = assignment.getLearningPath();
-                    path.getSteps().size();
-                    return path.getSteps();
-                })
-                .orElse(List.of());
+    private List<LearningPathStep> resolvePrimaryPathSteps(Long studentId, Long classId) {
+        return pathAssignmentResolver.resolvePrimaryPathSteps(studentId, classId);
     }
 }

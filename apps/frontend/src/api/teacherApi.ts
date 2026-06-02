@@ -69,6 +69,25 @@ export interface StudentPathProgress {
   }>;
 }
 
+export interface StudentPathAssignment {
+  studentId: number;
+  learningPathId: number;
+  pathName: string;
+  startDate: string;
+  expectedEndDate: string | null;
+  assignmentSource: 'CLASS' | 'STUDENT';
+}
+
+export interface ClassStudentPathOverview {
+  studentId: number;
+  firstName: string;
+  lastName: string;
+  learningPathId?: number;
+  pathName?: string;
+  completionPercent: number;
+  assignmentSource?: 'CLASS' | 'STUDENT';
+}
+
 export interface LearningPathSummary {
   id: number;
   pathName: string;
@@ -160,6 +179,63 @@ export const teacherApi = {
 
   getPathById: async (id: number): Promise<LearningPathSummary> => {
     const res = await api.get<LearningPathSummary>(`/learning-paths/${id}`);
+    return res.data;
+  },
+
+  getAssignedPathsForStudent: async (
+    classId: number,
+    studentId: number,
+  ): Promise<LearningPathSummary[]> => {
+    const res = await api.get<LearningPathSummary[]>(
+      `/enseignant/classes/${classId}/students/${studentId}/paths`,
+    );
+    return res.data;
+  },
+
+  getEffectiveAssignmentForStudent: async (
+    classId: number,
+    studentId: number,
+  ): Promise<StudentPathAssignment | null> => {
+    const res = await api.get<StudentPathAssignment>(
+      `/enseignant/classes/${classId}/students/${studentId}/paths/effective`,
+      { validateStatus: (status) => status === 200 || status === 204 },
+    );
+    return res.status === 204 ? null : res.data;
+  },
+
+  assignPathToStudent: async (
+    classId: number,
+    studentId: number,
+    pathId: number,
+  ): Promise<LearningPathSummary> => {
+    const today = new Date();
+    const startDate = today.toISOString().slice(0, 10);
+    const payload = {
+      studentId,
+      learningPathId: pathId,
+      startDate,
+    };
+    const res = await api.post<LearningPathSummary>(
+      `/enseignant/classes/${classId}/students/${studentId}/paths`,
+      payload,
+    );
+    return res.data;
+  },
+
+  unassignPathFromStudent: async (
+    classId: number,
+    studentId: number,
+    pathId: number,
+  ): Promise<void> => {
+    await api.delete(
+      `/enseignant/classes/${classId}/students/${studentId}/paths/${pathId}`,
+    );
+  },
+
+  getClassPathOverview: async (classId: number): Promise<ClassStudentPathOverview[]> => {
+    const res = await api.get<ClassStudentPathOverview[]>(
+      `/enseignant/classes/${classId}/paths/overview`,
+    );
     return res.data;
   },
 

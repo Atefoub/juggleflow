@@ -20,11 +20,19 @@ export default function AssignPathPage() {
     const params = new URLSearchParams(location.search);
     const classId = params.get('classId');
     const pathId = params.get('pathId');
+    const studentId = params.get('studentId');
     return {
       classId: classId ? Number(classId) : null,
       pathId: pathId ? Number(pathId) : null,
+      studentId: studentId ? Number(studentId) : null,
     };
   }, [location.search]);
+
+  type AssignmentScope = 'class' | 'student';
+  const [assignmentScope, setAssignmentScope] = useState<AssignmentScope>(
+    preselect.studentId ? 'student' : 'class',
+  );
+  const [selectedStudent, setSelectedStudent] = useState<StudentSummary | null>(null);
 
   const [step, setStep]                 = useState<Step>(1);
   const [paths, setPaths]               = useState<LearningPathSummary[]>([]);
@@ -85,7 +93,13 @@ export default function AssignPathPage() {
     teacherApi
       .getClassStudents(selectedClass.id)
       .then((list) => {
-        if (!cancelled) setClassStudents(list);
+        if (!cancelled) {
+          setClassStudents(list);
+          if (preselect.studentId) {
+            const found = list.find((s) => s.id === preselect.studentId) ?? null;
+            if (found) setSelectedStudent(found);
+          }
+        }
       })
       .catch(() => {
         if (!cancelled) setError('Impossible de charger les élèves de la classe.');
@@ -94,7 +108,7 @@ export default function AssignPathPage() {
         if (!cancelled) setLoadingStudents(false);
       });
     return () => { cancelled = true; };
-  }, [selectedClass?.id, step]);
+  }, [selectedClass?.id, step, preselect.studentId]);
 
   // Filtrage des parcours
   const uniqueLevels = [
@@ -107,12 +121,25 @@ export default function AssignPathPage() {
 
   async function handleSubmit() {
     if (!selectedPath || !selectedClass) return;
+    if (assignmentScope === 'student' && !selectedStudent) return;
     setSubmitting(true);
     setError(null);
     try {
-      await teacherApi.assignPathToClass(selectedClass.id, selectedPath.id);
+      if (assignmentScope === 'student' && selectedStudent) {
+        await teacherApi.assignPathToStudent(
+          selectedClass.id,
+          selectedStudent.id,
+          selectedPath.id,
+        );
+      } else {
+        await teacherApi.assignPathToClass(selectedClass.id, selectedPath.id);
+      }
       setSuccess(true);
-      setTimeout(() => navigate('/teacher/dashboard'), 1500);
+      const redirect =
+        assignmentScope === 'student' && selectedStudent
+          ? `/teacher/eleves/${selectedStudent.id}?classId=${selectedClass.id}`
+          : '/teacher/dashboard';
+      setTimeout(() => navigate(redirect), 1500);
     } catch {
       setError("Erreur lors de l'assignation. Veuillez réessayer.");
     } finally {
@@ -120,11 +147,14 @@ export default function AssignPathPage() {
     }
   }
 
-  const STEPS = ['Parcours', 'Classe', 'Confirmation'];
+  const STEPS = ['Parcours', 'Cible', 'Confirmation'];
 
   const canContinue =
     step === 1 ? !!selectedPath
-    : step === 2 ? !!selectedClass
+    : step === 2
+      ? assignmentScope === 'class'
+        ? !!selectedClass
+        : !!selectedClass && !!selectedStudent
     : false;
 
   return (
@@ -263,11 +293,32 @@ export default function AssignPathPage() {
         {step === 2 && selectedPath && (
           <>
             <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
-              Étape 2 — Choisir la classe
+              Étape 2 — Choisir la cible
             </h2>
 
+            <div className="flex gap-2">
+              {(['class', 'student'] as AssignmentScope[]).map((scope) => (
+                <button
+                  key={scope}
+                  type="button"
+                  onClick={() => {
+                    setAssignmentScope(scope);
+                    if (scope === 'class') setSelectedStudent(null);
+                  }}
+                  className={[
+                    'flex-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors',
+                    assignmentScope === scope
+                      ? 'jf-chip-active border-transparent text-white'
+                      : 'border-border bg-bg-card text-text-muted',
+                  ].join(' ')}
+                >
+                  {scope === 'class' ? 'Toute la classe' : 'Un élève'}
+                </button>
+              ))}
+            </div>
+
             <section className="p-4 rounded-2xl bg-bg-card border border-border">
-              <p className="text-xs text-text-muted mb-2">Classe cible</p>
+              <p className="text-xs text-text-muted mb-2">Classe</p>
               {loadingClasses ? (
                 <div className="h-10 rounded-xl animate-pulse bg-bg-input" />
               ) : classes.length === 0 ? (
@@ -291,9 +342,36 @@ export default function AssignPathPage() {
               )}
             </section>
 
-            {loadingStudents ? (
+            {assignmentScope === 'student' && selectedClass && (
+              <section className="p-4 rounded-2xl bg-bg-card border border-border">
+                <p className="text-xs text-text-muted mb-2">Élève</p>
+                {loadingStudents ? (
+                  <div className="h-10 rounded-xl animate-pulse bg-bg-input" />
+                ) : classStudents.length === 0 ? (
+                  <p className="text-sm text-text-muted">Aucun élève dans cette classe.</p>
+                ) : (
+                  <select
+                    className="w-full px-3 py-2.5 rounded-xl bg-bg-primary border border-border text-sm text-text-primary outline-none"
+                    value={selectedStudent?.id ?? ''}
+                    onChange={(e) => {
+                      const sid = Number(e.target.value);
+                      setSelectedStudent(classStudents.find((s) => s.id === sid) ?? null);
+                    }}
+                  >
+                    <option value="">Sélectionner un élève…</option>
+                    {classStudents.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.firstName} {s.lastName}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </section>
+            )}
+
+            {assignmentScope === 'class' && loadingStudents ? (
               <div className="h-24 rounded-2xl animate-pulse bg-bg-card" />
-            ) : selectedClass && (
+            ) : assignmentScope === 'class' && selectedClass && (
               <div className="p-4 rounded-2xl bg-bg-card border border-border">
                 <p className="text-xs text-text-muted mb-2">
                   {classStudents.length} élève{classStudents.length !== 1 ? 's' : ''} recevront le parcours
@@ -314,13 +392,15 @@ export default function AssignPathPage() {
             )}
 
             <div className="rounded-xl border border-brand/30 bg-accent-surface p-3 text-xs text-brand-end">
-              Le parcours sera assigné à toute la classe sélectionnée.
+              {assignmentScope === 'class'
+                ? 'Le parcours sera le défaut pour toute la classe. Les assignations individuelles restent prioritaires.'
+                : 'Assignation individuelle : elle remplace le parcours de classe pour cet élève uniquement.'}
             </div>
           </>
         )}
 
         {/* ── Step 3 : Confirmation ── */}
-        {step === 3 && selectedPath && selectedClass && (
+        {step === 3 && selectedPath && selectedClass && (assignmentScope === 'class' || selectedStudent) && (
           <>
             <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
               Étape 3 — Confirmation
@@ -337,15 +417,26 @@ export default function AssignPathPage() {
               </div>
               <div className="h-px bg-border" />
               <div>
-                <p className="text-xs text-text-muted mb-1">Classe sélectionnée</p>
-                <p className="font-bold text-text-primary">
-                  {selectedClass?.name ?? '—'} · {selectedClass?.studentCount ?? 0} élève{(selectedClass?.studentCount ?? 0) > 1 ? 's' : ''}
-                </p>
+                <p className="text-xs text-text-muted mb-1">Classe</p>
+                <p className="font-bold text-text-primary">{selectedClass?.name ?? '—'}</p>
               </div>
+              {assignmentScope === 'student' && selectedStudent && (
+                <>
+                  <div className="h-px bg-border" />
+                  <div>
+                    <p className="text-xs text-text-muted mb-1">Élève</p>
+                    <p className="font-bold text-text-primary">
+                      {selectedStudent.firstName} {selectedStudent.lastName}
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="rounded-xl border border-brand/30 bg-accent-surface p-3 text-xs text-brand-end">
-              ⚡ Le parcours sera assigné à toute la classe.
+              {assignmentScope === 'class'
+                ? 'Le parcours sera assigné à toute la classe.'
+                : 'Le parcours sera assigné uniquement à cet élève (prioritaire sur la classe).'}
             </div>
           </>
         )}

@@ -2,13 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AppIcon from '../../components/icons/AppIcon';
 import ProgressBar from '../../components/ProgressBar';
+import StudentPathSummary from '../../components/teacher/StudentPathSummary';
 import {
   teacherApi,
   GROUP_COLOR_MAP,
   GROUP_LABEL_MAP,
+  type ClassStudentPathOverview,
   type SchoolClass,
   type StudentSummary,
 } from '../../api/teacherApi';
+import { pathOverviewByStudentId } from '../../utils/pathOverview';
 import {
   GROUP_ORDER,
   averageGroupProgress,
@@ -58,6 +61,9 @@ export default function GroupManagementPage() {
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [selectedClass, setSelectedClass] = useState<SchoolClass | null>(null);
   const [students, setStudents] = useState<StudentSummary[]>([]);
+  const [pathOverview, setPathOverview] = useState<Map<number, ClassStudentPathOverview>>(
+    () => new Map(),
+  );
   const [search, setSearch] = useState('');
   const [groupFilter, setGroupFilter] = useState<GroupFilter>('Tous');
   const [loading, setLoading] = useState(true);
@@ -67,8 +73,12 @@ export default function GroupManagementPage() {
   const [dropTarget, setDropTarget] = useState<GroupColor | null>(null);
 
   const loadStudents = useCallback(async (classId: number) => {
-    const data = await teacherApi.getClassStudents(classId);
+    const [data, overview] = await Promise.all([
+      teacherApi.getClassStudents(classId),
+      teacherApi.getClassPathOverview(classId),
+    ]);
     setStudents(data);
+    setPathOverview(pathOverviewByStudentId(overview));
   }, []);
 
   useEffect(() => {
@@ -378,14 +388,19 @@ export default function GroupManagementPage() {
                 Élèves
               </h2>
               <div className="rounded-2xl overflow-hidden border border-border">
-                <div className="hidden sm:grid grid-cols-[1fr_80px_100px] gap-2 px-4 py-2 bg-bg-header text-[0.65rem] font-semibold uppercase tracking-wider text-text-muted">
+                <div className="hidden sm:grid grid-cols-[1fr_minmax(0,1.2fr)_72px_88px] gap-2 px-4 py-2 bg-bg-header text-[0.65rem] font-semibold uppercase tracking-wider text-text-muted">
                   <span>Élève</span>
-                  <span className="text-right">Progression</span>
+                  <span>Parcours</span>
+                  <span className="text-right">Sur parcours</span>
                   <span className="text-right">Dernière co.</span>
                 </div>
                 <ul>
                   {filteredList.map((s, i) => {
                     const chipColor = GROUP_COLOR_MAP[s.groupColor];
+                    const pathRow = pathOverview.get(s.id);
+                    const pathPct = pathRow?.pathName
+                      ? pathRow.completionPercent
+                      : null;
                     return (
                       <li
                         key={s.id}
@@ -407,8 +422,8 @@ export default function GroupManagementPage() {
                           }
                           className="w-full text-left"
                         >
-                          <div className="flex items-center gap-3 sm:grid sm:grid-cols-[1fr_80px_100px] sm:items-center">
-                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[1fr_minmax(0,1.2fr)_72px_88px] sm:items-center sm:gap-2">
+                            <div className="flex items-center gap-3 min-w-0">
                               <span
                                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
                                 style={{ backgroundColor: chipColor }}
@@ -419,7 +434,7 @@ export default function GroupManagementPage() {
                                 <p className="text-sm font-semibold text-text-primary truncate">
                                   {s.firstName} {s.lastName}
                                 </p>
-                                <p className="text-xs text-text-muted">
+                                <p className="text-xs text-text-muted sm:hidden">
                                   {GROUP_LABEL_MAP[s.groupColor]}
                                   {s.groupColorManual && (
                                     <span className="ml-1 text-brand-end">· manuel</span>
@@ -427,8 +442,9 @@ export default function GroupManagementPage() {
                                 </p>
                               </div>
                             </div>
+                            <StudentPathSummary overview={pathRow} className="sm:px-0" />
                             <span className="text-sm font-bold text-text-primary sm:text-right">
-                              {s.progressionPercent}%
+                              {pathPct != null ? `${pathPct}%` : '—'}
                             </span>
                             <span className="text-xs text-text-muted sm:text-right">
                               {formatLastActivity(s.lastActivityAt)}
