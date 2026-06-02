@@ -21,6 +21,22 @@ export interface StudentLookup {
   alreadyInClass: boolean;
 }
 
+export interface TeacherCreateStudentRequest {
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface TeacherCreateStudentResponse {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  classId: number;
+  className: string | null;
+  generatedPassword: string;
+}
+
 export interface StudentSummary {
   id: number;
   firstName: string;
@@ -86,6 +102,17 @@ export const teacherApi = {
 
   getClassStudents: async (classId: number): Promise<StudentSummary[]> => {
     const res = await api.get<StudentSummary[]>(`/enseignant/classes/${classId}/students`);
+    return res.data;
+  },
+
+  createStudentInClass: async (
+    classId: number,
+    body: TeacherCreateStudentRequest,
+  ): Promise<TeacherCreateStudentResponse> => {
+    const res = await api.post<TeacherCreateStudentResponse>(
+      `/enseignant/classes/${classId}/students`,
+      body,
+    );
     return res.data;
   },
 

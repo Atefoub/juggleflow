@@ -9,6 +9,7 @@ import {
   type SchoolClass,
   type StudentLookup,
   type StudentSummary,
+  type TeacherCreateStudentResponse,
 } from '../../api/teacherApi';
 import { apiErrorMessage } from '../../utils/apiErrorMessage';
 
@@ -44,6 +45,11 @@ export default function StudentListPage() {
   const [lookupPreview, setLookupPreview] = useState<StudentLookup | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
   const [addingStudent, setAddingStudent] = useState(false);
+  const [creatingStudent, setCreatingStudent] = useState(false);
+  const [newStudentEmail, setNewStudentEmail] = useState('');
+  const [newStudentFirstName, setNewStudentFirstName] = useState('');
+  const [newStudentLastName, setNewStudentLastName] = useState('');
+  const [createdStudent, setCreatedStudent] = useState<TeacherCreateStudentResponse | null>(null);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState<string | null>(null);
 
@@ -149,6 +155,30 @@ export default function StudentListPage() {
     }
   }
 
+  async function handleCreateStudent() {
+    if (!selectedClass) return;
+    setCreatingStudent(true);
+    setError(null);
+    setCreatedStudent(null);
+    try {
+      const created = await teacherApi.createStudentInClass(selectedClass.id, {
+        email: newStudentEmail.trim(),
+        firstName: newStudentFirstName.trim(),
+        lastName: newStudentLastName.trim(),
+      });
+      setCreatedStudent(created);
+      const updated = await teacherApi.getClassStudents(selectedClass.id);
+      setStudents(updated);
+      setNewStudentEmail('');
+      setNewStudentFirstName('');
+      setNewStudentLastName('');
+    } catch (err) {
+      setError(apiErrorMessage(err, "Impossible de créer cet élève."));
+    } finally {
+      setCreatingStudent(false);
+    }
+  }
+
   return (
     <div className="flex flex-1 flex-col w-full min-h-0">
 
@@ -242,6 +272,75 @@ export default function StudentListPage() {
               >
                 {addingStudent ? 'Ajout…' : `Ajouter à ${selectedClass?.name ?? 'la classe'}`}
               </button>
+            </div>
+          )}
+        </div>
+
+        {/* Créer un élève */}
+        <div className="mb-4 flex flex-col gap-2">
+          <label className="text-xs font-semibold text-text-secondary" htmlFor="create-student-email">
+            Créer un élève
+          </label>
+          <div className="grid gap-2 sm:grid-cols-3">
+            <input
+              id="create-student-email"
+              value={newStudentEmail}
+              onChange={(e) => setNewStudentEmail(e.target.value)}
+              placeholder="E-mail élève"
+              autoComplete="off"
+              className="px-4 py-3 rounded-xl outline-none text-sm min-h-12 bg-bg-input text-text-primary border-[1.5px] border-border"
+            />
+            <input
+              value={newStudentFirstName}
+              onChange={(e) => setNewStudentFirstName(e.target.value)}
+              placeholder="Prénom"
+              autoComplete="off"
+              className="px-4 py-3 rounded-xl outline-none text-sm min-h-12 bg-bg-input text-text-primary border-[1.5px] border-border"
+            />
+            <input
+              value={newStudentLastName}
+              onChange={(e) => setNewStudentLastName(e.target.value)}
+              placeholder="Nom"
+              autoComplete="off"
+              className="px-4 py-3 rounded-xl outline-none text-sm min-h-12 bg-bg-input text-text-primary border-[1.5px] border-border"
+            />
+          </div>
+          <button
+            type="button"
+            disabled={
+              creatingStudent ||
+              !selectedClass ||
+              !newStudentEmail.trim() ||
+              !newStudentFirstName.trim() ||
+              !newStudentLastName.trim()
+            }
+            onClick={() => void handleCreateStudent()}
+            className="jf-btn-primary min-h-12 rounded-xl px-4 py-3 text-sm disabled:opacity-50"
+          >
+            {creatingStudent ? 'Création…' : 'Créer + générer un mot de passe'}
+          </button>
+
+          {createdStudent && (
+            <div className="rounded-xl border border-brand/40 bg-bg-card p-3 flex flex-col gap-2">
+              <p className="text-sm font-semibold text-text-primary">
+                Compte créé : {createdStudent.firstName} {createdStudent.lastName}
+              </p>
+              <p className="text-xs text-text-muted">{createdStudent.email}</p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs rounded-lg bg-bg-input border border-border px-3 py-2 text-text-primary">
+                  {createdStudent.generatedPassword}
+                </code>
+                <button
+                  type="button"
+                  className="jf-btn-secondary jf-btn-secondary-sm min-h-11 rounded-xl px-3 py-2 text-xs"
+                  onClick={() => void navigator.clipboard?.writeText(createdStudent.generatedPassword)}
+                >
+                  Copier
+                </button>
+              </div>
+              <p className="text-xs text-text-muted">
+                Ce mot de passe est affiché une seule fois. Transmets-le à l’élève puis demande-lui de le changer.
+              </p>
             </div>
           )}
         </div>

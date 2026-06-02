@@ -2,10 +2,14 @@ package com.juggleflow.backend.service;
 
 import com.juggleflow.backend.dto.AdminCreateSchoolClassRequest;
 import com.juggleflow.backend.dto.AdminUpdateSchoolClassRequest;
+import com.juggleflow.backend.dto.AdminCreateUserRequest;
+import com.juggleflow.backend.dto.AdminCreateUserResponse;
 import com.juggleflow.backend.dto.SchoolClassRequest;
 import com.juggleflow.backend.dto.SchoolClassResponse;
 import com.juggleflow.backend.dto.StudentLookupResponse;
 import com.juggleflow.backend.dto.StudentSummaryResponse;
+import com.juggleflow.backend.dto.TeacherCreateStudentRequest;
+import com.juggleflow.backend.dto.TeacherCreateStudentResponse;
 import com.juggleflow.backend.dto.UpdateStudentGroupRequest;
 import com.juggleflow.backend.exception.ResourceNotFoundException;
 import com.juggleflow.backend.model.SchoolClass;
@@ -35,6 +39,7 @@ public class SchoolClassService {
     private final TeacherRepository teacherRepository;
     private final UserProgressRepository userProgressRepository;
     private final StudentBlockageService studentBlockageService;
+    private final AdminService adminService;
 
     /**
      * Crée une nouvelle classe scolaire et la rattache à l'enseignant connecté.
@@ -254,6 +259,39 @@ public class SchoolClassService {
         schoolClassRepository.save(schoolClass);
 
         log.info("Élève {} ajouté à la classe {}", studentId, classId);
+    }
+
+    /**
+     * Crée un compte élève et le rattache à une classe de l'enseignant.
+     * Le mot de passe est généré côté serveur et renvoyé UNE SEULE FOIS.
+     */
+    @Transactional
+    public TeacherCreateStudentResponse createStudentInClass(
+            Long classId,
+            TeacherCreateStudentRequest request,
+            String teacherEmail
+    ) {
+        assertClassOwnership(classId, teacherEmail);
+
+        AdminCreateUserRequest adminReq = new AdminCreateUserRequest();
+        adminReq.setRole("ROLE_ELEVE");
+        adminReq.setClassId(classId);
+        adminReq.setEmail(request.getEmail() != null ? request.getEmail().trim().toLowerCase() : null);
+        adminReq.setFirstName(request.getFirstName());
+        adminReq.setLastName(request.getLastName());
+        // password absent => le serveur le génère
+
+        AdminCreateUserResponse created = adminService.createUser(adminReq);
+
+        return TeacherCreateStudentResponse.builder()
+                .id(created.getId())
+                .email(created.getEmail())
+                .firstName(created.getFirstName())
+                .lastName(created.getLastName())
+                .classId(created.getClassId())
+                .className(created.getClassName())
+                .generatedPassword(created.getGeneratedPassword())
+                .build();
     }
 
     /**
