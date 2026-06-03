@@ -101,6 +101,43 @@ class TeacherStudentControllerTest {
     }
 
     @Test
+    @DisplayName("context → retourne classe et élève pour le titulaire")
+    void context_shouldReturnClassAndStudent_whenOwner() throws Exception {
+        String teacherToken = registerAndGetToken("teacher_ctx@test.fr", "teacher");
+        Long classId = createClassAndGetId(teacherToken);
+        registerAndGetToken("student_ctx@test.fr", "student");
+        Long studentId = findStudentIdByEmail("student_ctx@test.fr");
+
+        mockMvc.perform(post("/api/enseignant/classes/" + classId + "/students/" + studentId)
+                .header("Authorization", "Bearer " + teacherToken))
+            .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/enseignant/students/" + studentId + "/context")
+                .header("Authorization", "Bearer " + teacherToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.classId").value(classId.intValue()))
+            .andExpect(jsonPath("$.student.id").value(studentId.intValue()));
+    }
+
+    @Test
+    @DisplayName("context → 404 si l'enseignant n'est pas titulaire")
+    void context_shouldReturn404_whenNotClassOwner() throws Exception {
+        String ownerToken = registerAndGetToken("owner_ctx@test.fr", "teacher");
+        String intruderToken = registerAndGetToken("intruder_ctx@test.fr", "teacher");
+        Long classId = createClassAndGetId(ownerToken);
+        registerAndGetToken("student_ctx_idor@test.fr", "student");
+        Long studentId = findStudentIdByEmail("student_ctx_idor@test.fr");
+
+        mockMvc.perform(post("/api/enseignant/classes/" + classId + "/students/" + studentId)
+                .header("Authorization", "Bearer " + ownerToken))
+            .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/enseignant/students/" + studentId + "/context")
+                .header("Authorization", "Bearer " + intruderToken))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("lookup → 404 si l'enseignant n'est pas titulaire de la classe")
     void lookup_shouldReturn404_whenNotClassOwner() throws Exception {
         String ownerToken = registerAndGetToken("owner_lookup@test.fr", "teacher");
@@ -141,6 +178,12 @@ class TeacherStudentControllerTest {
 
         return objectMapper.readTree(result.getResponse().getContentAsString())
             .get("accessToken").asText();
+    }
+
+    private Long findStudentIdByEmail(String email) {
+        return studentRepository.findByEmail(email)
+            .orElseThrow()
+            .getId();
     }
 
     private SchoolClassRequest buildClassRequest() {

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import ProgressBar from '../../components/ProgressBar';
-import {
-  teacherApi,
-  type LearningPathSummary,
-  type StudentPathProgress,
-} from '../../api/teacherApi';
+import { pathsApi } from '../../api/teacher/pathsApi';
+import { teacherQueryKeys } from '../../api/teacher/queryKeys';
+import { useInvalidateTeacherClass } from '../../hooks/teacher/useTeacherClassDataQuery';
+import { useTeacherPathDetailQuery } from '../../hooks/teacher/useTeacherPathDetailQuery';
 
 function pct(done: number, total: number): number {
   if (!total) return 0;
@@ -16,6 +16,8 @@ export default function TeacherPathDetailPage() {
   const navigate = useNavigate();
   const params = useParams();
   const location = useLocation();
+  const queryClient = useQueryClient();
+  const invalidateClass = useInvalidateTeacherClass();
 
   const classId = useMemo(() => Number(params.classId), [params.classId]);
   const pathId  = useMemo(() => Number(params.pathId),  [params.pathId]);
@@ -24,39 +26,43 @@ export default function TeacherPathDetailPage() {
     return q.get('download') === 'csv';
   }, [location.search]);
 
-  const [path, setPath] = useState<LearningPathSummary | null>(null);
-  const [progress, setProgress] = useState<StudentPathProgress[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isUnassigning, setIsUnassigning] = useState(false);
+  const validParams = Number.isFinite(classId) && Number.isFinite(pathId);
+  const paramError = validParams ? null : 'Paramètres invalides.';
+
+  const { path, progress, loading, error: loadError } = useTeacherPathDetailQuery(
+    validParams ? classId : null,
+    validParams ? pathId : null,
+  );
+
+  const [actionError, setActionError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const autoDownloadedRef = useRef(false);
 
-  async function handleUnassign() {
-    if (!Number.isFinite(classId) || !Number.isFinite(pathId)) return;
-    if (isUnassigning) return;
-    const ok = window.confirm('Désassigner ce parcours de la classe ?');
-    if (!ok) return;
+  const error = paramError ?? actionError ?? loadError;
 
-    setIsUnassigning(true);
-    setError(null);
-    try {
-      await teacherApi.unassignPathFromClass(classId, pathId);
+  const unassignMutation = useMutation({
+    mutationFn: () => pathsApi.unassignPathFromClass(classId, pathId),
+    onSuccess: () => {
+      invalidateClass(classId);
+      void queryClient.invalidateQueries({
+        queryKey: teacherQueryKeys.teacherPathDetail(classId, pathId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: teacherQueryKeys.classProgress(classId, pathId),
+      });
       navigate('/teacher/dashboard');
-    } catch {
-      setError("Erreur lors de la désassignation. Veuillez réessayer.");
-    } finally {
-      setIsUnassigning(false);
-    }
-  }
+    },
+    onError: () => {
+      setActionError('Erreur lors de la désassignation. Veuillez réessayer.');
+    },
+  });
 
   async function handleDownloadCsv() {
-    if (!Number.isFinite(classId) || !Number.isFinite(pathId)) return;
-    if (isDownloading) return;
+    if (!validParams || isDownloading) return;
     setIsDownloading(true);
-    setError(null);
+    setActionError(null);
     try {
-      const blob = await teacherApi.downloadPathProgressCsv(classId, pathId);
+      const blob = await pathsApi.downloadPathProgressCsv(classId, pathId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -66,43 +72,21 @@ export default function TeacherPathDetailPage() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch {
-      setError("Impossible de télécharger le CSV.");
+      setActionError('Impossible de télécharger le CSV.');
     } finally {
       setIsDownloading(false);
     }
   }
 
   useEffect(() => {
-    if (!Number.isFinite(classId) || !Number.isFinite(pathId)) {
-      setError('Paramètres invalides.');
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    Promise.all([
-      teacherApi.getPathById(pathId),
-      teacherApi.getStudentProgress(classId, pathId),
-    ])
-      .then(([p, prog]) => {
-        setPath(p);
-        setProgress(prog);
-      })
-      .catch(() => setError("Impossible de charger le parcours ou la progression."))
-      .finally(() => setLoading(false));
-  }, [classId, pathId]);
-
-  useEffect(() => {
     if (!shouldAutoDownload) return;
     if (autoDownloadedRef.current) return;
     if (loading) return;
     if (error) return;
-    if (!Number.isFinite(classId) || !Number.isFinite(pathId)) return;
+    if (!validParams) return;
     autoDownloadedRef.current = true;
     void handleDownloadCsv();
-  }, [shouldAutoDownload, loading, error, classId, pathId]);
+  }, [shouldAutoDownload, loading, error, classId, pathId, validParams]);
 
   const classAvg = useMemo(() => {
     if (progress.length === 0) return 0;
@@ -126,7 +110,7 @@ export default function TeacherPathDetailPage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={handleDownloadCsv}
+              onClick={() => void handleDownloadCsv()}
               disabled={isDownloading}
               className="jf-btn-secondary jf-btn-secondary-sm rounded-xl disabled:opacity-60"
             >
@@ -141,11 +125,15 @@ export default function TeacherPathDetailPage() {
             </button>
             <button
               type="button"
-              onClick={handleUnassign}
-              disabled={isUnassigning}
+              onClick={() => {
+                if (!window.confirm('Désassigner ce parcours de la classe ?')) return;
+                setActionError(null);
+                unassignMutation.mutate();
+              }}
+              disabled={unassignMutation.isPending}
               className="text-xs px-3 py-1.5 rounded-xl text-alert border border-alert/40 bg-alert/10 font-semibold disabled:opacity-60"
             >
-              {isUnassigning ? '…' : 'Désassigner'}
+              {unassignMutation.isPending ? '…' : 'Désassigner'}
             </button>
           </div>
         </div>
@@ -154,7 +142,7 @@ export default function TeacherPathDetailPage() {
           {path ? path.pathName : 'Parcours'}
         </h1>
         <p className="text-xs text-text-muted mt-1">
-          Classe #{Number.isFinite(classId) ? classId : '—'} · {progress.length} élève{progress.length > 1 ? 's' : ''}
+          Classe #{validParams ? classId : '—'} · {progress.length} élève{progress.length > 1 ? 's' : ''}
         </p>
 
         <div className="mt-4 p-4 rounded-2xl bg-bg-card border border-border">
@@ -229,4 +217,3 @@ export default function TeacherPathDetailPage() {
     </div>
   );
 }
-
