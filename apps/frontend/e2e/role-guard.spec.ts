@@ -8,6 +8,7 @@ import {
   completeStudentOnboardingIfNeeded,
   expectOnLoginPage,
   loginViaUi,
+  navigateInSpa,
 } from './helpers/auth';
 
 test.describe('Garde de rôles (routes protégées)', () => {
@@ -25,7 +26,7 @@ test.describe('Garde de rôles (routes protégées)', () => {
     await completeStudentOnboardingIfNeeded(page);
     await expect(page).toHaveURL(/\/student\/dashboard/);
 
-    await page.goto('/teacher/dashboard');
+    await navigateInSpa(page, '/teacher/dashboard');
     await expect(page).toHaveURL(/\/student\/dashboard/);
     await expect(page.getByText('Bonjour')).toBeVisible();
   });
@@ -36,7 +37,7 @@ test.describe('Garde de rôles (routes protégées)', () => {
     await loginViaUi(page, TEACHER_EMAIL, E2E_PASSWORD);
     await expect(page).toHaveURL(/\/teacher\/dashboard/);
 
-    await page.goto('/admin/dashboard');
+    await navigateInSpa(page, '/admin/dashboard');
     await expect(page).toHaveURL(/\/teacher\/dashboard/);
     await expect(page.getByText('Progression moyenne')).toBeVisible();
   });
@@ -47,7 +48,7 @@ test.describe('Garde de rôles (routes protégées)', () => {
     await loginViaUi(page, ADMIN_EMAIL, E2E_ADMIN_PASSWORD);
     await expect(page).toHaveURL(/\/admin\/dashboard/);
 
-    await page.goto('/student/dashboard');
+    await navigateInSpa(page, '/student/dashboard');
     await expect(page).toHaveURL(/\/admin\/dashboard/);
     await expect(
       page.getByRole('heading', { name: 'Tableau de bord' }),
