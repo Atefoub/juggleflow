@@ -3,14 +3,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import AppIcon from '../../components/icons/AppIcon';
 import ProgressBar from '../../components/ProgressBar';
 import StudentPathSummary from '../../components/teacher/StudentPathSummary';
+import { GROUP_COLOR_MAP, GROUP_LABEL_MAP, type StudentSummary } from '../../api/teacherApi';
+import { studentsApi } from '../../api/teacher/studentsApi';
+import { useTeacherClassesQuery } from '../../hooks/teacher/useTeacherClassesQuery';
 import {
-  teacherApi,
-  GROUP_COLOR_MAP,
-  GROUP_LABEL_MAP,
-  type SchoolClass,
-  type StudentSummary,
-} from '../../api/teacherApi';
-import { useTeacherClassData } from '../../hooks/useTeacherClassData';
+  useInvalidateTeacherClass,
+  useTeacherClassDataQuery,
+} from '../../hooks/teacher/useTeacherClassDataQuery';
 import {
   GROUP_ORDER,
   averageGroupProgress,
@@ -57,15 +56,20 @@ export default function GroupManagementPage() {
     };
   }, [location.search]);
 
-  const [classes, setClasses] = useState<SchoolClass[]>([]);
-  const [selectedClass, setSelectedClass] = useState<SchoolClass | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(
+    preselect.classId,
+  );
   const [search, setSearch] = useState('');
   const [groupFilter, setGroupFilter] = useState<GroupFilter>('Tous');
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<number | null>(null);
   const [dragStudentId, setDragStudentId] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<GroupColor | null>(null);
+
+  const { classes, isLoading: classesLoading, error: classesError } =
+    useTeacherClassesQuery();
+  const selectedClass =
+    classes.find((c) => c.id === selectedClassId) ?? classes[0] ?? null;
 
   const {
     students,
@@ -73,32 +77,29 @@ export default function GroupManagementPage() {
     loading: classDataLoading,
     error: classDataError,
     reload: reloadClassData,
-  } = useTeacherClassData(selectedClass?.id ?? null);
+  } = useTeacherClassDataQuery(selectedClass?.id ?? null);
+
+  const invalidateClass = useInvalidateTeacherClass();
+  const loading = classesLoading;
 
   useEffect(() => {
-    teacherApi
-      .getMyClasses()
-      .then((cls) => {
-        setClasses(cls);
-        if (cls.length === 0) return;
-        const found = preselect.classId
-          ? cls.find((c) => c.id === preselect.classId) ?? cls[0]
-          : cls[0];
-        setSelectedClass(found);
-      })
-      .catch(() => setError('Impossible de charger vos classes.'))
-      .finally(() => setLoading(false));
-  }, [preselect.classId]);
+    if (classes.length === 0) return;
+    if (preselect.classId && classes.some((c) => c.id === preselect.classId)) {
+      setSelectedClassId(preselect.classId);
+    } else if (selectedClassId == null) {
+      setSelectedClassId(classes[0].id);
+    }
+  }, [classes, preselect.classId, selectedClassId]);
 
   useEffect(() => {
     if (preselect.group) setGroupFilter(preselect.group);
   }, [preselect.group]);
 
   useEffect(() => {
-    if (classDataError) {
-      setError(classDataError);
-    }
-  }, [classDataError]);
+    if (classesError) setError(classesError);
+    else if (classDataError) setError(classDataError);
+    else setError(null);
+  }, [classesError, classDataError]);
 
   const groups = useMemo(() => groupStudentsByColor(students), [students]);
 
@@ -120,13 +121,9 @@ export default function GroupManagementPage() {
     setSavingId(studentId);
     setError(null);
     try {
-      const updated = await teacherApi.updateStudentGroup(
-        selectedClass.id,
-        studentId,
-        target,
-      );
-      void updated;
+      await studentsApi.updateStudentGroup(selectedClass.id, studentId, target);
       await reloadClassData();
+      void invalidateClass(selectedClass.id);
     } catch {
       setError('Impossible de mettre à jour le groupe. Réessayez.');
     } finally {
@@ -139,13 +136,9 @@ export default function GroupManagementPage() {
     setSavingId(studentId);
     setError(null);
     try {
-      const updated = await teacherApi.updateStudentGroup(
-        selectedClass.id,
-        studentId,
-        null,
-      );
-      void updated;
+      await studentsApi.updateStudentGroup(selectedClass.id, studentId, null);
       await reloadClassData();
+      void invalidateClass(selectedClass.id);
     } catch {
       setError('Impossible de réinitialiser le groupe automatique.');
     } finally {
@@ -200,7 +193,7 @@ export default function GroupManagementPage() {
               <button
                 key={cls.id}
                 type="button"
-                onClick={() => setSelectedClass(cls)}
+                onClick={() => setSelectedClassId(cls.id)}
                 className={[
                   'shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
                   selectedClass?.id === cls.id
