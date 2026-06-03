@@ -4,15 +4,19 @@ import AppIcon from '../../components/icons/AppIcon';
 import ProgressBar from '../../components/ProgressBar';
 import StudentPathSummary from '../../components/teacher/StudentPathSummary';
 import {
-  teacherApi,
   GROUP_COLOR_MAP,
   GROUP_LABEL_MAP,
-  type SchoolClass,
   type StudentLookup,
   type TeacherCreateStudentResponse,
 } from '../../api/teacherApi';
+import { classesApi } from '../../api/teacher/classesApi';
+import { studentsApi } from '../../api/teacher/studentsApi';
 import { apiErrorMessage } from '../../utils/apiErrorMessage';
-import { useTeacherClassData } from '../../hooks/useTeacherClassData';
+import { useTeacherClassesQuery } from '../../hooks/teacher/useTeacherClassesQuery';
+import {
+  useInvalidateTeacherClass,
+  useTeacherClassDataQuery,
+} from '../../hooks/teacher/useTeacherClassDataQuery';
 
 type GroupFilter = 'Tous' | 'VERT' | 'ORANGE' | 'ROUGE';
 
@@ -37,8 +41,9 @@ export default function StudentListPage() {
     };
   }, [location.search]);
 
-  const [classes, setClasses]           = useState<SchoolClass[]>([]);
-  const [selectedClass, setSelectedClass] = useState<SchoolClass | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(
+    preselect.classId,
+  );
   const [groupFilter, setGroupFilter]   = useState<GroupFilter>('Tous');
   const [search, setSearch]             = useState('');
   const [addQuery, setAddQuery] = useState('');
@@ -50,8 +55,12 @@ export default function StudentListPage() {
   const [newStudentFirstName, setNewStudentFirstName] = useState('');
   const [newStudentLastName, setNewStudentLastName] = useState('');
   const [createdStudent, setCreatedStudent] = useState<TeacherCreateStudentResponse | null>(null);
-  const [loading, setLoading]           = useState(true);
-  const [error, setError]               = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const { classes, isLoading: classesLoading, error: classesError } =
+    useTeacherClassesQuery();
+  const selectedClass =
+    classes.find((c) => c.id === selectedClassId) ?? classes[0] ?? null;
 
   const {
     students,
@@ -59,35 +68,29 @@ export default function StudentListPage() {
     loading: classDataLoading,
     error: classDataError,
     reload: reloadClassData,
-  } = useTeacherClassData(selectedClass?.id ?? null);
+  } = useTeacherClassDataQuery(selectedClass?.id ?? null);
 
-  // Load classes once
-  useEffect(() => {
-    teacherApi
-      .getMyClasses()
-      .then((cls) => {
-        setClasses(cls);
-        if (cls.length === 0) return;
-        if (preselect.classId) {
-          const found = cls.find((c) => c.id === preselect.classId) ?? null;
-          setSelectedClass(found ?? cls[0]);
-        } else {
-          setSelectedClass(cls[0]);
-        }
-      })
-      .catch(() => setError('Impossible de charger vos classes.'))
-      .finally(() => setLoading(false));
-  }, [preselect.classId]);
+  const invalidateClass = useInvalidateTeacherClass();
+  const loading = classesLoading;
 
   useEffect(() => {
     if (preselect.group) setGroupFilter(preselect.group);
   }, [preselect.group]);
 
   useEffect(() => {
-    if (classDataError) {
-      setError(classDataError);
+    if (classesError) setError(classesError);
+    else if (classDataError) setError(classDataError);
+    else setError(null);
+  }, [classesError, classDataError]);
+
+  useEffect(() => {
+    if (classes.length === 0) return;
+    if (preselect.classId && classes.some((c) => c.id === preselect.classId)) {
+      setSelectedClassId(preselect.classId);
+    } else if (selectedClassId == null) {
+      setSelectedClassId(classes[0].id);
     }
-  }, [classDataError]);
+  }, [classes, preselect.classId, selectedClassId]);
 
   useEffect(() => {
     setLookupPreview(null);
@@ -110,7 +113,7 @@ export default function StudentListPage() {
     setError(null);
     setLookupPreview(null);
     try {
-      const result = await teacherApi.lookupStudent(addQuery, selectedClass.id);
+      const result = await studentsApi.lookupStudent(addQuery, selectedClass.id);
       setLookupPreview(result);
       if (result.alreadyInClass) {
         setError('Cet élève est déjà inscrit dans cette classe.');
@@ -147,8 +150,9 @@ export default function StudentListPage() {
     setAddingStudent(true);
     setError(null);
     try {
-      await teacherApi.addStudentToClass(selectedClass.id, studentId);
+      await classesApi.addStudentToClass(selectedClass.id, studentId);
       await reloadClassData();
+      void invalidateClass(selectedClass.id);
       setAddQuery('');
       setLookupPreview(null);
     } catch (err) {
@@ -164,13 +168,14 @@ export default function StudentListPage() {
     setError(null);
     setCreatedStudent(null);
     try {
-      const created = await teacherApi.createStudentInClass(selectedClass.id, {
+      const created = await classesApi.createStudentInClass(selectedClass.id, {
         email: newStudentEmail.trim(),
         firstName: newStudentFirstName.trim(),
         lastName: newStudentLastName.trim(),
       });
       setCreatedStudent(created);
       await reloadClassData();
+      void invalidateClass(selectedClass.id);
       setNewStudentEmail('');
       setNewStudentFirstName('');
       setNewStudentLastName('');
@@ -353,7 +358,7 @@ export default function StudentListPage() {
             {classes.map((cls) => (
               <button
                 key={cls.id}
-                onClick={() => setSelectedClass(cls)}
+                onClick={() => setSelectedClassId(cls.id)}
                 className={[
                   'shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
                   selectedClass?.id === cls.id
