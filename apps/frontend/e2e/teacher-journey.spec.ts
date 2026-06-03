@@ -11,8 +11,10 @@ test.describe('Parcours enseignant', () => {
   test('tableau de bord : alerte élève bloqué sur une figure (données démo)', async ({
     page,
   }) => {
-    await expect(page.getByText(/bloqué sur une figure/i)).toBeVisible();
-    await expect(page.getByText(/Lucas/i)).toBeVisible();
+    const blockageAlert = page.locator('div').filter({ hasText: /bloqué sur une figure/i });
+    await expect(blockageAlert).toBeVisible();
+    // Lucas apparaît aussi dans « Parcours par élève » — cibler l'alerte blocage uniquement
+    await expect(blockageAlert.getByText(/Lucas M\./)).toBeVisible();
 
     await page.getByRole('button', { name: /Voir les élèves/i }).first().click();
     await expect(page).toHaveURL(/\/teacher\/eleves/);
@@ -51,7 +53,7 @@ test.describe('Parcours enseignant', () => {
 
     await page.getByRole('button', { name: OPTIONAL_ASSIGN_PATH }).click();
     await page.getByRole('button', { name: 'Continuer →' }).click();
-    await expect(page.getByText('Étape 2 — Choisir la classe')).toBeVisible();
+    await expect(page.getByText('Étape 2 — Choisir la cible')).toBeVisible();
 
     await page.getByRole('button', { name: 'Continuer →' }).click();
     await expect(page.getByText('Étape 3 — Confirmation')).toBeVisible();
