@@ -8,12 +8,10 @@ import {
   teacherApi,
   GROUP_COLOR_MAP,
   GROUP_LABEL_MAP,
-  type ClassStudentPathOverview,
   type SchoolClass,
   type StudentSummary,
-  type LearningPathSummary,
 } from '../../api/teacherApi';
-import { pathOverviewByStudentId } from '../../utils/pathOverview';
+import { useTeacherClassData } from '../../hooks/useTeacherClassData';
 
 function groupStudents(students: StudentSummary[]) {
   const groups: Record<StudentSummary['groupColor'], StudentSummary[]> = {
@@ -37,18 +35,20 @@ export default function TeacherDashboardPage() {
   const navigate = useNavigate();
 
   const [classes, setClasses]   = useState<SchoolClass[]>([]);
-  const [students, setStudents] = useState<StudentSummary[]>([]);
-  const [assignedPaths, setAssignedPaths] = useState<LearningPathSummary[]>([]);
   const [selectedClass, setSelectedClass] = useState<SchoolClass | null>(null);
   const [loading, setLoading]   = useState(true);
-  const [loadingPaths, setLoadingPaths] = useState(false);
-  const [loadingPathOverview, setLoadingPathOverview] = useState(false);
-  const [pathOverview, setPathOverview] = useState<Map<number, ClassStudentPathOverview>>(
-    () => new Map(),
-  );
   const [pathsError, setPathsError] = useState<string | null>(null);
   const [error, setError]       = useState<string | null>(null);
   const [reportPickerOpen, setReportPickerOpen] = useState(false);
+
+  const {
+    students,
+    assignedPaths,
+    pathOverview,
+    loading: classDataLoading,
+    error: classDataError,
+    reload: reloadClassData,
+  } = useTeacherClassData(selectedClass?.id ?? null);
 
   useEffect(() => {
     teacherApi
@@ -61,33 +61,6 @@ export default function TeacherDashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    if (!selectedClass) return;
-    setStudents([]);
-    setAssignedPaths([]);
-    setPathOverview(new Map());
-    setLoadingPaths(true);
-    setLoadingPathOverview(true);
-    setPathsError(null);
-
-    teacherApi
-      .getClassStudents(selectedClass.id)
-      .then(setStudents)
-      .catch(() => setError('Impossible de charger les élèves de cette classe.'));
-
-    teacherApi
-      .getAssignedPathsForClass(selectedClass.id)
-      .then(setAssignedPaths)
-      .catch(() => setPathsError("Impossible de charger les parcours de cette classe."))
-      .finally(() => setLoadingPaths(false));
-
-    teacherApi
-      .getClassPathOverview(selectedClass.id)
-      .then((rows) => setPathOverview(pathOverviewByStudentId(rows)))
-      .catch(() => setPathsError((prev) => prev ?? 'Impossible de charger les parcours par élève.'))
-      .finally(() => setLoadingPathOverview(false));
-  }, [selectedClass]);
-
   async function handleUnassign(pathId: number) {
     if (!selectedClass) return;
     const ok = window.confirm('Désassigner ce parcours de la classe ?');
@@ -95,8 +68,8 @@ export default function TeacherDashboardPage() {
 
     try {
       await teacherApi.unassignPathFromClass(selectedClass.id, pathId);
-      const refreshed = await teacherApi.getAssignedPathsForClass(selectedClass.id);
-      setAssignedPaths(refreshed);
+      setPathsError(null);
+      await reloadClassData();
     } catch {
       setPathsError("Erreur lors de la désassignation. Veuillez réessayer.");
     }
@@ -336,7 +309,7 @@ export default function TeacherDashboardPage() {
                   </button>
                 </div>
 
-                {loadingPathOverview ? (
+                {classDataLoading ? (
                   <div className="flex flex-col gap-2">
                     {[1, 2, 3].map((i) => (
                       <div key={i} className="h-12 rounded-xl animate-pulse bg-bg-card" />
@@ -401,13 +374,13 @@ export default function TeacherDashboardPage() {
                   </button>
                 </div>
 
-                {pathsError && (
+                {(pathsError ?? classDataError) && (
                   <div className="p-3 rounded-2xl text-xs text-alert bg-alert-surface border border-alert mb-3">
-                    {pathsError}
+                    {pathsError ?? classDataError}
                   </div>
                 )}
 
-                {loadingPaths ? (
+                {classDataLoading ? (
                   <div className="flex flex-col gap-2">
                     {[1, 2].map((i) => (
                       <div key={i} className="h-16 rounded-2xl animate-pulse bg-bg-card" />

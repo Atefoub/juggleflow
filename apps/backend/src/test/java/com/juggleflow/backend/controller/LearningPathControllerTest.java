@@ -292,6 +292,39 @@ class LearningPathControllerTest {
   }
 
   @Test
+  @DisplayName("getClassPathOverview → 404 si l'enseignant n'est pas titulaire")
+  void getClassPathOverview_shouldReturn404_whenNotClassOwner() throws Exception {
+    String ownerToken = registerAndGetToken("owner_overview@lp.fr", "teacher");
+    String intruderToken = registerAndGetToken("intruder_overview@lp.fr", "teacher");
+    Long classId = createClass(ownerToken);
+
+    mockMvc.perform(get("/api/enseignant/classes/" + classId + "/paths/overview")
+        .header("Authorization", "Bearer " + intruderToken))
+      .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @DisplayName("exportStudentProgressCsv → 404 si l'enseignant n'est pas titulaire")
+  void exportCsv_shouldReturn404_whenNotClassOwner() throws Exception {
+    String ownerToken = registerAndGetToken("owner_csv@lp.fr", "teacher");
+    String intruderToken = registerAndGetToken("intruder_csv@lp.fr", "teacher");
+    Long classId = createClass(ownerToken);
+    LearningPath path = learningPathRepository.save(
+      buildPath("Export", LearningPath.TargetLevel.BEGINNER));
+    AssignPathRequest req = buildAssignRequest(path.getId(), classId);
+    mockMvc.perform(post("/api/enseignant/classes/" + classId + "/paths")
+        .header("Authorization", "Bearer " + ownerToken)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(req)))
+      .andExpect(status().isCreated());
+
+    mockMvc.perform(get("/api/enseignant/classes/" + classId
+        + "/paths/" + path.getId() + "/progress/export")
+        .header("Authorization", "Bearer " + intruderToken))
+      .andExpect(status().isNotFound());
+  }
+
+  @Test
   @DisplayName("getAllPaths → 401 sans token")
   void getAllPaths_shouldReturn401_withoutToken() throws Exception {
     mockMvc.perform(get("/api/learning-paths"))
