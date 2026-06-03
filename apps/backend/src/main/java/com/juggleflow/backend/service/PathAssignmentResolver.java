@@ -38,11 +38,10 @@ public class PathAssignmentResolver {
 
     public Optional<ResolvedPath> resolvePrimaryPath(Long studentId, Long classId) {
         List<StudentLearningPath> studentAssignments =
-                studentLearningPathRepository.findByStudent_Id(studentId);
+                studentLearningPathRepository.findWithPathsByStudent_Id(studentId);
         if (!studentAssignments.isEmpty()) {
             StudentLearningPath assignment = studentAssignments.getFirst();
             LearningPath path = assignment.getLearningPath();
-            path.getSteps().size();
             return Optional.of(new ResolvedPath(
                     path,
                     AssignmentSource.STUDENT,
@@ -54,7 +53,7 @@ public class PathAssignmentResolver {
             return Optional.empty();
         }
 
-        return classLearningPathRepository.findBySchoolClass_Id(classId).stream()
+        return classLearningPathRepository.findWithPathsBySchoolClass_Id(classId).stream()
                 .findFirst()
                 .map(this::toResolvedFromClass);
     }
@@ -67,7 +66,7 @@ public class PathAssignmentResolver {
 
     public List<LearningPath> resolveAllPathsForStudent(Long studentId, Long classId) {
         List<StudentLearningPath> studentAssignments =
-                studentLearningPathRepository.findByStudent_Id(studentId);
+                studentLearningPathRepository.findWithPathsByStudent_Id(studentId);
         if (!studentAssignments.isEmpty()) {
             return studentAssignments.stream()
                     .map(StudentLearningPath::getLearningPath)
@@ -77,7 +76,7 @@ public class PathAssignmentResolver {
         if (classId == null) {
             return List.of();
         }
-        return classLearningPathRepository.findBySchoolClass_Id(classId).stream()
+        return classLearningPathRepository.findWithPathsBySchoolClass_Id(classId).stream()
                 .map(ClassLearningPath::getLearningPath)
                 .distinct()
                 .toList();
@@ -85,7 +84,6 @@ public class PathAssignmentResolver {
 
     private ResolvedPath toResolvedFromClass(ClassLearningPath assignment) {
         LearningPath path = assignment.getLearningPath();
-        path.getSteps().size();
         return new ResolvedPath(
                 path,
                 AssignmentSource.CLASS,

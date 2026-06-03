@@ -1,16 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AppIcon from '../../components/icons/AppIcon';
 import DifficultyChip from '../../components/catalogue/DifficultyChip';
 import { PATH_LEVEL_LABELS } from '../../components/catalogue/trickLevelStyles';
+import type { LearningPathSummary, StudentSummary } from '../../api/teacherApi';
+import { pathsApi } from '../../api/teacher/pathsApi';
+import { useTeacherClassesQuery } from '../../hooks/teacher/useTeacherClassesQuery';
 import {
-  teacherApi,
-  type SchoolClass,
-  type LearningPathSummary,
-  type StudentSummary,
-} from '../../api/teacherApi';
+  useInvalidateTeacherClass,
+  useTeacherClassDataQuery,
+} from '../../hooks/teacher/useTeacherClassDataQuery';
+import { useTeacherPathCatalogQuery } from '../../hooks/teacher/useTeacherPathCatalogQuery';
+import {
+  canContinueAssignPath,
+  type AssignPathStep,
+  type AssignmentScope,
+} from '../../utils/assignPathWizard';
 
-type Step = 1 | 2 | 3;
+type Step = AssignPathStep;
 
 export default function AssignPathPage() {
   const navigate = useNavigate();
@@ -28,87 +36,84 @@ export default function AssignPathPage() {
     };
   }, [location.search]);
 
-  type AssignmentScope = 'class' | 'student';
   const [assignmentScope, setAssignmentScope] = useState<AssignmentScope>(
     preselect.studentId ? 'student' : 'class',
   );
   const [selectedStudent, setSelectedStudent] = useState<StudentSummary | null>(null);
-
-  const [step, setStep]                 = useState<Step>(1);
-  const [paths, setPaths]               = useState<LearningPathSummary[]>([]);
+  const [step, setStep] = useState<Step>(1);
   const [selectedPath, setSelectedPath] = useState<LearningPathSummary | null>(null);
-  const [levelFilter, setLevelFilter]   = useState<string>('Tous');
+  const [levelFilter, setLevelFilter] = useState<string>('Tous');
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(preselect.classId);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-  const [classes, setClasses]                   = useState<SchoolClass[]>([]);
-  const [selectedClass, setSelectedClass]       = useState<SchoolClass | null>(null);
+  const { classes, isLoading: loadingClasses, error: classesError } =
+    useTeacherClassesQuery();
+  const selectedClass =
+    classes.find((c) => c.id === selectedClassId) ?? classes[0] ?? null;
 
-  const [loadingPaths, setLoadingPaths]     = useState(true);
-  const [loadingClasses, setLoadingClasses] = useState(true);
-  const [classStudents, setClassStudents]   = useState<StudentSummary[]>([]);
-  const [loadingStudents, setLoadingStudents] = useState(false);
+  const { paths, isLoading: loadingPaths, error: catalogError } =
+    useTeacherPathCatalogQuery(levelFilter);
 
-  const [submitting, setSubmitting]         = useState(false);
-  const [error, setError]                   = useState<string | null>(null);
-  const [success, setSuccess]               = useState(false);
+  const { students: classStudents, loading: loadingStudents, error: classDataError } =
+    useTeacherClassDataQuery(step >= 2 ? selectedClass?.id ?? null : null);
 
-  // Chargement des parcours réels depuis l'API
-  useEffect(() => {
-    teacherApi
-      .getAllPaths()
-      .then((p) => {
-        setPaths(p);
-        if (preselect.pathId) {
-          const found = p.find((x) => x.id === preselect.pathId) ?? null;
-          if (found) setSelectedPath(found);
-        }
-      })
-      .catch(() => setError('Impossible de charger les parcours.'))
-      .finally(() => setLoadingPaths(false));
-  }, [preselect.pathId]);
-
-  // Chargement des classes
-  useEffect(() => {
-    teacherApi
-      .getMyClasses()
-      .then((cls) => {
-        setClasses(cls);
-        if (preselect.classId) {
-          const found = cls.find((c) => c.id === preselect.classId) ?? null;
-          setSelectedClass(found ?? (cls[0] ?? null));
-        } else if (cls.length > 0) {
-          setSelectedClass(cls[0]);
-        }
-      })
-      .catch(() => setError('Impossible de charger les classes.'))
-      .finally(() => setLoadingClasses(false));
-  }, [preselect.classId]);
+  const invalidateClass = useInvalidateTeacherClass();
 
   useEffect(() => {
-    if (!selectedClass || step < 2) {
-      setClassStudents([]);
-      return;
+    if (preselect.pathId && paths.length > 0 && !selectedPath) {
+      const found = paths.find((x) => x.id === preselect.pathId) ?? null;
+      if (found) setSelectedPath(found);
     }
-    let cancelled = false;
-    setLoadingStudents(true);
-    teacherApi
-      .getClassStudents(selectedClass.id)
-      .then((list) => {
-        if (!cancelled) {
-          setClassStudents(list);
-          if (preselect.studentId) {
-            const found = list.find((s) => s.id === preselect.studentId) ?? null;
-            if (found) setSelectedStudent(found);
-          }
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setError('Impossible de charger les élèves de la classe.');
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingStudents(false);
-      });
-    return () => { cancelled = true; };
-  }, [selectedClass, step, preselect.studentId]);
+  }, [paths, preselect.pathId, selectedPath]);
+
+  useEffect(() => {
+    if (classes.length === 0) return;
+    if (preselect.classId && classes.some((c) => c.id === preselect.classId)) {
+      setSelectedClassId(preselect.classId);
+    } else if (selectedClassId == null) {
+      setSelectedClassId(classes[0].id);
+    }
+  }, [classes, preselect.classId, selectedClassId]);
+
+  useEffect(() => {
+    if (preselect.studentId && classStudents.length > 0) {
+      const found = classStudents.find((s) => s.id === preselect.studentId) ?? null;
+      if (found) setSelectedStudent(found);
+    }
+  }, [classStudents, preselect.studentId]);
+
+  useEffect(() => {
+    const msg = classesError ?? catalogError ?? classDataError;
+    if (msg) setError(msg);
+  }, [classesError, catalogError, classDataError]);
+
+  const assignMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedPath || !selectedClass) throw new Error('missing');
+      if (assignmentScope === 'student' && selectedStudent) {
+        return pathsApi.assignPathToStudent(
+          selectedClass.id,
+          selectedStudent.id,
+          selectedPath.id,
+        );
+      }
+      return pathsApi.assignPathToClass(selectedClass.id, selectedPath.id);
+    },
+    onSuccess: async () => {
+      if (selectedClass) await invalidateClass(selectedClass.id);
+      setSuccess(true);
+      const classId = selectedClass?.id;
+      const redirect =
+        assignmentScope === 'student' && selectedStudent && classId != null
+          ? `/teacher/eleve/${selectedStudent.id}?classId=${classId}`
+          : '/teacher/dashboard';
+      setTimeout(() => navigate(redirect), 1500);
+    },
+    onError: () => {
+      setError("Erreur lors de l'assignation. Veuillez réessayer.");
+    },
+  });
 
   // Filtrage des parcours
   const uniqueLevels = [
@@ -119,43 +124,24 @@ export default function AssignPathPage() {
     (p) => levelFilter === 'Tous' || p.targetLevel === levelFilter
   );
 
-  async function handleSubmit() {
+  function handleSubmit() {
     if (!selectedPath || !selectedClass) return;
     if (assignmentScope === 'student' && !selectedStudent) return;
-    setSubmitting(true);
     setError(null);
-    try {
-      if (assignmentScope === 'student' && selectedStudent) {
-        await teacherApi.assignPathToStudent(
-          selectedClass.id,
-          selectedStudent.id,
-          selectedPath.id,
-        );
-      } else {
-        await teacherApi.assignPathToClass(selectedClass.id, selectedPath.id);
-      }
-      setSuccess(true);
-      const redirect =
-        assignmentScope === 'student' && selectedStudent
-          ? `/teacher/eleves/${selectedStudent.id}?classId=${selectedClass.id}`
-          : '/teacher/dashboard';
-      setTimeout(() => navigate(redirect), 1500);
-    } catch {
-      setError("Erreur lors de l'assignation. Veuillez réessayer.");
-    } finally {
-      setSubmitting(false);
-    }
+    assignMutation.mutate();
   }
 
   const STEPS = ['Parcours', 'Cible', 'Confirmation'];
 
-  const canContinue =
-    step === 1 ? !!selectedPath
-    : step === 2
-      ? assignmentScope === 'class'
-        ? !!selectedClass
-        : !!selectedClass && !!selectedStudent
-    : false;
+  const canContinue = canContinueAssignPath({
+    step,
+    hasSelectedPath: !!selectedPath,
+    assignmentScope,
+    hasSelectedClass: !!selectedClass,
+    hasSelectedStudent: !!selectedStudent,
+  });
+
+  const submitting = assignMutation.isPending;
 
   return (
     <div className="flex flex-1 flex-col w-full min-h-0 pb-28 lg:pb-24">
@@ -329,8 +315,7 @@ export default function AssignPathPage() {
                   value={selectedClass?.id ?? ''}
                   onChange={(e) => {
                     const id = Number(e.target.value);
-                    const found = classes.find((c) => c.id === id) ?? null;
-                    setSelectedClass(found);
+                    setSelectedClassId(id);
                   }}
                 >
                   {classes.map((c) => (
