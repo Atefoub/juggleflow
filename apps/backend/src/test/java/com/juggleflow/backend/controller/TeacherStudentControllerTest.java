@@ -3,6 +3,9 @@ package com.juggleflow.backend.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.juggleflow.backend.dto.RegisterRequest;
 import com.juggleflow.backend.dto.SchoolClassRequest;
+import com.juggleflow.backend.repository.SchoolClassRepository;
+import com.juggleflow.backend.repository.StudentRepository;
+import com.juggleflow.backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,9 +33,20 @@ class TeacherStudentControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private StudentRepository studentRepository;
+
+    @Autowired
+    private SchoolClassRepository schoolClassRepository;
+
     @BeforeEach
     void setUp() {
-        // contexte partagé — emails uniques par test
+        studentRepository.deleteAll();
+        schoolClassRepository.deleteAll();
+        userRepository.deleteAll();
     }
 
     @Test
@@ -63,14 +77,52 @@ class TeacherStudentControllerTest {
     }
 
     @Test
+    @DisplayName("lookup → 400 si classId absent")
+    void lookup_shouldReturn400_whenClassIdMissing() throws Exception {
+        String teacherToken = registerAndGetToken("teacher_lookup400@test.fr", "teacher");
+
+        mockMvc.perform(get("/api/enseignant/students/lookup")
+                .param("email", "eleve@test.fr")
+                .header("Authorization", "Bearer " + teacherToken))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("lookup → 404 si e-mail inconnu")
     void lookup_shouldReturn404_whenEmailUnknown() throws Exception {
         String teacherToken = registerAndGetToken("teacher_lookup404@test.fr", "teacher");
+        Long classId = createClassAndGetId(teacherToken);
 
         mockMvc.perform(get("/api/enseignant/students/lookup")
                 .param("email", "inconnu@test.fr")
+                .param("classId", String.valueOf(classId))
                 .header("Authorization", "Bearer " + teacherToken))
             .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("lookup → 404 si l'enseignant n'est pas titulaire de la classe")
+    void lookup_shouldReturn404_whenNotClassOwner() throws Exception {
+        String ownerToken = registerAndGetToken("owner_lookup@test.fr", "teacher");
+        String intruderToken = registerAndGetToken("intruder_lookup@test.fr", "teacher");
+        Long classId = createClassAndGetId(ownerToken);
+        registerAndGetToken("student_lookup_idor@test.fr", "student");
+
+        mockMvc.perform(get("/api/enseignant/students/lookup")
+                .param("email", "student_lookup_idor@test.fr")
+                .param("classId", String.valueOf(classId))
+                .header("Authorization", "Bearer " + intruderToken))
+            .andExpect(status().isNotFound());
+    }
+
+    private Long createClassAndGetId(String teacherToken) throws Exception {
+        MvcResult classResult = mockMvc.perform(post("/api/enseignant/classes")
+                .header("Authorization", "Bearer " + teacherToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(buildClassRequest())))
+            .andExpect(status().isCreated())
+            .andReturn();
+        return objectMapper.readTree(classResult.getResponse().getContentAsString()).get("id").asLong();
     }
 
     private String registerAndGetToken(String email, String role) throws Exception {

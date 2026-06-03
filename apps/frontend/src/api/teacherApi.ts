@@ -260,9 +260,11 @@ export const teacherApi = {
     await api.delete(`/enseignant/classes/${classId}/paths/${pathId}`);
   },
 
-  lookupStudent: async (email: string, classId?: number): Promise<StudentLookup> => {
-    const params: Record<string, string> = { email: email.trim() };
-    if (classId != null) params.classId = String(classId);
+  lookupStudent: async (email: string, classId: number): Promise<StudentLookup> => {
+    const params: Record<string, string> = {
+      email: email.trim(),
+      classId: String(classId),
+    };
     const res = await api.get<StudentLookup>('/enseignant/students/lookup', { params });
     return res.data;
   },

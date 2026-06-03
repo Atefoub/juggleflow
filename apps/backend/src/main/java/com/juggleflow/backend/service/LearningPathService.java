@@ -13,14 +13,12 @@ import com.juggleflow.backend.model.StudentLearningPath;
 import com.juggleflow.backend.model.LearningPathStep;
 import com.juggleflow.backend.model.SchoolClass;
 import com.juggleflow.backend.model.Student;
-import com.juggleflow.backend.model.Teacher;
 import com.juggleflow.backend.model.UserProgress;
 import com.juggleflow.backend.repository.ClassLearningPathRepository;
 import com.juggleflow.backend.repository.LearningPathRepository;
 import com.juggleflow.backend.repository.StudentLearningPathRepository;
 import com.juggleflow.backend.repository.SchoolClassRepository;
 import com.juggleflow.backend.repository.StudentRepository;
-import com.juggleflow.backend.repository.TeacherRepository;
 import com.juggleflow.backend.repository.UserProgressRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +42,7 @@ public class LearningPathService {
     private final PathAssignmentResolver pathAssignmentResolver;
     private final SchoolClassRepository schoolClassRepository;
     private final StudentRepository studentRepository;
-    private final TeacherRepository teacherRepository;
+    private final TeacherClassAccessService teacherClassAccessService;
     private final UserProgressRepository userProgressRepository;
 
     /**
@@ -93,8 +91,7 @@ public class LearningPathService {
      * Vérifie que l'enseignant connecté est bien titulaire de la classe.
      */
     public List<LearningPathResponse> getAssignedPathsForClass(Long classId, String teacherEmail) {
-        Teacher teacher = findTeacherByEmail(teacherEmail);
-        assertClassOwnership(classId, teacher.getId());
+        teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
 
         return classLearningPathRepository.findBySchoolClass_Id(classId).stream()
                 .map(ClassLearningPath::getLearningPath)
@@ -126,8 +123,7 @@ public class LearningPathService {
      */
     @Transactional
     public LearningPathResponse assignToClass(AssignPathRequest request, String teacherEmail) {
-        Teacher teacher = findTeacherByEmail(teacherEmail);
-        assertClassOwnership(request.getClassId(), teacher.getId());
+        teacherClassAccessService.assertClassOwnedByTeacher(request.getClassId(), teacherEmail);
 
         LearningPath path = learningPathRepository.findById(request.getLearningPathId())
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -172,8 +168,7 @@ public class LearningPathService {
      */
     @Transactional
     public void unassignFromClass(Long classId, Long pathId, String teacherEmail) {
-        Teacher teacher = findTeacherByEmail(teacherEmail);
-        assertClassOwnership(classId, teacher.getId());
+        teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
 
         classLearningPathRepository.findByLearningPath_IdAndSchoolClass_Id(pathId, classId)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -189,9 +184,7 @@ public class LearningPathService {
      */
     public List<LearningPathResponse> getAssignedPathsForStudent(
             Long classId, Long studentId, String teacherEmail) {
-        Teacher teacher = findTeacherByEmail(teacherEmail);
-        assertClassOwnership(classId, teacher.getId());
-        assertStudentInClass(studentId, classId);
+        teacherClassAccessService.requireStudentInClass(classId, studentId, teacherEmail);
         return pathAssignmentResolver.resolveAllPathsForStudent(studentId, classId).stream()
                 .map(LearningPathResponse::from)
                 .toList();
@@ -202,9 +195,7 @@ public class LearningPathService {
      */
     public StudentPathAssignmentResponse getEffectiveAssignmentForStudent(
             Long classId, Long studentId, String teacherEmail) {
-        Teacher teacher = findTeacherByEmail(teacherEmail);
-        assertClassOwnership(classId, teacher.getId());
-        assertStudentInClass(studentId, classId);
+        teacherClassAccessService.requireStudentInClass(classId, studentId, teacherEmail);
 
         return pathAssignmentResolver.resolvePrimaryPath(studentId, classId)
                 .map(resolved -> StudentPathAssignmentResponse.builder()
@@ -224,9 +215,8 @@ public class LearningPathService {
             AssignPathToStudentRequest request,
             String teacherEmail) {
 
-        Teacher teacher = findTeacherByEmail(teacherEmail);
-        assertClassOwnership(classId, teacher.getId());
-        Student student = assertStudentInClass(request.getStudentId(), classId);
+        Student student = teacherClassAccessService.requireStudentInClass(
+                classId, request.getStudentId(), teacherEmail);
 
         LearningPath path = learningPathRepository.findById(request.getLearningPathId())
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -260,9 +250,7 @@ public class LearningPathService {
     public void unassignFromStudent(
             Long classId, Long studentId, Long pathId, String teacherEmail) {
 
-        Teacher teacher = findTeacherByEmail(teacherEmail);
-        assertClassOwnership(classId, teacher.getId());
-        assertStudentInClass(studentId, classId);
+        teacherClassAccessService.requireStudentInClass(classId, studentId, teacherEmail);
 
         studentLearningPathRepository.findByLearningPath_IdAndStudent_Id(pathId, studentId)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -279,8 +267,7 @@ public class LearningPathService {
     public List<ClassStudentPathOverviewResponse> getClassPathOverview(
             Long classId, String teacherEmail) {
 
-        Teacher teacher = findTeacherByEmail(teacherEmail);
-        assertClassOwnership(classId, teacher.getId());
+        teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
 
         List<Student> students = studentRepository.findBySchoolClass_Id(classId);
 
@@ -324,8 +311,7 @@ public class LearningPathService {
     public List<StudentPathProgressResponse> getStudentProgress(
             Long classId, Long pathId, String teacherEmail) {
 
-        Teacher teacher = findTeacherByEmail(teacherEmail);
-        assertClassOwnership(classId, teacher.getId());
+        teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
 
         LearningPath path = learningPathRepository.findById(pathId)
                 .orElseThrow(() -> new ResourceNotFoundException("Parcours", pathId));
@@ -382,15 +368,13 @@ public class LearningPathService {
     public StudentPathProgressResponse getStudentProgressForStudent(
             Long classId, Long pathId, Long studentId, String teacherEmail) {
 
-        Teacher teacher = findTeacherByEmail(teacherEmail);
-        assertClassOwnership(classId, teacher.getId());
+        teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
 
         LearningPath path = learningPathRepository.findById(pathId)
                 .orElseThrow(() -> new ResourceNotFoundException("Parcours", pathId));
 
-        Student student = studentRepository.findByIdAndSchoolClass_Id(studentId, classId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Élève introuvable dans cette classe : " + studentId));
+        Student student = teacherClassAccessService.requireStudentInClass(
+                classId, studentId, teacherEmail);
 
         List<LearningPathStep> steps = path.getSteps();
         List<Long> trickIds = steps.stream()
@@ -464,25 +448,6 @@ public class LearningPathService {
                 .filter(p -> p.getStatus() == UserProgress.ProgressStatus.MASTERED)
                 .count();
         return (int) ((masteredCount * 100L) / steps.size());
-    }
-
-    private Student assertStudentInClass(Long studentId, Long classId) {
-        return studentRepository.findByIdAndSchoolClass_Id(studentId, classId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Élève introuvable dans cette classe : " + studentId));
-    }
-
-    private Teacher findTeacherByEmail(String email) {
-        return teacherRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                    "Enseignant introuvable : " + email));
-    }
-
-    private void assertClassOwnership(Long classId, Long teacherId) {
-        if (!schoolClassRepository.existsByIdAndHomeroomTeacher_Id(classId, teacherId)) {
-            throw new ResourceNotFoundException(
-                "Classe introuvable ou accès non autorisé : " + classId);
-        }
     }
 
     private LearningPath.TargetLevel parseLevel(String level) {
