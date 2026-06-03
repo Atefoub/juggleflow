@@ -3,16 +3,19 @@ import { AuthProvider } from '../context/AuthContext';
 import ErrorBoundary from '../components/ErrorBoundary';
 import SyncStatusBanner from '../components/SyncStatusBanner';
 import PwaUpdateBanner from '../components/PwaUpdateBanner';
+import QueryProvider from '../providers/QueryProvider';
 
 export function App() {
   return (
-    <AuthProvider>
-      <ErrorBoundary>
-        <PwaUpdateBanner />
-        <SyncStatusBanner />
-        <AppRouter />
-      </ErrorBoundary>
-    </AuthProvider>
+    <QueryProvider>
+      <AuthProvider>
+        <ErrorBoundary>
+          <PwaUpdateBanner />
+          <SyncStatusBanner />
+          <AppRouter />
+        </ErrorBoundary>
+      </AuthProvider>
+    </QueryProvider>
   );
 }
 

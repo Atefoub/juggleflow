@@ -1,17 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ProgressBar from '../../components/ProgressBar';
 import AppIcon from '../../components/icons/AppIcon';
 import StudentPathSummary from '../../components/teacher/StudentPathSummary';
+import { GROUP_COLOR_MAP, GROUP_LABEL_MAP, type StudentSummary } from '../../api/teacherApi';
+import { pathsApi } from '../../api/teacher/pathsApi';
+import { useTeacherClassesQuery } from '../../hooks/teacher/useTeacherClassesQuery';
 import {
-  teacherApi,
-  GROUP_COLOR_MAP,
-  GROUP_LABEL_MAP,
-  type SchoolClass,
-  type StudentSummary,
-} from '../../api/teacherApi';
-import { useTeacherClassData } from '../../hooks/useTeacherClassData';
+  useInvalidateTeacherClass,
+  useTeacherClassDataQuery,
+} from '../../hooks/teacher/useTeacherClassDataQuery';
 
 function groupStudents(students: StudentSummary[]) {
   const groups: Record<StudentSummary['groupColor'], StudentSummary[]> = {
@@ -34,12 +34,14 @@ export default function TeacherDashboardPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [classes, setClasses]   = useState<SchoolClass[]>([]);
-  const [selectedClass, setSelectedClass] = useState<SchoolClass | null>(null);
-  const [loading, setLoading]   = useState(true);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [pathsError, setPathsError] = useState<string | null>(null);
-  const [error, setError]       = useState<string | null>(null);
   const [reportPickerOpen, setReportPickerOpen] = useState(false);
+
+  const { classes, isLoading: classesLoading, error: classesError } =
+    useTeacherClassesQuery();
+  const selectedClass =
+    classes.find((c) => c.id === selectedClassId) ?? classes[0] ?? null;
 
   const {
     students,
@@ -47,32 +49,29 @@ export default function TeacherDashboardPage() {
     pathOverview,
     loading: classDataLoading,
     error: classDataError,
-    reload: reloadClassData,
-  } = useTeacherClassData(selectedClass?.id ?? null);
+  } = useTeacherClassDataQuery(selectedClass?.id ?? null);
 
-  useEffect(() => {
-    teacherApi
-      .getMyClasses()
-      .then((cls) => {
-        setClasses(cls);
-        if (cls.length > 0) setSelectedClass(cls[0]);
-      })
-      .catch(() => setError('Impossible de charger vos classes.'))
-      .finally(() => setLoading(false));
-  }, []);
+  const invalidateClass = useInvalidateTeacherClass();
+  const unassignMutation = useMutation({
+    mutationFn: ({ classId, pathId }: { classId: number; pathId: number }) =>
+      pathsApi.unassignPathFromClass(classId, pathId),
+    onSuccess: (_data, { classId }) => {
+      setPathsError(null);
+      void invalidateClass(classId);
+    },
+    onError: () => {
+      setPathsError('Erreur lors de la désassignation. Veuillez réessayer.');
+    },
+  });
 
-  async function handleUnassign(pathId: number) {
+  const loading = classesLoading;
+  const error = classesError;
+
+  function handleUnassign(pathId: number) {
     if (!selectedClass) return;
     const ok = window.confirm('Désassigner ce parcours de la classe ?');
     if (!ok) return;
-
-    try {
-      await teacherApi.unassignPathFromClass(selectedClass.id, pathId);
-      setPathsError(null);
-      await reloadClassData();
-    } catch {
-      setPathsError("Erreur lors de la désassignation. Veuillez réessayer.");
-    }
+    unassignMutation.mutate({ classId: selectedClass.id, pathId });
   }
 
   const groups          = groupStudents(students);
@@ -118,7 +117,7 @@ export default function TeacherDashboardPage() {
             {classes.map((cls) => (
               <button
                 key={cls.id}
-                onClick={() => setSelectedClass(cls)}
+                onClick={() => setSelectedClassId(cls.id)}
                 className={[
                   'shrink-0 rounded-lg border px-3 py-1 text-xs font-semibold',
                   selectedClass?.id === cls.id
