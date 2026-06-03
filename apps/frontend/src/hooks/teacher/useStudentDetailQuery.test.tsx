@@ -3,6 +3,8 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useStudentDetailQuery, STUDENT_NOT_FOUND_ERROR } from './useStudentDetailQuery';
+import { classesApi } from '../../api/teacher/classesApi';
+import { studentsApi } from '../../api/teacher/studentsApi';
 
 vi.mock('../../api/teacher/classesApi', () => ({
   classesApi: {
@@ -22,9 +24,6 @@ vi.mock('../../api/teacher/studentsApi', () => ({
     getStudentClassContext: vi.fn(),
   },
 }));
-
-import { classesApi } from '../../api/teacher/classesApi';
-import { studentsApi } from '../../api/teacher/studentsApi';
 
 function wrapper(client: QueryClient) {
   return function Wrapper({ children }: { children: ReactNode }) {
