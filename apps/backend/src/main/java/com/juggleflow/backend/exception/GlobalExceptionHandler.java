@@ -11,6 +11,7 @@ import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
@@ -47,6 +48,21 @@ public class GlobalExceptionHandler {
       .path(request.getRequestURI())
       .fieldErrors(fieldErrors)
       .build();
+
+    return ResponseEntity.badRequest().body(body);
+  }
+
+  @ExceptionHandler(MissingServletRequestParameterException.class)
+  public ResponseEntity<ErrorResponse> handleMissingRequestParam(
+      MissingServletRequestParameterException ex,
+      HttpServletRequest request) {
+
+    ErrorResponse body = ErrorResponse.builder()
+        .status(HttpStatus.BAD_REQUEST.value())
+        .error("Requête invalide")
+        .message("Paramètre obligatoire manquant : " + ex.getParameterName())
+        .path(request.getRequestURI())
+        .build();
 
     return ResponseEntity.badRequest().body(body);
   }

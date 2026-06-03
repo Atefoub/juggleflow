@@ -31,7 +31,7 @@ public class TeacherStudentController {
     @Operation(summary = "Rechercher un élève par e-mail")
     public ResponseEntity<StudentLookupResponse> lookupStudent(
             @RequestParam String email,
-            @RequestParam(required = false) Long classId,
+            @RequestParam Long classId,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         return ResponseEntity.ok(
