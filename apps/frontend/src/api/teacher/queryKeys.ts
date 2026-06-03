@@ -9,4 +9,10 @@ export const teacherQueryKeys = {
     [...teacherQueryKeys.all, 'pathDetail', pathId] as const,
   classProgress: (classId: number, pathId: number) =>
     [...teacherQueryKeys.all, 'classProgress', classId, pathId] as const,
+  studentDetail: (studentId: number, classId: number | null) =>
+    [...teacherQueryKeys.all, 'studentDetail', studentId, classId ?? 'discover'] as const,
+  studentPathProgress: (classId: number, pathId: number, studentId: number) =>
+    [...teacherQueryKeys.all, 'studentPathProgress', classId, pathId, studentId] as const,
+  teacherPathDetail: (classId: number, pathId: number) =>
+    [...teacherQueryKeys.all, 'teacherPathDetail', classId, pathId] as const,
 };

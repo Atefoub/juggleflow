@@ -6,6 +6,7 @@ import com.juggleflow.backend.dto.AdminCreateUserRequest;
 import com.juggleflow.backend.dto.AdminCreateUserResponse;
 import com.juggleflow.backend.dto.SchoolClassRequest;
 import com.juggleflow.backend.dto.SchoolClassResponse;
+import com.juggleflow.backend.dto.StudentClassContextResponse;
 import com.juggleflow.backend.dto.StudentLookupResponse;
 import com.juggleflow.backend.dto.StudentSummaryResponse;
 import com.juggleflow.backend.dto.TeacherCreateStudentRequest;
@@ -92,6 +93,24 @@ public class SchoolClassService {
     public List<StudentSummaryResponse> getClassStudents(Long classId, String teacherEmail) {
         teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
         return buildStudentSummariesForClass(classId);
+    }
+
+    /**
+     * Contexte classe + résumé élève en un appel (évite de parcourir toutes les classes).
+     */
+    public StudentClassContextResponse getStudentClassContext(Long studentId, String teacherEmail) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Élève", studentId));
+        if (student.getSchoolClass() == null) {
+            throw new ResourceNotFoundException("Élève introuvable.");
+        }
+        Long classId = student.getSchoolClass().getId();
+        teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
+        return StudentClassContextResponse.builder()
+                .classId(classId)
+                .className(student.getSchoolClass().getName())
+                .student(toStudentSummary(student, classId))
+                .build();
     }
 
     /**

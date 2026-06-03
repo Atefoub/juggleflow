@@ -9,6 +9,12 @@ export interface SchoolClass {
 
 export type StudentGroupColor = 'VERT' | 'ORANGE' | 'ROUGE';
 
+export interface StudentClassContext {
+  classId: number;
+  className: string;
+  student: StudentSummary;
+}
+
 export interface StudentLookup {
   id: number;
   firstName: string;

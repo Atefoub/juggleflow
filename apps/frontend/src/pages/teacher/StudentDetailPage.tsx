@@ -1,20 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import AppIcon from '../../components/icons/AppIcon';
 import type { IconName } from '../../components/icons/iconRegistry';
 import ProgressBar from '../../components/ProgressBar';
 import {
-  teacherApi,
   GROUP_COLOR_MAP,
   GROUP_LABEL_MAP,
-  type StudentSummary,
-  type LearningPathSummary,
-  type StudentPathProgress,
-  type StudentPathAssignment,
 } from '../../api/teacherApi';
+import { pathsApi } from '../../api/teacher/pathsApi';
+import { classesApi } from '../../api/teacher/classesApi';
+import { teacherQueryKeys } from '../../api/teacher/queryKeys';
 import { catalogueApi } from '../../api/catalogueApi';
 import { apiErrorMessage } from '../../utils/apiErrorMessage';
 import ProgressStatusIcon from '../../components/icons/ProgressStatusIcon';
+import { useTeacherPathCatalogQuery } from '../../hooks/teacher/useTeacherPathCatalogQuery';
+import {
+  useStudentDetailQuery,
+} from '../../hooks/teacher/useStudentDetailQuery';
+import { useStudentPathProgressQuery } from '../../hooks/teacher/useStudentPathProgressQuery';
+import { useInvalidateTeacherClass } from '../../hooks/teacher/useTeacherClassDataQuery';
 
 const STATUS_CONFIG = {
   MASTERED:    { label: 'Maîtrisé',   textClass: 'text-success',    bgClass: 'bg-success/10  border border-success/30'  },
@@ -24,6 +29,7 @@ const STATUS_CONFIG = {
 
 export default function StudentDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const studentId = id ? Number(id) : null;
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -37,23 +43,44 @@ export default function StudentDetailPage() {
     return raw ? Number(raw) : null;
   }, [query]);
 
-  const [student, setStudent]   = useState<StudentSummary | null>(null);
-  const [paths, setPaths]       = useState<LearningPathSummary[]>([]); // catalogue global (fallback)
-  const [assignedPaths, setAssignedPaths] = useState<LearningPathSummary[]>([]);
-  const [effectiveClassId, setEffectiveClassId] = useState<number | null>(null);
-  const [selectedPathId, setSelectedPathId] = useState<number | null>(null);
-  const [pathProgress, setPathProgress] = useState<StudentPathProgress | null>(null);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState<string | null>(null);
-  const [blockagePrerequisites, setBlockagePrerequisites] = useState<string[]>([]);
-  const [removing, setRemoving] = useState(false);
-  const [effectiveAssignment, setEffectiveAssignment] = useState<StudentPathAssignment | null>(null);
-  const [unassigningPath, setUnassigningPath] = useState(false);
+  const {
+    student,
+    classId: effectiveClassId,
+    assignedPaths,
+    effectiveAssignment,
+    loading,
+    error: loadError,
+    refetch: refetchDetail,
+  } = useStudentDetailQuery(studentId, classIdFromQuery);
 
-  // Groupe de couleur
+  const { paths } = useTeacherPathCatalogQuery();
+
+  const defaultPathId = useMemo(() => {
+    if (Number.isFinite(pathIdFromQuery ?? NaN)) return pathIdFromQuery;
+    return assignedPaths[0]?.id ?? null;
+  }, [pathIdFromQuery, assignedPaths]);
+
+  const [selectedPathId, setSelectedPathId] = useState<number | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedPathId(defaultPathId);
+  }, [defaultPathId, studentId, effectiveClassId]);
+
+  const pathProgressQuery = useStudentPathProgressQuery(
+    effectiveClassId,
+    selectedPathId,
+    studentId,
+  );
+  const pathProgress = pathProgressQuery.data ?? null;
+
+  const queryClient = useQueryClient();
+  const invalidateClass = useInvalidateTeacherClass();
+
   const groupColor  = student?.groupColor ?? 'VERT';
   const chipColor   = GROUP_COLOR_MAP[groupColor];
   const progressPct = student?.progressionPercent ?? 0;
+  const error = actionError ?? loadError;
 
   const blockage = useMemo(() => {
     if (student?.blocked && student.blockedTrickName) {
@@ -74,99 +101,13 @@ export default function StudentDetailPage() {
     return null;
   }, [student, pathProgress]);
 
-  useEffect(() => {
-    if (!blockage?.trickId) {
-      setBlockagePrerequisites([]);
-      return;
-    }
-    catalogueApi
-      .getTrickById(blockage.trickId)
-      .then((t) => setBlockagePrerequisites(t.prerequisiteNames))
-      .catch(() => setBlockagePrerequisites([]));
-  }, [blockage?.trickId]);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        // 1. Charger les parcours disponibles (catalogue global)
-        const allPaths = await teacherApi.getAllPaths();
-        setPaths(allPaths);
-
-        // 2. Déterminer la classe (query > découverte)
-        let resolvedClassId: number | null = Number.isFinite(classIdFromQuery ?? NaN)
-          ? classIdFromQuery
-          : null;
-
-        if (resolvedClassId == null) {
-          // Fallback : découvrir la classe de l'élève en parcourant les classes
-          const classes = await teacherApi.getMyClasses();
-          for (const cls of classes) {
-            const list = await teacherApi.getClassStudents(cls.id);
-            const found = list.find((s) => s.id === Number(id)) ?? null;
-            if (found) {
-              setStudent(found);
-              resolvedClassId = cls.id;
-              break;
-            }
-          }
-          if (resolvedClassId == null) {
-            setError('Élève introuvable.');
-            return;
-          }
-        } else {
-          // Cas normal : classId fourni → un seul appel API nécessaire
-          const list = await teacherApi.getClassStudents(resolvedClassId);
-          const found = list.find((s) => s.id === Number(id)) ?? null;
-          if (!found) {
-            setError('Élève introuvable.');
-            return;
-          }
-          setStudent(found);
-        }
-
-        setEffectiveClassId(resolvedClassId);
-
-        // 3. Parcours effectifs de l'élève (individuel prioritaire sur classe)
-        let assigned: LearningPathSummary[] = [];
-        if (resolvedClassId != null) {
-          assigned = await teacherApi.getAssignedPathsForStudent(
-            resolvedClassId,
-            Number(id),
-          );
-          setAssignedPaths(assigned);
-          const effective = await teacherApi.getEffectiveAssignmentForStudent(
-            resolvedClassId,
-            Number(id),
-          );
-          setEffectiveAssignment(effective);
-        } else {
-          setEffectiveAssignment(null);
-        }
-
-        // 4. Choix du parcours: query > premier assigné > rien
-        const resolvedPathId =
-          (Number.isFinite(pathIdFromQuery ?? NaN) ? (pathIdFromQuery as number) : (assigned[0]?.id ?? null));
-        setSelectedPathId(resolvedPathId);
-
-        // 5. Charger la progression détaillée pour ce parcours (si on a classId + pathId)
-        if (resolvedClassId != null && resolvedPathId) {
-          const me = await teacherApi.getStudentProgressForStudent(
-            resolvedClassId,
-            resolvedPathId,
-            Number(id)
-          );
-          setPathProgress(me);
-        } else {
-          setPathProgress(null);
-        }
-      } catch {
-        setError("Impossible de charger les données de l'élève.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [id, classIdFromQuery, pathIdFromQuery]);
+  const blockagePrereqQuery = useQuery({
+    queryKey: ['catalogue', 'trick', blockage?.trickId],
+    queryFn: () => catalogueApi.getTrickById(blockage!.trickId!),
+    enabled: blockage?.trickId != null,
+    staleTime: 300_000,
+  });
+  const blockagePrerequisites = blockagePrereqQuery.data?.prerequisiteNames ?? [];
 
   const selectedPath = selectedPathId
     ? (assignedPaths.find((p) => p.id === selectedPathId)
@@ -174,25 +115,56 @@ export default function StudentDetailPage() {
         ?? null)
     : null;
 
-  async function handleRemoveFromClass() {
-    if (!student || effectiveClassId == null || removing) return;
+  const removeMutation = useMutation({
+    mutationFn: () =>
+      classesApi.removeStudentFromClass(effectiveClassId!, student!.id),
+    onSuccess: () => {
+      if (effectiveClassId != null) {
+        invalidateClass(effectiveClassId);
+      }
+      const qs = `?classId=${effectiveClassId}`;
+      navigate(`/teacher/eleves${qs}`);
+    },
+    onError: (err) => {
+      setActionError(apiErrorMessage(err, 'Impossible de retirer cet élève de la classe.'));
+    },
+  });
+
+  const unassignMutation = useMutation({
+    mutationFn: () =>
+      pathsApi.unassignPathFromStudent(
+        effectiveClassId!,
+        studentId!,
+        effectiveAssignment!.learningPathId,
+      ),
+    onSuccess: async () => {
+      const { data } = await refetchDetail();
+      if (effectiveClassId != null) {
+        invalidateClass(effectiveClassId);
+        void queryClient.invalidateQueries({
+          queryKey: teacherQueryKeys.studentDetail(studentId ?? 0, classIdFromQuery),
+        });
+      }
+      const nextPathId =
+        data?.effectiveAssignment?.learningPathId
+        ?? data?.assignedPaths[0]?.id
+        ?? null;
+      setSelectedPathId(nextPathId);
+    },
+    onError: (err) => {
+      setActionError(apiErrorMessage(err, 'Impossible de retirer le parcours.'));
+    },
+  });
+
+  function handleRemoveFromClass() {
+    if (!student || effectiveClassId == null || removeMutation.isPending) return;
     const confirmed = window.confirm(
       `Retirer ${student.firstName} ${student.lastName} de cette classe ?\n\n`
         + 'La progression de l\'élève est conservée ; il pourra être réinscrit plus tard.',
     );
     if (!confirmed) return;
-
-    setRemoving(true);
-    setError(null);
-    try {
-      await teacherApi.removeStudentFromClass(effectiveClassId, student.id);
-      const qs = `?classId=${effectiveClassId}`;
-      navigate(`/teacher/eleves${qs}`);
-    } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible de retirer cet élève de la classe.'));
-    } finally {
-      setRemoving(false);
-    }
+    setActionError(null);
+    removeMutation.mutate();
   }
 
   return (
@@ -392,40 +364,17 @@ export default function StudentDetailPage() {
                 {effectiveAssignment.assignmentSource === 'STUDENT' && effectiveClassId && (
                   <button
                     type="button"
-                    disabled={unassigningPath}
-                    onClick={async () => {
+                    disabled={unassignMutation.isPending}
+                    onClick={() => {
                       if (!window.confirm('Retirer l\'assignation individuelle ? L\'élève repassera sur le parcours de classe.')) {
                         return;
                       }
-                      setUnassigningPath(true);
-                      setError(null);
-                      try {
-                        await teacherApi.unassignPathFromStudent(
-                          effectiveClassId,
-                          Number(id),
-                          effectiveAssignment.learningPathId,
-                        );
-                        const refreshed = await teacherApi.getAssignedPathsForStudent(
-                          effectiveClassId,
-                          Number(id),
-                        );
-                        setAssignedPaths(refreshed);
-                        const effective = await teacherApi.getEffectiveAssignmentForStudent(
-                          effectiveClassId,
-                          Number(id),
-                        );
-                        setEffectiveAssignment(effective);
-                        const nextPathId = effective?.learningPathId ?? refreshed[0]?.id ?? null;
-                        setSelectedPathId(nextPathId);
-                      } catch (err) {
-                        setError(apiErrorMessage(err, 'Impossible de retirer le parcours.'));
-                      } finally {
-                        setUnassigningPath(false);
-                      }
+                      setActionError(null);
+                      unassignMutation.mutate();
                     }}
                     className="mt-3 text-xs font-semibold text-alert underline underline-offset-2 disabled:opacity-60"
                   >
-                    {unassigningPath ? 'Retrait…' : 'Retirer l\'assignation individuelle'}
+                    {unassignMutation.isPending ? 'Retrait…' : 'Retirer l\'assignation individuelle'}
                   </button>
                 )}
               </section>
@@ -471,20 +420,7 @@ export default function StudentDetailPage() {
                       <button
                         key={p.id}
                         type="button"
-                        onClick={async () => {
-                          if (!effectiveClassId) return;
-                          setSelectedPathId(p.id);
-                          try {
-                            const me = await teacherApi.getStudentProgressForStudent(
-                              effectiveClassId,
-                              p.id,
-                              Number(id)
-                            );
-                            setPathProgress(me);
-                          } catch {
-                            setPathProgress(null);
-                          }
-                        }}
+                        onClick={() => setSelectedPathId(p.id)}
                         className={[
                           'shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
                           selectedPathId === p.id
@@ -524,7 +460,9 @@ export default function StudentDetailPage() {
                   </div>
                 )}
 
-                {!pathProgress ? (
+                {pathProgressQuery.isLoading ? (
+                  <div className="h-24 rounded-2xl animate-pulse bg-bg-card" />
+                ) : !pathProgress ? (
                   <div className="p-4 rounded-2xl bg-bg-card border border-border text-sm text-text-secondary">
                     Aucune donnée de progression pour ce parcours.
                   </div>
@@ -594,11 +532,11 @@ export default function StudentDetailPage() {
               {effectiveClassId != null && (
                 <button
                   type="button"
-                  disabled={removing}
+                  disabled={removeMutation.isPending}
                   onClick={() => void handleRemoveFromClass()}
                   className="w-full min-h-11 rounded-2xl py-3 text-sm font-semibold text-alert border border-alert bg-alert-surface hover:opacity-80 transition-opacity disabled:opacity-60"
                 >
-                  {removing ? 'Retrait…' : 'Retirer de la classe'}
+                  {removeMutation.isPending ? 'Retrait…' : 'Retirer de la classe'}
                 </button>
               )}
             </section>
@@ -609,4 +547,3 @@ export default function StudentDetailPage() {
     </div>
   );
 }
-
