@@ -7,14 +7,12 @@ import {
   teacherApi,
   GROUP_COLOR_MAP,
   GROUP_LABEL_MAP,
-  type ClassStudentPathOverview,
   type SchoolClass,
   type StudentLookup,
-  type StudentSummary,
   type TeacherCreateStudentResponse,
 } from '../../api/teacherApi';
 import { apiErrorMessage } from '../../utils/apiErrorMessage';
-import { pathOverviewByStudentId } from '../../utils/pathOverview';
+import { useTeacherClassData } from '../../hooks/useTeacherClassData';
 
 type GroupFilter = 'Tous' | 'VERT' | 'ORANGE' | 'ROUGE';
 
@@ -40,10 +38,6 @@ export default function StudentListPage() {
   }, [location.search]);
 
   const [classes, setClasses]           = useState<SchoolClass[]>([]);
-  const [students, setStudents]         = useState<StudentSummary[]>([]);
-  const [pathOverview, setPathOverview] = useState<Map<number, ClassStudentPathOverview>>(
-    () => new Map(),
-  );
   const [selectedClass, setSelectedClass] = useState<SchoolClass | null>(null);
   const [groupFilter, setGroupFilter]   = useState<GroupFilter>('Tous');
   const [search, setSearch]             = useState('');
@@ -58,6 +52,14 @@ export default function StudentListPage() {
   const [createdStudent, setCreatedStudent] = useState<TeacherCreateStudentResponse | null>(null);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState<string | null>(null);
+
+  const {
+    students,
+    pathOverview,
+    loading: classDataLoading,
+    error: classDataError,
+    reload: reloadClassData,
+  } = useTeacherClassData(selectedClass?.id ?? null);
 
   // Load classes once
   useEffect(() => {
@@ -81,24 +83,11 @@ export default function StudentListPage() {
     if (preselect.group) setGroupFilter(preselect.group);
   }, [preselect.group]);
 
-  async function refreshClassRoster(classId: number) {
-    const [studentList, overview] = await Promise.all([
-      teacherApi.getClassStudents(classId),
-      teacherApi.getClassPathOverview(classId),
-    ]);
-    setStudents(studentList);
-    setPathOverview(pathOverviewByStudentId(overview));
-  }
-
-  // Load students when class changes
   useEffect(() => {
-    if (!selectedClass) return;
-    setStudents([]);
-    setPathOverview(new Map());
-    refreshClassRoster(selectedClass.id).catch(() =>
-      setError('Impossible de charger les élèves de cette classe.'),
-    );
-  }, [selectedClass]);
+    if (classDataError) {
+      setError(classDataError);
+    }
+  }, [classDataError]);
 
   useEffect(() => {
     setLookupPreview(null);
@@ -159,7 +148,7 @@ export default function StudentListPage() {
     setError(null);
     try {
       await teacherApi.addStudentToClass(selectedClass.id, studentId);
-      await refreshClassRoster(selectedClass.id);
+      await reloadClassData();
       setAddQuery('');
       setLookupPreview(null);
     } catch (err) {
@@ -181,7 +170,7 @@ export default function StudentListPage() {
         lastName: newStudentLastName.trim(),
       });
       setCreatedStudent(created);
-      await refreshClassRoster(selectedClass.id);
+      await reloadClassData();
       setNewStudentEmail('');
       setNewStudentFirstName('');
       setNewStudentLastName('');
@@ -428,7 +417,7 @@ export default function StudentListPage() {
         )}
 
         {/* Skeleton */}
-        {loading && (
+        {(loading || classDataLoading) && (
           <div className="flex flex-col gap-3">
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="h-20 rounded-2xl animate-pulse bg-bg-card" />
@@ -437,7 +426,7 @@ export default function StudentListPage() {
         )}
 
         {/* Empty state */}
-        {!loading && !error && filteredStudents.length === 0 && (
+        {!loading && !classDataLoading && !error && filteredStudents.length === 0 && (
           <div className="flex flex-col items-center gap-3 py-12 text-center">
             <AppIcon name="search" size={40} className="text-text-muted" label="Aucun résultat" />
             <p className="text-sm text-text-muted">
@@ -457,7 +446,7 @@ export default function StudentListPage() {
         )}
 
         {/* Student list */}
-        {!loading && !error && filteredStudents.length > 0 && (
+        {!loading && !classDataLoading && !error && filteredStudents.length > 0 && (
           <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
             {filteredStudents.map((student) => {
               const chipColor = GROUP_COLOR_MAP[student.groupColor];

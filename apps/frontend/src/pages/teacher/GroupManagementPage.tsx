@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AppIcon from '../../components/icons/AppIcon';
 import ProgressBar from '../../components/ProgressBar';
@@ -7,11 +7,10 @@ import {
   teacherApi,
   GROUP_COLOR_MAP,
   GROUP_LABEL_MAP,
-  type ClassStudentPathOverview,
   type SchoolClass,
   type StudentSummary,
 } from '../../api/teacherApi';
-import { pathOverviewByStudentId } from '../../utils/pathOverview';
+import { useTeacherClassData } from '../../hooks/useTeacherClassData';
 import {
   GROUP_ORDER,
   averageGroupProgress,
@@ -60,10 +59,6 @@ export default function GroupManagementPage() {
 
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [selectedClass, setSelectedClass] = useState<SchoolClass | null>(null);
-  const [students, setStudents] = useState<StudentSummary[]>([]);
-  const [pathOverview, setPathOverview] = useState<Map<number, ClassStudentPathOverview>>(
-    () => new Map(),
-  );
   const [search, setSearch] = useState('');
   const [groupFilter, setGroupFilter] = useState<GroupFilter>('Tous');
   const [loading, setLoading] = useState(true);
@@ -72,14 +67,13 @@ export default function GroupManagementPage() {
   const [dragStudentId, setDragStudentId] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<GroupColor | null>(null);
 
-  const loadStudents = useCallback(async (classId: number) => {
-    const [data, overview] = await Promise.all([
-      teacherApi.getClassStudents(classId),
-      teacherApi.getClassPathOverview(classId),
-    ]);
-    setStudents(data);
-    setPathOverview(pathOverviewByStudentId(overview));
-  }, []);
+  const {
+    students,
+    pathOverview,
+    loading: classDataLoading,
+    error: classDataError,
+    reload: reloadClassData,
+  } = useTeacherClassData(selectedClass?.id ?? null);
 
   useEffect(() => {
     teacherApi
@@ -101,12 +95,10 @@ export default function GroupManagementPage() {
   }, [preselect.group]);
 
   useEffect(() => {
-    if (!selectedClass) return;
-    setError(null);
-    loadStudents(selectedClass.id).catch(() =>
-      setError('Impossible de charger les élèves de cette classe.'),
-    );
-  }, [selectedClass, loadStudents]);
+    if (classDataError) {
+      setError(classDataError);
+    }
+  }, [classDataError]);
 
   const groups = useMemo(() => groupStudentsByColor(students), [students]);
 
@@ -133,7 +125,8 @@ export default function GroupManagementPage() {
         studentId,
         target,
       );
-      setStudents((prev) => prev.map((s) => (s.id === studentId ? updated : s)));
+      void updated;
+      await reloadClassData();
     } catch {
       setError('Impossible de mettre à jour le groupe. Réessayez.');
     } finally {
@@ -151,7 +144,8 @@ export default function GroupManagementPage() {
         studentId,
         null,
       );
-      setStudents((prev) => prev.map((s) => (s.id === studentId ? updated : s)));
+      void updated;
+      await reloadClassData();
     } catch {
       setError('Impossible de réinitialiser le groupe automatique.');
     } finally {
@@ -234,7 +228,7 @@ export default function GroupManagementPage() {
           </div>
         )}
 
-        {loading && (
+        {(loading || classDataLoading) && (
           <div className="flex flex-col gap-3">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-40 rounded-2xl animate-pulse bg-bg-card" />
@@ -242,7 +236,7 @@ export default function GroupManagementPage() {
           </div>
         )}
 
-        {!loading && selectedClass && students.length > 0 && (
+        {!loading && !classDataLoading && selectedClass && students.length > 0 && (
           <>
             {/* Colonnes par groupe */}
             <section className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 lg:grid lg:grid-cols-3 lg:overflow-visible lg:mx-0 lg:px-0 lg:gap-4 lg:items-start">
@@ -488,7 +482,7 @@ export default function GroupManagementPage() {
           </>
         )}
 
-        {!loading && students.length === 0 && !error && (
+        {!loading && !classDataLoading && students.length === 0 && !error && (
           <div className="flex flex-col items-center gap-3 py-12 text-center">
             <p className="text-sm text-text-muted">
               Aucun élève dans cette classe. Ajoutez-en depuis la liste des élèves.

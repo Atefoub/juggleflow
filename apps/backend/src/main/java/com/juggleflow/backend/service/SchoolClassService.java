@@ -37,6 +37,7 @@ public class SchoolClassService {
     private final SchoolClassRepository schoolClassRepository;
     private final StudentRepository studentRepository;
     private final TeacherRepository teacherRepository;
+    private final TeacherClassAccessService teacherClassAccessService;
     private final UserProgressRepository userProgressRepository;
     private final StudentBlockageService studentBlockageService;
     private final AdminService adminService;
@@ -50,7 +51,7 @@ public class SchoolClassService {
      */
     @Transactional
     public SchoolClassResponse createClass(SchoolClassRequest request, String teacherEmail) {
-        Teacher teacher = findTeacherByEmail(teacherEmail);
+        Teacher teacher = teacherClassAccessService.requireTeacher(teacherEmail);
 
         SchoolClass schoolClass = SchoolClass.builder()
                 .name(request.getName())
@@ -72,7 +73,7 @@ public class SchoolClassService {
      * @return la liste des classes sous forme de DTOs
      */
     public List<SchoolClassResponse> getMyClasses(String teacherEmail) {
-        Teacher teacher = findTeacherByEmail(teacherEmail);
+        Teacher teacher = teacherClassAccessService.requireTeacher(teacherEmail);
         return schoolClassRepository.findByHomeroomTeacher_Id(teacher.getId())
                 .stream()
                 .map(SchoolClassResponse::from)
@@ -89,7 +90,7 @@ public class SchoolClassService {
      * @return la liste des résumés élèves
      */
     public List<StudentSummaryResponse> getClassStudents(Long classId, String teacherEmail) {
-        assertClassOwnership(classId, teacherEmail);
+        teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
         return buildStudentSummariesForClass(classId);
     }
 
@@ -102,7 +103,7 @@ public class SchoolClassService {
             Long studentId,
             UpdateStudentGroupRequest request,
             String teacherEmail) {
-        assertClassOwnership(classId, teacherEmail);
+        teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
 
         Student student = studentRepository.findByIdAndSchoolClass_Id(studentId, classId)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -188,7 +189,7 @@ public class SchoolClassService {
      * Recherche un élève par e-mail pour l'ajout à une classe.
      *
      * @param email        e-mail du compte élève
-     * @param classId      classe cible (optionnelle) pour indiquer si l'élève y est déjà
+     * @param classId      classe cible (obligatoire) pour vérifier le titulaire et si l'élève y est déjà
      * @param teacherEmail l'email de l'enseignant authentifié
      */
     public StudentLookupResponse lookupStudentByEmail(
@@ -197,10 +198,10 @@ public class SchoolClassService {
         if (!StringUtils.hasText(email)) {
             throw new IllegalArgumentException("L'e-mail est obligatoire.");
         }
-
-        if (classId != null) {
-            assertClassOwnership(classId, teacherEmail);
+        if (classId == null) {
+            throw new IllegalArgumentException("Le paramètre classId est obligatoire.");
         }
+        teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
 
         String normalized = email.trim().toLowerCase();
         Student student = studentRepository.findByEmail(normalized)
@@ -234,7 +235,7 @@ public class SchoolClassService {
      */
     @Transactional
     public void addStudentToClass(Long classId, Long studentId, String teacherEmail) {
-        assertClassOwnership(classId, teacherEmail);
+        teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
 
         SchoolClass schoolClass = findClassById(classId);
 
@@ -271,7 +272,7 @@ public class SchoolClassService {
             TeacherCreateStudentRequest request,
             String teacherEmail
     ) {
-        assertClassOwnership(classId, teacherEmail);
+        teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
 
         AdminCreateUserRequest adminReq = new AdminCreateUserRequest();
         adminReq.setRole("ROLE_ELEVE");
@@ -303,7 +304,7 @@ public class SchoolClassService {
      */
     @Transactional
     public void removeStudentFromClass(Long classId, Long studentId, String teacherEmail) {
-        assertClassOwnership(classId, teacherEmail);
+        teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
 
         SchoolClass schoolClass = findClassById(classId);
 
@@ -328,7 +329,7 @@ public class SchoolClassService {
      */
     @Transactional
     public void deleteClass(Long classId, String teacherEmail) {
-        assertClassOwnership(classId, teacherEmail);
+        teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
 
         int studentCount = studentRepository.countBySchoolClass_Id(classId);
         if (studentCount > 0) {
@@ -410,23 +411,8 @@ public class SchoolClassService {
     }
 
 
-    private Teacher findTeacherByEmail(String email) {
-        return teacherRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                    "Enseignant introuvable : " + email));
-    }
-
     private SchoolClass findClassById(Long classId) {
         return schoolClassRepository.findById(classId)
                 .orElseThrow(() -> new ResourceNotFoundException("Classe", classId));
-    }
-
-    private void assertClassOwnership(Long classId, String teacherEmail) {
-        Teacher teacher = findTeacherByEmail(teacherEmail);
-        if (!schoolClassRepository.existsByIdAndHomeroomTeacher_Id(
-                classId, teacher.getId())) {
-            throw new ResourceNotFoundException(
-                "Classe introuvable ou accès non autorisé : " + classId);
-        }
     }
 }

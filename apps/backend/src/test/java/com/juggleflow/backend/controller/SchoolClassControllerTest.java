@@ -111,6 +111,27 @@ class SchoolClassControllerTest {
     }
 
     @Test
+    @DisplayName("getClassStudents → 404 si l'enseignant n'est pas titulaire")
+    void getClassStudents_shouldReturn404_whenNotClassOwner() throws Exception {
+        String ownerToken = registerAndGetToken("owner_students@test.fr", "teacher");
+        String intruderToken = registerAndGetToken("intruder_students@test.fr", "teacher");
+
+        Long classId = objectMapper.readTree(
+                mockMvc.perform(post("/api/enseignant/classes")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(buildClassRequest())))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(get("/api/enseignant/classes/" + classId + "/students")
+                        .header("Authorization", "Bearer " + intruderToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("addStudent → 400 si l'élève est déjà dans la classe")
     void addStudent_shouldReturn400_whenStudentAlreadyInClass() throws Exception {
         String teacherToken = registerAndGetToken("teacher_dup@test.fr", "teacher");
