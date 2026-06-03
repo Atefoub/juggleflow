@@ -11,12 +11,13 @@ test.describe('Parcours enseignant', () => {
   test('tableau de bord : alerte élève bloqué sur une figure (données démo)', async ({
     page,
   }) => {
-    const blockageAlert = page.locator('div').filter({ hasText: /bloqué sur une figure/i });
+    const blockageAlert = page
+      .locator('div.bg-accent-surface')
+      .filter({ hasText: /bloqué sur une figure/i });
     await expect(blockageAlert).toBeVisible();
-    // Lucas apparaît aussi dans « Parcours par élève » — cibler l'alerte blocage uniquement
-    await expect(blockageAlert.getByText(/Lucas M\./)).toBeVisible();
+    await expect(blockageAlert.getByText('Lucas M. (Fontaine)')).toBeVisible();
 
-    await page.getByRole('button', { name: /Voir les élèves/i }).first().click();
+    await blockageAlert.getByRole('button', { name: /Voir les élèves/i }).click();
     await expect(page).toHaveURL(/\/teacher\/eleves/);
     await expect(page.getByText(/Bloqué/i).first()).toBeVisible();
   });
