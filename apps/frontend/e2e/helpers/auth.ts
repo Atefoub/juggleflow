@@ -61,6 +61,17 @@ export async function expectOnLoginPage(page: Page): Promise<void> {
   await expect(page.getByText('Plateforme pédagogique de jonglage')).toBeVisible();
 }
 
+/**
+ * Navigation client-side (React Router) sans recharger l'app.
+ * Évite une course avec /auth/refresh au reload (flaky en CI).
+ */
+export async function navigateInSpa(page: Page, path: string): Promise<void> {
+  await page.evaluate((targetPath) => {
+    window.history.pushState({}, '', targetPath);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }, path);
+}
+
 /** Connexion enseignant puis attente du tableau de bord. */
 export async function loginAsTeacher(page: Page): Promise<void> {
   await loginViaUi(page, TEACHER_EMAIL, E2E_PASSWORD);
