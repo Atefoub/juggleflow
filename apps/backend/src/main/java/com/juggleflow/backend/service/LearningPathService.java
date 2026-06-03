@@ -93,7 +93,7 @@ public class LearningPathService {
     public List<LearningPathResponse> getAssignedPathsForClass(Long classId, String teacherEmail) {
         teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
 
-        return classLearningPathRepository.findBySchoolClass_Id(classId).stream()
+        return classLearningPathRepository.findWithPathsBySchoolClass_Id(classId).stream()
                 .map(ClassLearningPath::getLearningPath)
                 .distinct()
                 .map(LearningPathResponse::from)
@@ -107,7 +107,7 @@ public class LearningPathService {
      * @return le parcours sous forme de DTO
      */
     public LearningPathResponse getPathById(Long id) {
-        LearningPath path = learningPathRepository.findById(id)
+        LearningPath path = learningPathRepository.findWithStepsById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Parcours", id));
         return LearningPathResponse.from(path);
     }
@@ -125,7 +125,7 @@ public class LearningPathService {
     public LearningPathResponse assignToClass(AssignPathRequest request, String teacherEmail) {
         teacherClassAccessService.assertClassOwnedByTeacher(request.getClassId(), teacherEmail);
 
-        LearningPath path = learningPathRepository.findById(request.getLearningPathId())
+        LearningPath path = learningPathRepository.findWithStepsById(request.getLearningPathId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                     "Parcours", request.getLearningPathId()));
 
@@ -218,7 +218,7 @@ public class LearningPathService {
         Student student = teacherClassAccessService.requireStudentInClass(
                 classId, request.getStudentId(), teacherEmail);
 
-        LearningPath path = learningPathRepository.findById(request.getLearningPathId())
+        LearningPath path = learningPathRepository.findWithStepsById(request.getLearningPathId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Parcours", request.getLearningPathId()));
 
@@ -313,7 +313,7 @@ public class LearningPathService {
 
         teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
 
-        LearningPath path = learningPathRepository.findById(pathId)
+        LearningPath path = learningPathRepository.findWithStepsById(pathId)
                 .orElseThrow(() -> new ResourceNotFoundException("Parcours", pathId));
 
         List<LearningPathStep> steps = path.getSteps();
@@ -370,7 +370,7 @@ public class LearningPathService {
 
         teacherClassAccessService.assertClassOwnedByTeacher(classId, teacherEmail);
 
-        LearningPath path = learningPathRepository.findById(pathId)
+        LearningPath path = learningPathRepository.findWithStepsById(pathId)
                 .orElseThrow(() -> new ResourceNotFoundException("Parcours", pathId));
 
         Student student = teacherClassAccessService.requireStudentInClass(
