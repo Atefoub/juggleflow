@@ -34,6 +34,14 @@ yarn-error.log
 testem.log
 /typings
 
+# Environment & secrets (NE PAS COMMITTER)
+.env
+.env.*
+!.env.example
+
+# Local DB backups
+backups/
+
 # System Files
 .DS_Store
 Thumbs.db
