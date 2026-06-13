@@ -292,6 +292,56 @@ class LearningPathControllerTest {
   }
 
   @Test
+  @DisplayName("getStudentProgressForStudent → 404 si parcours non assigné à l'élève")
+  void getStudentProgressForStudent_shouldReturn404_whenStudentNotOnPath() throws Exception {
+    String teacherToken = registerAndGetToken("teacher@notonpath.fr", "teacher");
+    Long classId = createClass(teacherToken);
+
+    String studentToken = registerAndGetToken("eleve@notonpath.fr", "student");
+    Long studentId = objectMapper.readTree(
+        mockMvc.perform(get("/api/auth/me")
+            .header("Authorization", "Bearer " + studentToken))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString()
+    ).get("id").asLong();
+
+    Student student = studentRepository.findById(studentId).orElseThrow();
+    student.setSchoolClass(schoolClassRepository.findById(classId).orElseThrow());
+    studentRepository.save(student);
+
+    LearningPath classPath = learningPathRepository.save(
+        buildPath("Classe seule", LearningPath.TargetLevel.BEGINNER));
+    LearningPath studentPath = learningPathRepository.save(
+        buildPath("Individuel seul", LearningPath.TargetLevel.INTERMEDIATE));
+
+    mockMvc.perform(post("/api/enseignant/classes/" + classId + "/paths")
+            .header("Authorization", "Bearer " + teacherToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(buildAssignRequest(classPath.getId(), classId))))
+        .andExpect(status().isCreated());
+
+    AssignPathToStudentRequest studentReq = new AssignPathToStudentRequest();
+    studentReq.setStudentId(studentId);
+    studentReq.setLearningPathId(studentPath.getId());
+    studentReq.setStartDate(LocalDate.now());
+
+    mockMvc.perform(post("/api/enseignant/classes/" + classId
+            + "/students/" + studentId + "/paths")
+            .header("Authorization", "Bearer " + teacherToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(studentReq)))
+        .andExpect(status().isCreated());
+
+    mockMvc.perform(get("/api/enseignant/classes/" + classId
+            + "/paths/" + classPath.getId()
+            + "/students/" + studentId)
+            .header("Authorization", "Bearer " + teacherToken))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
   @DisplayName("getClassPathOverview → 404 si l'enseignant n'est pas titulaire")
   void getClassPathOverview_shouldReturn404_whenNotClassOwner() throws Exception {
     String ownerToken = registerAndGetToken("owner_overview@lp.fr", "teacher");

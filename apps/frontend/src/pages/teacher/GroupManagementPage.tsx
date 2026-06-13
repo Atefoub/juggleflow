@@ -115,6 +115,7 @@ export default function GroupManagementPage() {
 
   async function moveStudent(studentId: number, target: GroupColor) {
     if (!selectedClass) return;
+    if (savingId === studentId) return;
     const current = students.find((s) => s.id === studentId);
     if (!current || current.groupColor === target) return;
 
@@ -133,6 +134,7 @@ export default function GroupManagementPage() {
 
   async function resetStudentToAuto(studentId: number) {
     if (!selectedClass) return;
+    if (savingId === studentId) return;
     setSavingId(studentId);
     setError(null);
     try {
@@ -156,7 +158,7 @@ export default function GroupManagementPage() {
   }
 
   function handleDrop(target: GroupColor) {
-    if (dragStudentId != null) {
+    if (dragStudentId != null && savingId !== dragStudentId) {
       void moveStudent(dragStudentId, target);
     }
     handleDragEnd();

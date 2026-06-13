@@ -56,9 +56,16 @@ export default function StudentDetailPage() {
   const { paths } = useTeacherPathCatalogQuery();
 
   const defaultPathId = useMemo(() => {
-    if (Number.isFinite(pathIdFromQuery ?? NaN)) return pathIdFromQuery;
-    return assignedPaths[0]?.id ?? null;
-  }, [pathIdFromQuery, assignedPaths]);
+    const assignedIds = new Set(assignedPaths.map((p) => p.id));
+    if (
+      pathIdFromQuery != null &&
+      Number.isFinite(pathIdFromQuery) &&
+      assignedIds.has(pathIdFromQuery)
+    ) {
+      return pathIdFromQuery;
+    }
+    return effectiveAssignment?.learningPathId ?? assignedPaths[0]?.id ?? null;
+  }, [pathIdFromQuery, assignedPaths, effectiveAssignment]);
 
   const [selectedPathId, setSelectedPathId] = useState<number | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -82,14 +89,10 @@ export default function StudentDetailPage() {
   const progressPct = student?.progressionPercent ?? 0;
   const error = actionError ?? loadError;
 
+  const primaryPathId =
+    effectiveAssignment?.learningPathId ?? assignedPaths[0]?.id ?? null;
+
   const blockage = useMemo(() => {
-    if (student?.blocked && student.blockedTrickName) {
-      return {
-        trickId: student.blockedTrickId,
-        trickName: student.blockedTrickName,
-        attemptCount: student.blockedAttemptCount ?? 0,
-      };
-    }
     const fromPath = pathProgress?.trickDetails.find((t) => t.blocked);
     if (fromPath) {
       return {
@@ -98,8 +101,19 @@ export default function StudentDetailPage() {
         attemptCount: fromPath.attemptCount,
       };
     }
+    const onPrimaryPath =
+      selectedPathId == null
+      || primaryPathId == null
+      || selectedPathId === primaryPathId;
+    if (onPrimaryPath && student?.blocked && student.blockedTrickName) {
+      return {
+        trickId: student.blockedTrickId,
+        trickName: student.blockedTrickName,
+        attemptCount: student.blockedAttemptCount ?? 0,
+      };
+    }
     return null;
-  }, [student, pathProgress]);
+  }, [student, pathProgress, selectedPathId, primaryPathId]);
 
   const blockagePrereqQuery = useQuery({
     queryKey: ['catalogue', 'trick', blockage?.trickId],
@@ -110,9 +124,7 @@ export default function StudentDetailPage() {
   const blockagePrerequisites = blockagePrereqQuery.data?.prerequisiteNames ?? [];
 
   const selectedPath = selectedPathId
-    ? (assignedPaths.find((p) => p.id === selectedPathId)
-        ?? paths.find((p) => p.id === selectedPathId)
-        ?? null)
+    ? assignedPaths.find((p) => p.id === selectedPathId) ?? null
     : null;
 
   const removeMutation = useMutation({
