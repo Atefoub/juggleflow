@@ -334,7 +334,8 @@ public class LearningPathService {
                     .filter(p -> trickIds.contains(p.getTrick().getId()))
                     .collect(Collectors.toMap(
                         p -> p.getTrick().getId(),
-                        p -> p
+                        p -> p,
+                        (a, b) -> a
                     ));
 
             List<StudentPathProgressResponse.TrickProgressDetail> details =
