@@ -150,12 +150,22 @@ export default function StudentDetailPage() {
         effectiveAssignment!.learningPathId,
       ),
     onSuccess: async () => {
+      const unassignedPathId = effectiveAssignment!.learningPathId;
       const { data } = await refetchDetail();
       if (effectiveClassId != null) {
         invalidateClass(effectiveClassId);
         void queryClient.invalidateQueries({
           queryKey: teacherQueryKeys.studentDetail(studentId ?? 0, classIdFromQuery),
         });
+        if (studentId != null) {
+          void queryClient.invalidateQueries({
+            queryKey: teacherQueryKeys.studentPathProgress(
+              effectiveClassId,
+              unassignedPathId,
+              studentId,
+            ),
+          });
+        }
       }
       const nextPathId =
         data?.effectiveAssignment?.learningPathId
