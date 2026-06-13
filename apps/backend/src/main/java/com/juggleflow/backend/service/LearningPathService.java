@@ -376,6 +376,12 @@ public class LearningPathService {
         Student student = teacherClassAccessService.requireStudentInClass(
                 classId, studentId, teacherEmail);
 
+        if (!isStudentOnPath(studentId, classId, pathId)) {
+            throw new ResourceNotFoundException(
+                    "Assignation introuvable pour l'élève " + studentId
+                    + " et le parcours " + pathId);
+        }
+
         List<LearningPathStep> steps = path.getSteps();
         List<Long> trickIds = steps.stream()
                 .map(s -> s.getTrick().getId())
@@ -387,7 +393,8 @@ public class LearningPathService {
                 .filter(p -> trickIds.contains(p.getTrick().getId()))
                 .collect(Collectors.toMap(
                         p -> p.getTrick().getId(),
-                        p -> p
+                        p -> p,
+                        (a, b) -> a
                 ));
 
         List<StudentPathProgressResponse.TrickProgressDetail> details =
