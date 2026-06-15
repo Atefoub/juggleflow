@@ -21,17 +21,21 @@ class BatchStudentYearEndAnonymizerBatchProcessor {
   private final StudentRepository studentRepository;
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public int anonymizeBatch(List<Student> students) {
-    int count = 0;
+  public AnonymizationBatchResult anonymizeBatch(List<Student> students) {
+    int anonymized = 0;
+    int detached = 0;
     for (Student student : students) {
       student.setEmail(UUID.randomUUID() + DELETED_EMAIL_SUFFIX);
       student.setFirstName(ANONYMIZED_NAME);
       student.setLastName(ANONYMIZED_NAME);
       student.setEnabled(false);
-      student.setSchoolClass(null);
+      if (student.getSchoolClass() != null) {
+        student.setSchoolClass(null);
+        detached++;
+      }
       studentRepository.save(student);
-      count++;
+      anonymized++;
     }
-    return count;
+    return new AnonymizationBatchResult(anonymized, detached);
   }
 }

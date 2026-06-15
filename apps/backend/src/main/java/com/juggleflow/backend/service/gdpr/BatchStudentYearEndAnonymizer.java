@@ -24,16 +24,19 @@ public class BatchStudentYearEndAnonymizer implements StudentYearEndAnonymizer {
 
   @Override
   public YearEndAnonymizationResult anonymizeBySchoolYear(int schoolYear) {
-    int count = 0;
+    int totalAnonymized = 0;
+    int totalDetached = 0;
     int page = 0;
     Page<Student> batch;
 
     do {
       batch = studentRepository.findBySchoolClass_SchoolYear(
         schoolYear, PageRequest.of(page++, BATCH_SIZE));
-      count += batchProcessor.anonymizeBatch(batch.getContent());
+      AnonymizationBatchResult result = batchProcessor.anonymizeBatch(batch.getContent());
+      totalAnonymized += result.anonymized();
+      totalDetached += result.detached();
     } while (batch.hasNext());
 
-    return new YearEndAnonymizationResult(count, count);
+    return new YearEndAnonymizationResult(totalAnonymized, totalDetached);
   }
 }

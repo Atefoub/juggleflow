@@ -1,5 +1,6 @@
 package com.juggleflow.backend.security;
 
+import jakarta.annotation.PostConstruct;
 import io.github.bucket4j.Bucket;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -66,6 +67,16 @@ public class RateLimitFilter extends OncePerRequestFilter {
   private StringRedisTemplate redis;
 
   private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+
+  @PostConstruct
+  void warnIfTrustedProxyEnabled() {
+    if (trustedProxy) {
+      log.warn(
+        "app.trusted-proxy=true : le rate limiting utilise la dernière entrée X-Forwarded-For. "
+          + "Fiable uniquement derrière un reverse proxy unique (nginx/traefik). "
+          + "Sans proxy dédié, un client peut forger XFF et contourner le rate limit.");
+    }
+  }
 
   private static final String REDIS_KEY_PREFIX = "ratelimit:auth:ip:";
 
@@ -158,7 +169,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
       .build();
   }
 
-  /** Sans proxy de confiance : IP TCP. Avec proxy : dernière entrée X-Forwarded-For (non forgeable). */
+  /**
+   * IP effective du client.
+   * Sans proxy de confiance : IP TCP directe (non forgeable).
+   * Avec proxy ({@code app.trusted-proxy=true}) : dernière entrée X-Forwarded-For.
+   * La dernière entrée est celle ajoutée par le reverse proxy connu (nginx/traefik)
+   * et est fiable uniquement si une seule couche de proxy se trouve devant l'app.
+   * Si plusieurs proxies sont chaînés, préférer un header propriétaire (ex. X-Real-IP).
+   * ATTENTION : activer trusted-proxy sans proxy dédié unique = contournement rate limit possible.
+   */
   private String getClientIp(HttpServletRequest request) {
     if (trustedProxy) {
       String xForwardedFor = request.getHeader("X-Forwarded-For");

@@ -89,10 +89,7 @@ public class JwtUtils {
     } catch (Exception e) {
       throw new RuntimeException("Erreur lors de l'initialisation de la clé JWT", e);
     }
-  }
 
-  @PostConstruct
-  void validateRevocationStoreConfig() {
     if ("redis".equalsIgnoreCase(revocationStore) && redis == null) {
       throw new IllegalStateException(
         "app.jwt.revocation.store=redis mais Redis n'est pas configuré. " +

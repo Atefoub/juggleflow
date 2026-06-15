@@ -35,8 +35,15 @@ public interface UserProgressRepository extends JpaRepository<UserProgress, Long
         """)
     long countMasteredByUserId(@Param("userId") Long userId);
 
+    @Query("""
+        SELECT up FROM UserProgress up
+        WHERE up.user.id IN :userIds AND up.trick.id IN :trickIds
+        """)
+    List<UserProgress> findByUserIdsAndTrickIds(
+        @Param("userIds") List<Long> userIds,
+        @Param("trickIds") List<Long> trickIds);
+
     /**
-     * Agrégats de progression par utilisateur (optimisation export admin).
      * - totalTricks      : nombre de figures ayant une entrée user_progress (quel que soit le status)
      * - masteredTricks   : nombre de figures MASTERED
      * - inProgressTricks : nombre de figures IN_PROGRESS
