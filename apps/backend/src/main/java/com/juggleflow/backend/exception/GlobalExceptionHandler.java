@@ -2,6 +2,7 @@ package com.juggleflow.backend.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -81,6 +82,32 @@ public class GlobalExceptionHandler {
       .build();
 
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+  }
+
+  /**
+   * Course register() : deux requêtes simultanées peuvent franchir existsByEmail()
+   * avant que la contrainte UNIQUE sur email ne rejette la seconde insertion.
+   * Même réponse que le chemin normal pour ne pas révéler qu'un email existe.
+   */
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
+    DataIntegrityViolationException ex,
+    HttpServletRequest request) {
+
+    if (isDuplicateEmailViolation(ex)) {
+      return handleBadCredentials(ex, request);
+    }
+
+    log.warn("Violation d'intégrité sur {} : {}", request.getRequestURI(), ex.getMessage());
+
+    ErrorResponse body = ErrorResponse.builder()
+      .status(HttpStatus.BAD_REQUEST.value())
+      .error("Requête invalide")
+      .message("La requête entre en conflit avec des données existantes.")
+      .path(request.getRequestURI())
+      .build();
+
+    return ResponseEntity.badRequest().body(body);
   }
 
   @ExceptionHandler(DisabledException.class)
@@ -228,6 +255,14 @@ public class GlobalExceptionHandler {
    * Allowlist de messages métier sûrs à retourner au client.
    * Ajouter ici les messages contrôlés émis par les services.
    */
+  private boolean isDuplicateEmailViolation(DataIntegrityViolationException ex) {
+    Throwable cause = ex.getMostSpecificCause();
+    String message = cause != null ? cause.getMessage() : ex.getMessage();
+    if (message == null) return false;
+    String lower = message.toLowerCase();
+    return lower.contains("unique") && lower.contains("email");
+  }
+
   private boolean isSafeBusinessMessage(String message) {
     if (message == null) return false;
     return message.matches("[\\p{L}\\p{N}\\s'.,!?@()-]{0,200}") &&
