@@ -13,6 +13,7 @@ import com.juggleflow.backend.repository.GdprConsentRepository;
 import com.juggleflow.backend.repository.SchoolClassRepository;
 import com.juggleflow.backend.repository.StudentRepository;
 import com.juggleflow.backend.service.gdpr.StudentYearEndAnonymizer;
+import com.juggleflow.backend.service.gdpr.YearEndAnonymizationResult;
 import com.juggleflow.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,17 +25,20 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.Year;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class GdprService {
+
+  private static final int CONSENT_IN_CLAUSE_CHUNK_SIZE = 500;
 
   private final GdprConsentRepository gdprConsentRepository;
   private final UserRepository userRepository;
@@ -226,10 +230,19 @@ public class GdprService {
     int currentYear = Year.now().getValue();
     log.info("Début de l'anonymisation annuelle RGPD — année scolaire {}", currentYear);
 
-    int anonymized = studentYearEndAnonymizer.anonymizeBySchoolYear(currentYear);
+    YearEndAnonymizationResult result =
+      studentYearEndAnonymizer.anonymizeBySchoolYear(currentYear);
 
-    log.info("Anonymisation terminée : {} compte(s) élève(s) traité(s) (année scolaire {})",
-      anonymized, currentYear);
+    log.info(
+      "Anonymisation terminée : {} compte(s) élève(s) traité(s), {} détaché(s) de leur classe "
+        + "(année scolaire {})",
+      result.anonymized(), result.detached(), currentYear);
+
+    if (result.anonymized() > 0 && result.detached() == 0) {
+      log.warn(
+        "Anonymisation sans détachement de classe pour l'année {} — vérifier la cohérence des données",
+        currentYear);
+    }
   }
 
   // -- Helpers prives ----------------------------------------------------------
@@ -248,10 +261,24 @@ public class GdprService {
   }
 
   private Map<Long, GdprConsent> loadParentalConsentsByUserId(Collection<Long> userIds) {
-    return gdprConsentRepository
-      .findByUser_IdInAndConsentType(userIds, ConsentType.PARENTAL_MINOR)
-      .stream()
-      .collect(Collectors.toMap(c -> c.getUser().getId(), c -> c, (a, b) -> a));
+    if (userIds.isEmpty()) {
+      return Map.of();
+    }
+
+    List<Long> idList = userIds instanceof List<Long> list
+      ? list
+      : new ArrayList<>(userIds);
+    Map<Long, GdprConsent> consentsByUserId = new HashMap<>();
+
+    for (int offset = 0; offset < idList.size(); offset += CONSENT_IN_CLAUSE_CHUNK_SIZE) {
+      List<Long> chunk = idList.subList(
+        offset, Math.min(offset + CONSENT_IN_CLAUSE_CHUNK_SIZE, idList.size()));
+      gdprConsentRepository
+        .findByUser_IdInAndConsentType(chunk, ConsentType.PARENTAL_MINOR)
+        .forEach(consent -> consentsByUserId.putIfAbsent(consent.getUser().getId(), consent));
+    }
+
+    return consentsByUserId;
   }
 
   private ConsentStatusResponse buildStatusResponse(Student student, GdprConsent consent) {
