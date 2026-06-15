@@ -256,9 +256,7 @@ public class AdminService {
                     "Impossible de désactiver votre propre compte depuis l'administration.");
             }
             if (target instanceof Administrator) {
-                long activeAdmins = userRepository.findAll().stream()
-                    .filter(u -> u instanceof Administrator && u.isEnabled())
-                    .count();
+                long activeAdmins = administratorRepository.countByEnabledTrue();
                 if (activeAdmins <= 1) {
                     throw new ResponseStatusException(
                         HttpStatus.CONFLICT,

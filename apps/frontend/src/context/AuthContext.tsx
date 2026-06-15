@@ -151,21 +151,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               studentApi.getMyProgress(),
               studentApi.getStatistics().catch(() => null),
             ]);
-            await saveStudentSnapshot(user.id, {
-              progress,
-              ...(stats ? { stats } : {}),
-            });
+            if (!cancelled) {
+              await saveStudentSnapshot(user.id, {
+                progress,
+                ...(stats ? { stats } : {}),
+              });
+            }
           } catch {
             // snapshot refresh best-effort
           }
         }
-        setOfflineSync((s) => ({
-          ...s,
-          pendingCount: nextPending,
-          isSyncing: false,
-          lastSyncAt: r.applied > 0 ? new Date().toISOString() : s.lastSyncAt,
-          lastError: r.failed > 0 ? 'Certaines mises à jour n’ont pas pu être synchronisées.' : null,
-        }));
+        if (!cancelled) {
+          setOfflineSync((s) => ({
+            ...s,
+            pendingCount: nextPending,
+            isSyncing: false,
+            lastSyncAt: r.applied > 0 ? new Date().toISOString() : s.lastSyncAt,
+            lastError: r.failed > 0 ? 'Certaines mises à jour n’ont pas pu être synchronisées.' : null,
+          }));
+        }
       })
       .catch((err: any) => {
         if (cancelled) return;

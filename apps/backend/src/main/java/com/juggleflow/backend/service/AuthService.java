@@ -74,10 +74,9 @@ public class AuthService {
       throw new BadCredentialsException("Identifiants invalides");
     }
 
+    establishmentLicenseService.assertSeatAvailableForNewAccount();
+
     User user = createUserByRole(request);
-    if (user instanceof Student || user instanceof Teacher) {
-      establishmentLicenseService.assertSeatAvailableForNewAccount();
-    }
     userRepository.save(user);
 
     JuggleflowUserDetails userDetails = new JuggleflowUserDetails(user);

@@ -25,9 +25,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -271,9 +275,25 @@ public class LearningPathService {
 
         List<Student> students = studentRepository.findBySchoolClass_Id(classId);
 
+        Map<Long, PathAssignmentResolver.ResolvedPath> resolvedByStudent = new HashMap<>();
+        Set<Long> allTrickIds = new HashSet<>();
+        for (Student student : students) {
+            pathAssignmentResolver.resolvePrimaryPath(student.getId(), classId)
+                .ifPresent(resolved -> {
+                    resolvedByStudent.put(student.getId(), resolved);
+                    resolved.path().getSteps()
+                        .forEach(s -> allTrickIds.add(s.getTrick().getId()));
+                });
+        }
+
+        Map<Long, Map<Long, UserProgress>> progressByStudentAndTrick =
+            loadProgressByStudentAndTrick(
+                students.stream().map(Student::getId).toList(),
+                new ArrayList<>(allTrickIds));
+
         return students.stream().map(student -> {
-            var resolved = pathAssignmentResolver.resolvePrimaryPath(student.getId(), classId);
-            if (resolved.isEmpty()) {
+            PathAssignmentResolver.ResolvedPath resolved = resolvedByStudent.get(student.getId());
+            if (resolved == null) {
                 return ClassStudentPathOverviewResponse.builder()
                         .studentId(student.getId())
                         .firstName(student.getFirstName())
@@ -282,18 +302,19 @@ public class LearningPathService {
                         .build();
             }
 
-            var path = resolved.get().path();
-            List<LearningPathStep> steps = path.getSteps();
-            int percent = computeCompletionPercent(student.getId(), steps);
+            List<LearningPathStep> steps = resolved.path().getSteps();
+            int percent = computeCompletionPercent(
+                progressByStudentAndTrick.getOrDefault(student.getId(), Map.of()),
+                steps);
 
             return ClassStudentPathOverviewResponse.builder()
                     .studentId(student.getId())
                     .firstName(student.getFirstName())
                     .lastName(student.getLastName())
-                    .learningPathId(path.getId())
-                    .pathName(path.getPathName())
+                    .learningPathId(resolved.path().getId())
+                    .pathName(resolved.path().getPathName())
                     .completionPercent(percent)
-                    .assignmentSource(resolved.get().source().name())
+                    .assignmentSource(resolved.source().name())
                     .build();
         }).toList();
     }
@@ -325,18 +346,13 @@ public class LearningPathService {
                 .filter(student -> isStudentOnPath(student.getId(), classId, pathId))
                 .toList();
 
-        return students.stream().map(student -> {
-            // Charger toute la progression de l'élève et filtrer sur les figures du parcours
-            List<UserProgress> allProgress =
-                    userProgressRepository.findByUser_Id(student.getId());
+        List<Long> studentIds = students.stream().map(Student::getId).toList();
+        Map<Long, Map<Long, UserProgress>> progressByStudentAndTrick =
+            loadProgressByStudentAndTrick(studentIds, trickIds);
 
-            Map<Long, UserProgress> progressByTrickId = allProgress.stream()
-                    .filter(p -> trickIds.contains(p.getTrick().getId()))
-                    .collect(Collectors.toMap(
-                        p -> p.getTrick().getId(),
-                        p -> p,
-                        (a, b) -> a
-                    ));
+        return students.stream().map(student -> {
+            Map<Long, UserProgress> progressByTrickId =
+                progressByStudentAndTrick.getOrDefault(student.getId(), Map.of());
 
             List<StudentPathProgressResponse.TrickProgressDetail> details =
                     steps.stream()
@@ -444,16 +460,26 @@ public class LearningPathService {
                 .anyMatch(p -> p.getId().equals(pathId));
     }
 
-    private int computeCompletionPercent(Long studentId, List<LearningPathStep> steps) {
+    private Map<Long, Map<Long, UserProgress>> loadProgressByStudentAndTrick(
+            List<Long> userIds, List<Long> trickIds) {
+        if (userIds.isEmpty() || trickIds.isEmpty()) {
+            return Map.of();
+        }
+        return userProgressRepository.findByUserIdsAndTrickIds(userIds, trickIds).stream()
+            .collect(Collectors.groupingBy(
+                p -> p.getUser().getId(),
+                Collectors.toMap(p -> p.getTrick().getId(), p -> p, (a, b) -> a)
+            ));
+    }
+
+    private int computeCompletionPercent(
+            Map<Long, UserProgress> progressByTrickId, List<LearningPathStep> steps) {
         if (steps.isEmpty()) {
             return 0;
         }
-        List<Long> trickIds = steps.stream()
-                .map(s -> s.getTrick().getId())
-                .toList();
-        long masteredCount = userProgressRepository.findByUser_Id(studentId).stream()
-                .filter(p -> trickIds.contains(p.getTrick().getId()))
-                .filter(p -> p.getStatus() == UserProgress.ProgressStatus.MASTERED)
+        long masteredCount = steps.stream()
+                .map(s -> progressByTrickId.get(s.getTrick().getId()))
+                .filter(p -> p != null && p.getStatus() == UserProgress.ProgressStatus.MASTERED)
                 .count();
         return (int) ((masteredCount * 100L) / steps.size());
     }

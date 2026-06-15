@@ -146,6 +146,7 @@ public class DemoBootstrapRunner implements ApplicationRunner {
         cp.setStudentCount(n3);
         schoolClassRepository.save(cp);
 
+        int totalStudents = n1 + n2 + n3;
         log.warn("""
                 DemoBootstrap : comptes de test créés (mot de passe = DEMO_BOOTSTRAP_PASSWORD)
                   Enseignants : marie.dupont@ecole.fr | pierre.lefebvre@ecole.fr | sophie.renard@ecole.fr
@@ -153,7 +154,7 @@ public class DemoBootstrapRunner implements ApplicationRunner {
                   Classes      : CE1 (6 élèves, Lucas bloqué sur Fontaine), CM2 (5), CP (3)
                   Admin option : ADMIN_BOOTSTRAP_EMAIL dans .env
                 NE PAS ACTIVER EN PRODUCTION
-                """);
+                """, totalStudents);
     }
 
     private Teacher saveTeacher(String encoded, String email, String firstName, String lastName) {
