@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -214,6 +215,26 @@ public class GdprService {
     Optional<GdprConsent> consent = gdprConsentRepository
       .findByUser_IdAndConsentType(userId, ConsentType.PARENTAL_MINOR);
     return consent.map(this::evaluateStatus).orElse(ConsentStatus.MISSING);
+  }
+
+  /**
+   * Charge les statuts de consentement parental pour une liste d'IDs en batch.
+   * Utilisé par AdminService pour éviter N+1 dans getAllUsers().
+   */
+  public Map<Long, ConsentStatus> getBulkParentalConsentStatuses(List<Long> userIds) {
+    if (userIds.isEmpty()) {
+      return Map.of();
+    }
+
+    Map<Long, GdprConsent> consentsByUserId = loadParentalConsentsByUserId(userIds);
+
+    return userIds.stream().collect(Collectors.toMap(
+      id -> id,
+      id -> {
+        GdprConsent consent = consentsByUserId.get(id);
+        return consent != null ? evaluateStatus(consent) : ConsentStatus.MISSING;
+      }
+    ));
   }
 
   /**

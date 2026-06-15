@@ -275,21 +275,48 @@ public class LearningPathService {
 
         List<Student> students = studentRepository.findBySchoolClass_Id(classId);
 
+        List<Long> studentIds = students.stream().map(Student::getId).toList();
+
+        Map<Long, StudentLearningPath> studentAssignmentById = studentIds.isEmpty()
+            ? Map.of()
+            : studentLearningPathRepository.findWithPathsByStudentIds(studentIds).stream()
+                .collect(Collectors.toMap(
+                    a -> a.getStudent().getId(),
+                    a -> a,
+                    (a, b) -> a
+                ));
+
+        List<ClassLearningPath> classAssignments =
+            classLearningPathRepository.findWithPathsBySchoolClass_Id(classId);
+        ClassLearningPath defaultClassAssignment = classAssignments.stream().findFirst().orElse(null);
+
         Map<Long, PathAssignmentResolver.ResolvedPath> resolvedByStudent = new HashMap<>();
         Set<Long> allTrickIds = new HashSet<>();
+
         for (Student student : students) {
-            pathAssignmentResolver.resolvePrimaryPath(student.getId(), classId)
-                .ifPresent(resolved -> {
-                    resolvedByStudent.put(student.getId(), resolved);
-                    resolved.path().getSteps()
-                        .forEach(s -> allTrickIds.add(s.getTrick().getId()));
-                });
+            PathAssignmentResolver.ResolvedPath resolved = null;
+            StudentLearningPath studentAssignment = studentAssignmentById.get(student.getId());
+            if (studentAssignment != null) {
+                resolved = new PathAssignmentResolver.ResolvedPath(
+                    studentAssignment.getLearningPath(),
+                    PathAssignmentResolver.AssignmentSource.STUDENT,
+                    studentAssignment.getStartDate(),
+                    studentAssignment.getExpectedEndDate());
+            } else if (defaultClassAssignment != null) {
+                resolved = new PathAssignmentResolver.ResolvedPath(
+                    defaultClassAssignment.getLearningPath(),
+                    PathAssignmentResolver.AssignmentSource.CLASS,
+                    defaultClassAssignment.getStartDate(),
+                    defaultClassAssignment.getExpectedEndDate());
+            }
+            if (resolved != null) {
+                resolvedByStudent.put(student.getId(), resolved);
+                resolved.path().getSteps().forEach(s -> allTrickIds.add(s.getTrick().getId()));
+            }
         }
 
         Map<Long, Map<Long, UserProgress>> progressByStudentAndTrick =
-            loadProgressByStudentAndTrick(
-                students.stream().map(Student::getId).toList(),
-                new ArrayList<>(allTrickIds));
+            loadProgressByStudentAndTrick(studentIds, new ArrayList<>(allTrickIds));
 
         return students.stream().map(student -> {
             PathAssignmentResolver.ResolvedPath resolved = resolvedByStudent.get(student.getId());
@@ -404,14 +431,13 @@ public class LearningPathService {
                 .map(s -> s.getTrick().getId())
                 .toList();
 
-        List<UserProgress> allProgress = userProgressRepository.findByUser_Id(student.getId());
-
-        Map<Long, UserProgress> progressByTrickId = allProgress.stream()
-                .filter(p -> trickIds.contains(p.getTrick().getId()))
+        Map<Long, UserProgress> progressByTrickId =
+            userProgressRepository.findByUserIdsAndTrickIds(List.of(student.getId()), trickIds)
+                .stream()
                 .collect(Collectors.toMap(
-                        p -> p.getTrick().getId(),
-                        p -> p,
-                        (a, b) -> a
+                    p -> p.getTrick().getId(),
+                    p -> p,
+                    (a, b) -> a
                 ));
 
         List<StudentPathProgressResponse.TrickProgressDetail> details =
