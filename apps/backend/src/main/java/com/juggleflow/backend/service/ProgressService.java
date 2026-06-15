@@ -14,6 +14,9 @@ import com.juggleflow.backend.repository.UserBadgeRepository;
 import com.juggleflow.backend.repository.UserProgressRepository;
 import com.juggleflow.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,10 +53,21 @@ public class ProgressService {
 
     /**
      * Crée ou met à jour la progression sur une figure.
+     * Retry sur course concurrente (UNIQUE user_id + trick_id) pour rester idempotent.
      */
+    @Retryable(
+        retryFor = DataIntegrityViolationException.class,
+        maxAttempts = 2,
+        backoff = @Backoff(delay = 0)
+    )
     @Transactional
     public ProgressResponse upsertProgress(String email, Long trickId,
                                             ProgressRequest request) {
+        return doUpsertProgress(email, trickId, request);
+    }
+
+    private ProgressResponse doUpsertProgress(String email, Long trickId,
+                                              ProgressRequest request) {
         User user = findUserByEmail(email);
         Trick trick = trickRepository.findById(trickId)
             .orElseThrow(() -> new ResourceNotFoundException("Figure", trickId));

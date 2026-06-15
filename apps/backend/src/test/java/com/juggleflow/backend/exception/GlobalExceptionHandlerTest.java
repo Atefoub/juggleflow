@@ -87,7 +87,10 @@ class GlobalExceptionHandlerTest {
         request.setRequestURI("/api/auth/register");
 
         var ex = new DataIntegrityViolationException(
-            "could not execute statement [ERROR: duplicate key value violates unique constraint \"users_email_key\"]");
+            "could not execute statement",
+            new java.sql.SQLException(
+                "ERROR: duplicate key value violates unique constraint \"users_email_key\"",
+                "23505"));
 
         var response = handler.handleDataIntegrityViolation(ex, request);
 

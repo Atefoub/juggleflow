@@ -94,7 +94,7 @@ public class GlobalExceptionHandler {
     DataIntegrityViolationException ex,
     HttpServletRequest request) {
 
-    if (isDuplicateEmailViolation(ex)) {
+    if (DataIntegrityViolations.isDuplicateEmailViolation(ex)) {
       return handleBadCredentials(ex, request);
     }
 
@@ -255,14 +255,6 @@ public class GlobalExceptionHandler {
    * Allowlist de messages métier sûrs à retourner au client.
    * Ajouter ici les messages contrôlés émis par les services.
    */
-  private boolean isDuplicateEmailViolation(DataIntegrityViolationException ex) {
-    Throwable cause = ex.getMostSpecificCause();
-    String message = cause != null ? cause.getMessage() : ex.getMessage();
-    if (message == null) return false;
-    String lower = message.toLowerCase();
-    return lower.contains("unique") && lower.contains("email");
-  }
-
   private boolean isSafeBusinessMessage(String message) {
     if (message == null) return false;
     return message.matches("[\\p{L}\\p{N}\\s'.,!?@()-]{0,200}") &&

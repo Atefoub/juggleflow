@@ -1,8 +1,9 @@
 package com.juggleflow.backend.repository;
 
 import com.juggleflow.backend.model.Student;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -44,32 +45,14 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
         """)
     List<Student> findStudentsForProgressExport(@Param("schoolYear") Integer schoolYear);
 
-    /**
-     * Anonymise en masse les élèves d'une année scolaire (RGPD fin d'année).
-     * Chaque ligne reçoit un email unique via gen_random_uuid() côté PostgreSQL.
-     */
-    @Modifying(clearAutomatically = true)
-    @Query(value = """
-        UPDATE users u
-        SET email = gen_random_uuid()::text || '@deleted.juggleflow.fr',
-            first_name = '[supprimé]',
-            last_name = '[supprimé]',
-            enabled = false
-        FROM student s
-        INNER JOIN school_class sc ON s.class_id = sc.class_id
-        WHERE u.id = s.id
-          AND sc.school_year = :schoolYear
-        """, nativeQuery = true)
-    int anonymizeUsersBySchoolYear(@Param("schoolYear") int schoolYear);
-
-    /** Détache les élèves anonymisés de leur classe (complément de {@link #anonymizeUsersBySchoolYear}). */
-    @Modifying(clearAutomatically = true)
-    @Query(value = """
-        UPDATE student s
-        SET class_id = NULL
-        FROM school_class sc
-        WHERE s.class_id = sc.class_id
-          AND sc.school_year = :schoolYear
-        """, nativeQuery = true)
-    int detachStudentsFromClassesBySchoolYear(@Param("schoolYear") int schoolYear);
+    /** Élèves d'une année scolaire (anonymisation batch portable, ex. H2). */
+    @Query("""
+        SELECT s
+        FROM Student s
+        JOIN s.schoolClass sc
+        WHERE sc.schoolYear = :schoolYear
+        """)
+    Page<Student> findBySchoolClass_SchoolYear(
+        @Param("schoolYear") int schoolYear,
+        Pageable pageable);
 }

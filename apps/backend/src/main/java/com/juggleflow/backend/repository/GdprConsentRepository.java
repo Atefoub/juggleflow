@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,9 @@ public interface GdprConsentRepository extends JpaRepository<GdprConsent, Long> 
      * Recherche un consentement précis par utilisateur et type.
      */
     Optional<GdprConsent> findByUser_IdAndConsentType(Long userId, ConsentType consentType);
+
+    List<GdprConsent> findByUser_IdInAndConsentType(
+        Collection<Long> userIds, ConsentType consentType);
 
     /**
      * Compte les élèves d'une classe sans consentement parental (PARENTAL_MINOR)
