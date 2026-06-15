@@ -18,7 +18,10 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -38,6 +41,7 @@ public class ProgressService {
     private final BadgeService badgeService;
     private final StreakService streakService;
     private final PracticeSessionRepository practiceSessionRepository;
+    private final PlatformTransactionManager transactionManager;
 
     /**
      * Récupère toute la progression d'un utilisateur.
@@ -60,10 +64,11 @@ public class ProgressService {
         maxAttempts = 2,
         backoff = @Backoff(delay = 5)
     )
-    @Transactional
     public ProgressResponse upsertProgress(String email, Long trickId,
                                             ProgressRequest request) {
-        return doUpsertProgress(email, trickId, request);
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        return template.execute(status -> doUpsertProgress(email, trickId, request));
     }
 
     private ProgressResponse doUpsertProgress(String email, Long trickId,

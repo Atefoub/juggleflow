@@ -77,7 +77,10 @@ public class EstablishmentLicenseService {
      * Vérifie qu'un nouveau compte élève ou enseignant peut être créé.
      */
     public void assertSeatAvailableForNewAccount() {
-        EstablishmentSettings settings = getSettings();
+        EstablishmentSettings settings = settingsRepository.findByIdForUpdate(1L)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Paramètres établissement non configurés."));
 
         if (settings.getLicenseExpiresAt() != null
                 && settings.getLicenseExpiresAt().isBefore(LocalDate.now())) {

@@ -157,7 +157,7 @@ export default function ProgressPage() {
       const ra = rank[a.status];
       const rb = rank[b.status];
       if (ra !== rb) return ra - rb;
-      return a.trickName.localeCompare(b.trickName, 'fr');
+      return (a.trickName ?? '').localeCompare(b.trickName ?? '', 'fr');
     });
   }, [trickProgress]);
 

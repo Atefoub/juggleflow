@@ -31,6 +31,10 @@ function writeList(userId: number | string, list: PendingProgressUpdate[]): void
   }
 }
 
+function entryKey(u: PendingProgressUpdate): string {
+  return `${u.trickId}|${u.queuedAt}`;
+}
+
 export function enqueueProgressUpdate(
   userId: number | string,
   update: Omit<PendingProgressUpdate, 'queuedAt'>
@@ -65,9 +69,16 @@ export function mergePendingIntoProgress<T extends { trickId: number; status: st
   for (const u of getPendingProgressUpdates(userId)) {
     const existing = map.get(u.trickId);
     map.set(u.trickId, {
-      ...(existing ?? { trickId: u.trickId }),
+      ...(existing ?? {
+        trickId: u.trickId,
+        trickName: '',
+        masteryScore: null,
+        updatedAt: null,
+      }),
       trickId: u.trickId,
       status: u.status,
+      updatedAt: u.queuedAt,
+      ...(u.masteryScore !== undefined ? { masteryScore: u.masteryScore } : {}),
     } as T);
   }
   return [...map.values()];
@@ -82,23 +93,30 @@ export async function flushProgressUpdates(
 
   let applied = 0;
   let failed = 0;
+  const appliedKeys = new Set<string>();
 
   // On applique en FIFO. Si une requête échoue, on stoppe et garde le reste.
-  const remaining: PendingProgressUpdate[] = [];
   for (let i = 0; i < list.length; i += 1) {
     const u = list[i];
     try {
       await apply(u);
       applied += 1;
+      appliedKeys.add(entryKey(u));
     } catch {
       failed += 1;
-      remaining.push(...list.slice(i));
       break;
     }
   }
 
-  writeList(userId, remaining);
+  if (applied === 0) {
+    return { applied, failed };
+  }
+
+  // Relire la file courante : ne retirer que les entrées réellement appliquées.
+  const stillPending = getPendingProgressUpdates(userId).filter(
+    (u) => !appliedKeys.has(entryKey(u)),
+  );
+  writeList(userId, stillPending);
 
   return { applied, failed };
 }
-
