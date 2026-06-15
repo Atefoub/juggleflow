@@ -51,7 +51,11 @@ export default function StudentSessionPage() {
     Promise.all([
       getTrickDetail(isOnline, trickId),
       isOnline
-        ? studentApi.updateProgress(trickId, { status: 'IN_PROGRESS' }).catch(() => { /* empty */ })
+        ? studentApi.updateProgress(trickId, { status: 'IN_PROGRESS' }).catch(() => {
+            if (user?.id) {
+              enqueueProgressUpdate(user.id, { trickId, status: 'IN_PROGRESS' });
+            }
+          })
         : Promise.resolve(),
     ])
       .then(([t]) => {
