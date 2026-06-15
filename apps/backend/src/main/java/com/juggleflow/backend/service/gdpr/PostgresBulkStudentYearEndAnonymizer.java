@@ -17,9 +17,9 @@ public class PostgresBulkStudentYearEndAnonymizer implements StudentYearEndAnony
   private final PostgresStudentAnonymizationRepository anonymizationRepository;
 
   @Override
-  public int anonymizeBySchoolYear(int schoolYear) {
+  public YearEndAnonymizationResult anonymizeBySchoolYear(int schoolYear) {
     int anonymized = anonymizationRepository.anonymizeUsersBySchoolYear(schoolYear);
-    anonymizationRepository.detachStudentsFromClassesBySchoolYear(schoolYear);
-    return anonymized;
+    int detached = anonymizationRepository.detachStudentsFromClassesBySchoolYear(schoolYear);
+    return new YearEndAnonymizationResult(anonymized, detached);
   }
 }

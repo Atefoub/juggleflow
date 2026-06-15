@@ -58,7 +58,7 @@ public class ProgressService {
     @Retryable(
         retryFor = DataIntegrityViolationException.class,
         maxAttempts = 2,
-        backoff = @Backoff(delay = 0)
+        backoff = @Backoff(delay = 5)
     )
     @Transactional
     public ProgressResponse upsertProgress(String email, Long trickId,

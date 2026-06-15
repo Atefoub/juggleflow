@@ -5,8 +5,6 @@ public interface StudentYearEndAnonymizer {
 
   /**
    * Anonymise les élèves rattachés à une année scolaire donnée.
-   *
-   * @return nombre de comptes élève traités
    */
-  int anonymizeBySchoolYear(int schoolYear);
+  YearEndAnonymizationResult anonymizeBySchoolYear(int schoolYear);
 }
