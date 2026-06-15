@@ -82,12 +82,18 @@ export default function StudentSessionPage() {
     if (!trick) return;
     if (!user?.id) return;
     setSaving(true);
+    setError(null);
     try {
       if (!isOnline) {
         enqueueProgressUpdate(user.id, { trickId: trick.id, status: 'MASTERED', masteryScore: 10 });
         setOfflineHint('Sauvegardé en attente. La progression sera synchronisée dès le retour de la connexion.');
       } else {
-        await studentApi.updateProgress(trick.id, { status: 'MASTERED', masteryScore: 10 });
+        try {
+          await studentApi.updateProgress(trick.id, { status: 'MASTERED', masteryScore: 10 });
+        } catch {
+          enqueueProgressUpdate(user.id, { trickId: trick.id, status: 'MASTERED', masteryScore: 10 });
+          setOfflineHint('Connexion instable : sauvegardé en attente de synchronisation.');
+        }
       }
       setStatus('MASTERED');
       dispatchProgressUpdated({ trickId: trick.id });

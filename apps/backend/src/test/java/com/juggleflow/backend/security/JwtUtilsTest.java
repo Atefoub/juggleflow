@@ -81,6 +81,22 @@ class JwtUtilsTest {
         assertThat(access).isNotEqualTo(refresh);
     }
 
+    @Test
+    @DisplayName("consumeRefreshToken → une seule consommation par JTI")
+    void consumeRefreshToken_shouldAllowOnlyOneConsumption() {
+        UserDetails user = buildUser("refresh@test.fr", "ROLE_ELEVE");
+        String refresh = jwtUtils.generateRefreshToken(user);
+
+        assertThat(jwtUtils.consumeRefreshToken(refresh)).isTrue();
+        assertThat(jwtUtils.consumeRefreshToken(refresh)).isFalse();
+    }
+
+    @Test
+    @DisplayName("consumeRefreshToken → false pour token invalide")
+    void consumeRefreshToken_shouldReturnFalse_forInvalidToken() {
+        assertThat(jwtUtils.consumeRefreshToken("token.invalide.ici")).isFalse();
+    }
+
     private UserDetails buildUser(String email, String role) {
         return User.withUsername(email)
             .password("hashed")

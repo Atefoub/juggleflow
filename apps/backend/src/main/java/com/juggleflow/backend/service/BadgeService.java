@@ -13,6 +13,7 @@ import com.juggleflow.backend.repository.UserProgressRepository;
 import com.juggleflow.backend.repository.UserStreakRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,13 +80,19 @@ public class BadgeService {
             }
 
             if (isBadgeEarned(badge, metrics)) {
-                UserBadge userBadge = UserBadge.builder()
-                    .user(user)
-                    .badge(badge)
-                    .notified(false)
-                    .build();
-                userBadgeRepository.save(userBadge);
-                log.info("Badge '{}' débloqué pour l'utilisateur {}", badge.getName(), user.getEmail());
+                try {
+                    UserBadge userBadge = UserBadge.builder()
+                        .user(user)
+                        .badge(badge)
+                        .notified(false)
+                        .build();
+                    userBadgeRepository.save(userBadge);
+                    unlockedBadgeIds.add(badge.getId());
+                    log.info("Badge '{}' débloqué pour l'utilisateur {}", badge.getName(), user.getEmail());
+                } catch (DataIntegrityViolationException ex) {
+                    // Course concurrente sur (user_id, badge_id) : l'autre requête a gagné.
+                    unlockedBadgeIds.add(badge.getId());
+                }
             }
         }
     }

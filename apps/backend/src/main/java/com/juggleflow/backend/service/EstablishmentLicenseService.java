@@ -26,7 +26,7 @@ public class EstablishmentLicenseService {
     private final TeacherRepository teacherRepository;
 
     public long countLicensedSeatsUsed() {
-        return studentRepository.count() + teacherRepository.count();
+        return studentRepository.countByEnabledTrue() + teacherRepository.countByEnabledTrue();
     }
 
     public EstablishmentSettings getSettings() {

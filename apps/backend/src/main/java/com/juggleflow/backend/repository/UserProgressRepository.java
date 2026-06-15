@@ -2,7 +2,9 @@ package com.juggleflow.backend.repository;
 
 import com.juggleflow.backend.model.UserProgress;
 import com.juggleflow.backend.model.UserProgress.ProgressStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -25,6 +27,15 @@ public interface UserProgressRepository extends JpaRepository<UserProgress, Long
     List<UserProgress> findByUser_IdAndStatus(Long userId, ProgressStatus status);
 
     Optional<UserProgress> findByUser_IdAndTrick_Id(Long userId, Long trickId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT p FROM UserProgress p
+        WHERE p.user.id = :userId AND p.trick.id = :trickId
+        """)
+    Optional<UserProgress> findByUser_IdAndTrick_IdForUpdate(
+        @Param("userId") Long userId,
+        @Param("trickId") Long trickId);
 
     boolean existsByUser_IdAndTrick_Id(Long userId, Long trickId);
 

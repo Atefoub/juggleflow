@@ -11,4 +11,7 @@ public interface TeacherRepository extends JpaRepository<Teacher, Long> {
      * Recherche un enseignant par l'email de son compte utilisateur parent.
      */
     Optional<Teacher> findByEmail(String email);
+
+    /** Compte les enseignants actifs (quota licence). */
+    long countByEnabledTrue();
 }

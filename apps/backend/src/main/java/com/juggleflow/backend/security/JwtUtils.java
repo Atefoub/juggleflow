@@ -186,6 +186,36 @@ public class JwtUtils {
   }
 
   /**
+   * Consomme atomiquement un refresh token (rotation).
+   * Retourne false si le JTI a déjà été consommé/révoqué — empêche deux
+   * requêtes parallèles de valider le même refresh.
+   */
+  public boolean consumeRefreshToken(String token) {
+    try {
+      String jti = extractClaim(token, Claims::getId);
+      if (!StringUtils.hasText(jti)) {
+        return false;
+      }
+
+      Date exp = extractExpiration(token);
+      long ttlMs = exp.getTime() - System.currentTimeMillis();
+      if (ttlMs <= 0) {
+        return false;
+      }
+
+      if ("redis".equalsIgnoreCase(revocationStore) && redis != null) {
+        Boolean acquired = redis.opsForValue().setIfAbsent(
+          REDIS_KEY_PREFIX + jti, "1", Duration.ofMillis(ttlMs));
+        return Boolean.TRUE.equals(acquired);
+      }
+
+      return revokedTokenIds.add(jti);
+    } catch (JwtException | IllegalArgumentException e) {
+      return false;
+    }
+  }
+
+  /**
    * Révoque un token en ajoutant son JTI en blacklist (logout, rotation).
    */
   public void revokeToken(String token) {

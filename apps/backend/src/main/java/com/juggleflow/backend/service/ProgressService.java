@@ -78,7 +78,7 @@ public class ProgressService {
             .orElseThrow(() -> new ResourceNotFoundException("Figure", trickId));
 
         UserProgress progress = progressRepository
-            .findByUser_IdAndTrick_Id(user.getId(), trickId)
+            .findByUser_IdAndTrick_IdForUpdate(user.getId(), trickId)
             .orElseGet(() -> UserProgress.builder()
                 .user(user)
                 .trick(trick)

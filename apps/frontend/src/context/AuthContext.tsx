@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -13,7 +14,7 @@ import type { LoginResponse } from '../types/auth';
 import { applyProfileOnboarding, resetOnboarding } from '../utils/onboarding';
 import { resetPreferences } from '../utils/preferences';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { flushProgressUpdates, getPendingProgressUpdatesCount } from '../utils/offlineQueue';
+import { flushProgressUpdates, getPendingProgressUpdatesCount, PROGRESS_QUEUE_CHANNEL } from '../utils/offlineQueue';
 import { clearStudentSnapshot, saveStudentSnapshot } from '../utils/offlineStudentStore';
 import { studentApi } from '../api/studentApi';
 import { dispatchProgressUpdated } from '../lib/progressEvents';
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]           = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const isOnline = useOnlineStatus();
+  const syncInFlightRef = useRef(false);
   const [offlineSync, setOfflineSync] = useState<OfflineSyncState>({
     pendingCount: 0,
     isSyncing: false,
@@ -91,7 +93,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     refresh();
     const id = window.setInterval(refresh, 1500);
-    return () => window.clearInterval(id);
+
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel(PROGRESS_QUEUE_CHANNEL);
+      channel.onmessage = (event) => {
+        if (event.data?.userId === user.id) refresh();
+      };
+    } catch {
+      // BroadcastChannel indisponible (ex. certains navigateurs privés)
+    }
+
+    return () => {
+      window.clearInterval(id);
+      channel?.close();
+    };
   }, [user?.id]);
 
   // Sync à la reconnexion, au retour sur l'onglet, et après background sync Workbox.
@@ -128,9 +144,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isOnline) return;
     if (!user?.id) return;
-    if (offlineSync.isSyncing) return;
     if (offlineSync.pendingCount === 0) return;
+    if (syncInFlightRef.current) return;
 
+    syncInFlightRef.current = true;
     let cancelled = false;
     setOfflineSync((s) => ({ ...s, isSyncing: true, lastError: null }));
 
@@ -179,10 +196,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           status === 403 ? 'Synchronisation impossible: accès refusé.' :
           'Synchronisation impossible: réessaiera automatiquement.';
         setOfflineSync((s) => ({ ...s, isSyncing: false, lastError: msg }));
+      })
+      .finally(() => {
+        syncInFlightRef.current = false;
       });
 
-    return () => { cancelled = true; };
-  }, [isOnline, user?.id, offlineSync.isSyncing, offlineSync.pendingCount]);
+    return () => {
+      cancelled = true;
+      syncInFlightRef.current = false;
+      setOfflineSync((s) => (s.isSyncing ? { ...s, isSyncing: false } : s));
+    };
+  }, [isOnline, user?.id, offlineSync.pendingCount]);
 
   const login = async (token: string, profile?: UserProfile): Promise<UserProfile> => {
     setAccessToken(token);

@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import {
   enqueueProgressUpdate,
   mergePendingIntoProgress,
@@ -56,5 +56,17 @@ describe('offlineQueue', () => {
     const pending = getPendingProgressUpdates(userId);
     expect(pending.some((p) => p.trickId === 8)).toBe(true);
     expect(pending.some((p) => p.trickId === 5 && p.queuedAt === trick5QueuedAt)).toBe(false);
+  });
+
+  it('enqueueProgressUpdate notifie les autres onglets via BroadcastChannel', async () => {
+    const channel = new BroadcastChannel('juggleflow-progress-queue');
+    const received = vi.fn();
+    channel.onmessage = received;
+
+    enqueueProgressUpdate(99, { trickId: 1, status: 'MASTERED' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(received).toHaveBeenCalled();
+    channel.close();
   });
 });

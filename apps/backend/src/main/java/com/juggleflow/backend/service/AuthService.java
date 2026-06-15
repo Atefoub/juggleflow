@@ -14,6 +14,7 @@ import com.juggleflow.backend.security.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -97,16 +98,19 @@ public class AuthService {
     JuggleflowUserDetails userDetails =
       (JuggleflowUserDetails) userDetailsService.loadUserByUsername(email);
 
+    if (!userDetails.isEnabled()) {
+      throw new DisabledException("Compte désactivé");
+    }
+
     if (!jwtUtils.isRefreshTokenValid(refreshToken, userDetails)) {
       throw new BadCredentialsException("Refresh token invalide ou expiré");
     }
 
-    LoginResponse response = buildLoginResponse(userDetails.getUser(), userDetails);
+    if (!jwtUtils.consumeRefreshToken(refreshToken)) {
+      throw new BadCredentialsException("Refresh token invalide ou expiré");
+    }
 
-    // Rotation : révoque l'ancien refresh token uniquement si la génération a réussi
-    jwtUtils.revokeToken(refreshToken);
-
-    return response;
+    return buildLoginResponse(userDetails.getUser(), userDetails);
   }
 
 
