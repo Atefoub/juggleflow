@@ -147,6 +147,16 @@
       <artifactId>spring-boot-starter-data-redis</artifactId>
     </dependency>
 
+    <!-- Retry (upsertProgress race sur contrainte UNIQUE user/trick) -->
+    <dependency>
+      <groupId>org.springframework.retry</groupId>
+      <artifactId>spring-retry</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-aspects</artifactId>
+    </dependency>
+
     <!-- OpenPDF : export PDF du registre des consentements RGPD -->
     <dependency>
       <groupId>com.github.librepdf</groupId>

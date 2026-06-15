@@ -12,6 +12,7 @@ import com.juggleflow.backend.model.User;
 import com.juggleflow.backend.repository.GdprConsentRepository;
 import com.juggleflow.backend.repository.SchoolClassRepository;
 import com.juggleflow.backend.repository.StudentRepository;
+import com.juggleflow.backend.service.gdpr.StudentYearEndAnonymizer;
 import com.juggleflow.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,8 +24,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.Year;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -37,6 +41,7 @@ public class GdprService {
   private final StudentRepository studentRepository;
   private final SchoolClassRepository schoolClassRepository;
   private final GdprPdfExporter gdprPdfExporter;
+  private final StudentYearEndAnonymizer studentYearEndAnonymizer;
 
   /**
    * Version courante de la politique de confidentialite (injectee depuis
@@ -62,7 +67,7 @@ public class GdprService {
     assertClassExists(classId);
     List<Student> students = studentRepository.findBySchoolClass_Id(classId);
 
-    return students.stream().map(this::buildStatusResponse).toList();
+    return buildStatusResponses(students);
   }
 
   /**
@@ -148,7 +153,7 @@ public class GdprService {
   public List<ConsentStatusResponse> exportConsentRegister(Long classId) {
     assertClassExists(classId);
     List<Student> students = studentRepository.findBySchoolClass_Id(classId);
-    return students.stream().map(this::buildStatusResponse).toList();
+    return buildStatusResponses(students);
   }
 
   /**
@@ -159,10 +164,8 @@ public class GdprService {
   public byte[] exportConsentRegisterPdf(Long classId) {
     SchoolClass schoolClass = schoolClassRepository.findById(classId)
       .orElseThrow(() -> new ResourceNotFoundException("Classe", classId));
-    List<ConsentStatusResponse> rows = studentRepository.findBySchoolClass_Id(classId)
-      .stream()
-      .map(this::buildStatusResponse)
-      .toList();
+    List<ConsentStatusResponse> rows = buildStatusResponses(
+      studentRepository.findBySchoolClass_Id(classId));
     return gdprPdfExporter.export(schoolClass, rows, currentPolicyVersion);
   }
 
@@ -174,8 +177,7 @@ public class GdprService {
    */
   public long getPendingConsentsCount(Long classId) {
     assertClassExists(classId);
-    return studentRepository.findBySchoolClass_Id(classId).stream()
-      .map(this::buildStatusResponse)
+    return buildStatusResponses(studentRepository.findBySchoolClass_Id(classId)).stream()
       .filter(r -> r.getStatus() != ConsentStatus.VALID)
       .count();
   }
@@ -224,8 +226,7 @@ public class GdprService {
     int currentYear = Year.now().getValue();
     log.info("Début de l'anonymisation annuelle RGPD — année scolaire {}", currentYear);
 
-    int anonymized = studentRepository.anonymizeUsersBySchoolYear(currentYear);
-    studentRepository.detachStudentsFromClassesBySchoolYear(currentYear);
+    int anonymized = studentYearEndAnonymizer.anonymizeBySchoolYear(currentYear);
 
     log.info("Anonymisation terminée : {} compte(s) élève(s) traité(s) (année scolaire {})",
       anonymized, currentYear);
@@ -233,19 +234,39 @@ public class GdprService {
 
   // -- Helpers prives ----------------------------------------------------------
 
-  private ConsentStatusResponse buildStatusResponse(Student student) {
-    Optional<GdprConsent> consent = gdprConsentRepository
-      .findByUser_IdAndConsentType(student.getId(), ConsentType.PARENTAL_MINOR);
-    ConsentStatus status = consent.map(this::evaluateStatus).orElse(ConsentStatus.MISSING);
+  private List<ConsentStatusResponse> buildStatusResponses(List<Student> students) {
+    if (students.isEmpty()) {
+      return List.of();
+    }
+
+    List<Long> userIds = students.stream().map(Student::getId).toList();
+    Map<Long, GdprConsent> consentsByUserId = loadParentalConsentsByUserId(userIds);
+
+    return students.stream()
+      .map(student -> buildStatusResponse(student, consentsByUserId.get(student.getId())))
+      .toList();
+  }
+
+  private Map<Long, GdprConsent> loadParentalConsentsByUserId(Collection<Long> userIds) {
+    return gdprConsentRepository
+      .findByUser_IdInAndConsentType(userIds, ConsentType.PARENTAL_MINOR)
+      .stream()
+      .collect(Collectors.toMap(c -> c.getUser().getId(), c -> c, (a, b) -> a));
+  }
+
+  private ConsentStatusResponse buildStatusResponse(Student student, GdprConsent consent) {
+    ConsentStatus status = consent != null
+      ? evaluateStatus(consent)
+      : ConsentStatus.MISSING;
 
     return ConsentStatusResponse.builder()
       .userId(student.getId())
       .firstName(student.getFirstName())
       .lastName(student.getLastName())
       .hasParentalConsent(status == ConsentStatus.VALID)
-      .consentDate(consent.map(GdprConsent::getConsentAt).orElse(null))
-      .policyVersion(consent.map(GdprConsent::getPolicyVersion).orElse(null))
-      .expiresAt(consent.map(GdprConsent::getExpiresAt).orElse(null))
+      .consentDate(consent != null ? consent.getConsentAt() : null)
+      .policyVersion(consent != null ? consent.getPolicyVersion() : null)
+      .expiresAt(consent != null ? consent.getExpiresAt() : null)
       .status(status)
       .build();
   }
