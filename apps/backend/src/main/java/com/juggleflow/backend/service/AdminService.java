@@ -100,9 +100,18 @@ public class AdminService {
     }
 
     public List<AdminUserResponse> getAllUsers() {
-        return userRepository.findAll()
-            .stream()
-            .map(this::toAdminUserResponse)
+        List<User> users = userRepository.findAll();
+
+        List<Long> studentIds = users.stream()
+            .filter(u -> u instanceof Student)
+            .map(User::getId)
+            .toList();
+
+        Map<Long, ConsentStatus> consentStatusById =
+            gdprService.getBulkParentalConsentStatuses(studentIds);
+
+        return users.stream()
+            .map(u -> toAdminUserResponse(u, consentStatusById))
             .toList();
     }
 
@@ -361,7 +370,9 @@ public class AdminService {
         return "\"" + v + "\"";
     }
 
-    private AdminUserResponse toAdminUserResponse(User user) {
+    private AdminUserResponse toAdminUserResponse(
+            User user,
+            Map<Long, ConsentStatus> consentStatusById) {
         AdminUserResponse.AdminUserResponseBuilder builder = AdminUserResponse.builder()
             .id(user.getId())
             .email(user.getEmail())
@@ -375,7 +386,8 @@ public class AdminService {
             Long classId = student.getSchoolClass() != null ? student.getSchoolClass().getId() : null;
             String className = student.getSchoolClass() != null ? student.getSchoolClass().getName() : null;
 
-            ConsentStatus status = gdprService.getParentalConsentStatus(student.getId());
+            ConsentStatus status = consentStatusById.getOrDefault(
+                student.getId(), ConsentStatus.MISSING);
             builder
                 .classId(classId)
                 .className(className)

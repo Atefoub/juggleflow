@@ -3,6 +3,8 @@ package com.juggleflow.backend.repository;
 import com.juggleflow.backend.model.StudentLearningPath;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +17,15 @@ public interface StudentLearningPathRepository extends JpaRepository<StudentLear
         "learningPath.steps.trick"
     })
     List<StudentLearningPath> findWithPathsByStudent_Id(Long studentId);
+
+    @EntityGraph(attributePaths = {
+        "learningPath",
+        "learningPath.steps",
+        "learningPath.steps.trick",
+        "student"
+    })
+    @Query("SELECT slp FROM StudentLearningPath slp WHERE slp.student.id IN :studentIds")
+    List<StudentLearningPath> findWithPathsByStudentIds(@Param("studentIds") List<Long> studentIds);
 
     Optional<StudentLearningPath> findByLearningPath_IdAndStudent_Id(
             Long learningPathId,
