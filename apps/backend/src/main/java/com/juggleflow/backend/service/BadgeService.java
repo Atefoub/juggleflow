@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -70,9 +71,10 @@ public class BadgeService {
 
         // Snapshot des metriques calculees une seule fois (vs. par badge dans la boucle).
         UserBadgeMetrics metrics = collectMetrics(user.getId());
+        Set<Long> unlockedBadgeIds = userBadgeRepository.findBadgeIdsByUserId(user.getId());
 
         for (Badge badge : allBadges) {
-            if (userBadgeRepository.existsByUser_IdAndBadge_Id(user.getId(), badge.getId())) {
+            if (unlockedBadgeIds.contains(badge.getId())) {
                 continue;
             }
 

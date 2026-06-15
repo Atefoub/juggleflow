@@ -9,11 +9,13 @@ import com.juggleflow.backend.model.Student;
 import com.juggleflow.backend.model.Teacher;
 import com.juggleflow.backend.model.User;
 import com.juggleflow.backend.repository.UserRepository;
+import com.juggleflow.backend.security.JuggleflowUserDetails;
 import com.juggleflow.backend.security.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -42,17 +44,13 @@ public class AuthService {
 
   @Transactional(readOnly = true)
   public LoginResponse login(LoginRequest request) {
-    authenticationManager.authenticate(
+    Authentication authentication = authenticationManager.authenticate(
       new UsernamePasswordAuthenticationToken(
         request.getEmail(), request.getPassword())
     );
 
-    // À ce stade, l'authentification a réussi — l'utilisateur existe forcément.
-    User user = userRepository.findByEmail(request.getEmail())
-      .orElseThrow(() -> new BadCredentialsException("Identifiants invalides"));
-
-    UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
-    return buildLoginResponse(user, userDetails);
+    JuggleflowUserDetails userDetails = (JuggleflowUserDetails) authentication.getPrincipal();
+    return buildLoginResponse(userDetails.getUser(), userDetails);
   }
 
 
@@ -82,13 +80,13 @@ public class AuthService {
     }
     userRepository.save(user);
 
-    UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+    JuggleflowUserDetails userDetails = new JuggleflowUserDetails(user);
     return buildLoginResponse(user, userDetails);
   }
 
 
   /** Échange un refresh token valide contre un nouvel access token (rotation). */
-  @Transactional(readOnly = true)
+  @Transactional
   public LoginResponse refresh(String refreshToken) {
     String email;
     try {
@@ -97,19 +95,19 @@ public class AuthService {
       throw new BadCredentialsException("Refresh token invalide");
     }
 
-    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+    JuggleflowUserDetails userDetails =
+      (JuggleflowUserDetails) userDetailsService.loadUserByUsername(email);
 
     if (!jwtUtils.isRefreshTokenValid(refreshToken, userDetails)) {
       throw new BadCredentialsException("Refresh token invalide ou expiré");
     }
 
-    // Rotation : révoque l'ancien refresh token
+    LoginResponse response = buildLoginResponse(userDetails.getUser(), userDetails);
+
+    // Rotation : révoque l'ancien refresh token uniquement si la génération a réussi
     jwtUtils.revokeToken(refreshToken);
 
-    User user = userRepository.findByEmail(email)
-      .orElseThrow(() -> new BadCredentialsException("Identifiants invalides"));
-
-    return buildLoginResponse(user, userDetails);
+    return response;
   }
 
 

@@ -8,13 +8,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -73,6 +77,23 @@ class GlobalExceptionHandlerTest {
             .andExpect(status().isUnauthorized())
             .andExpect(jsonPath("$.status").value(401))
             .andExpect(jsonPath("$.message").value("Email ou mot de passe incorrect"));
+    }
+
+    @Test
+    @DisplayName("Violation UNIQUE email (course register) → 401 même message que existsByEmail")
+    void duplicateEmailConstraint_shouldReturn401_withGenericMessage() {
+        var handler = new GlobalExceptionHandler();
+        var request = new MockHttpServletRequest();
+        request.setRequestURI("/api/auth/register");
+
+        var ex = new DataIntegrityViolationException(
+            "could not execute statement [ERROR: duplicate key value violates unique constraint \"users_email_key\"]");
+
+        var response = handler.handleDataIntegrityViolation(ex, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getMessage()).isEqualTo("Email ou mot de passe incorrect");
     }
 
     @Test

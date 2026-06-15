@@ -25,16 +25,12 @@ import java.time.Year;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class GdprService {
-
-  private static final String DELETED_EMAIL_SUFFIX = "@deleted.juggleflow.fr";
-  private static final String ANONYMIZED_NAME = "[supprimé]";
 
   private final GdprConsentRepository gdprConsentRepository;
   private final UserRepository userRepository;
@@ -228,24 +224,11 @@ public class GdprService {
     int currentYear = Year.now().getValue();
     log.info("Début de l'anonymisation annuelle RGPD — année scolaire {}", currentYear);
 
-    List<Student> studentsToAnonymize = studentRepository.findAll().stream()
-      .filter(s -> s.getSchoolClass() != null
-        && s.getSchoolClass().getSchoolYear() == currentYear)
-      .toList();
-
-    int count = 0;
-    for (Student student : studentsToAnonymize) {
-      student.setEmail(UUID.randomUUID() + DELETED_EMAIL_SUFFIX);
-      student.setFirstName(ANONYMIZED_NAME);
-      student.setLastName(ANONYMIZED_NAME);
-      student.setEnabled(false);
-      student.setSchoolClass(null);
-      studentRepository.save(student);
-      count++;
-    }
+    int anonymized = studentRepository.anonymizeUsersBySchoolYear(currentYear);
+    studentRepository.detachStudentsFromClassesBySchoolYear(currentYear);
 
     log.info("Anonymisation terminée : {} compte(s) élève(s) traité(s) (année scolaire {})",
-      count, currentYear);
+      anonymized, currentYear);
   }
 
   // -- Helpers prives ----------------------------------------------------------
