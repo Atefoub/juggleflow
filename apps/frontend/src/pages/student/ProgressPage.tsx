@@ -96,8 +96,9 @@ export default function ProgressPage() {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadProgressData = () => {
     if (!user?.id) return;
+    setLoading(true);
     Promise.all([
       getStudentStatistics(isOnline, user.id),
       getStudentBadges(isOnline, user.id),
@@ -110,6 +111,7 @@ export default function ProgressPage() {
         setBadges(badgeBundle.unlocked);
         setAllBadges(badgeBundle.all);
         setTrickProgress(progress);
+        setError(null);
       })
       .catch(() =>
         setError(
@@ -119,21 +121,17 @@ export default function ProgressPage() {
         ),
       )
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadProgressData();
   }, [user?.id, isOnline]);
 
   useEffect(() => {
-    const handler = (evt: Event) => {
-      const { detail } = evt as CustomEvent<{ trickId: number; status: ProgressStatus }>;
-      if (!detail?.trickId || !detail.status) return;
-      setTrickProgress((prev) => prev.map((p) => (
-        p.trickId === detail.trickId
-          ? { ...p, status: detail.status, updatedAt: new Date().toISOString() }
-          : p
-      )));
-    };
+    const handler = () => loadProgressData();
     window.addEventListener(PROGRESS_UPDATED_EVENT, handler);
     return () => window.removeEventListener(PROGRESS_UPDATED_EVENT, handler);
-  }, []);
+  }, [user?.id, isOnline]);
 
   const xp        = (stats?.totalTricksLearned ?? 0) * XP_PER_TRICK;
   const xpPercent = Math.min((xp / XP_MAX) * 100, 100);

@@ -153,10 +153,19 @@ export default function TrickDetailPage() {
           masteryScore: newStatus === 'MASTERED' ? 10 : undefined,
         });
       } else {
-        await studentApi.updateProgress(trick.id, {
-          status: newStatus,
-          masteryScore: newStatus === 'MASTERED' ? 10 : undefined,
-        });
+        try {
+          await studentApi.updateProgress(trick.id, {
+            status: newStatus,
+            masteryScore: newStatus === 'MASTERED' ? 10 : undefined,
+          });
+        } catch {
+          enqueueProgressUpdate(user.id, {
+            trickId: trick.id,
+            status: newStatus,
+            masteryScore: newStatus === 'MASTERED' ? 10 : undefined,
+          });
+          setStatusError('Connexion instable : sauvegardé en attente de synchronisation.');
+        }
       }
       setStatus(newStatus);
 

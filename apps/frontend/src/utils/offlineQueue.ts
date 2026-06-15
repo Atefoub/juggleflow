@@ -5,6 +5,11 @@ export type PendingProgressUpdate = {
   queuedAt: string; // ISO
 };
 
+/** Canal BroadcastChannel pour notifier les autres onglets d'une mise en file. */
+export const PROGRESS_QUEUE_CHANNEL = 'juggleflow-progress-queue';
+
+const MAX_PENDING_UPDATES = 50;
+
 function key(userId: number | string): string {
   return `pending_progress_updates:${userId}`;
 }
@@ -25,7 +30,7 @@ function writeList(userId: number | string, list: PendingProgressUpdate[]): void
       localStorage.removeItem(key(userId));
       return;
     }
-    localStorage.setItem(key(userId), JSON.stringify(list.slice(-50))); // borne simple
+    localStorage.setItem(key(userId), JSON.stringify(list.slice(-MAX_PENDING_UPDATES)));
   } catch {
     // ignore
   }
@@ -33,6 +38,14 @@ function writeList(userId: number | string, list: PendingProgressUpdate[]): void
 
 function entryKey(u: PendingProgressUpdate): string {
   return `${u.trickId}|${u.queuedAt}`;
+}
+
+function notifyQueueChanged(userId: number | string): void {
+  try {
+    new BroadcastChannel(PROGRESS_QUEUE_CHANNEL).postMessage({ userId });
+  } catch {
+    // BroadcastChannel indisponible
+  }
 }
 
 export function enqueueProgressUpdate(
@@ -48,6 +61,7 @@ export function enqueueProgressUpdate(
 
   list.push(next);
   writeList(userId, list);
+  notifyQueueChanged(userId);
 }
 
 export function getPendingProgressUpdatesCount(userId: number | string): number {
@@ -84,7 +98,7 @@ export function mergePendingIntoProgress<T extends { trickId: number; status: st
   return [...map.values()];
 }
 
-export async function flushProgressUpdates(
+async function doFlushProgressUpdates(
   userId: number | string,
   apply: (u: PendingProgressUpdate) => Promise<void>
 ): Promise<{ applied: number; failed: number }> {
@@ -117,6 +131,20 @@ export async function flushProgressUpdates(
     (u) => !appliedKeys.has(entryKey(u)),
   );
   writeList(userId, stillPending);
+  notifyQueueChanged(userId);
 
   return { applied, failed };
+}
+
+export async function flushProgressUpdates(
+  userId: number | string,
+  apply: (u: PendingProgressUpdate) => Promise<void>
+): Promise<{ applied: number; failed: number }> {
+  const lockName = `juggleflow-flush-${userId}`;
+
+  if (typeof navigator !== 'undefined' && navigator.locks?.request) {
+    return navigator.locks.request(lockName, () => doFlushProgressUpdates(userId, apply));
+  }
+
+  return doFlushProgressUpdates(userId, apply);
 }

@@ -369,8 +369,10 @@ public class LearningPathService {
                 .map(s -> s.getTrick().getId())
                 .toList();
 
-        List<Student> students = studentRepository.findBySchoolClass_Id(classId).stream()
-                .filter(student -> isStudentOnPath(student.getId(), classId, pathId))
+        List<Student> allStudents = studentRepository.findBySchoolClass_Id(classId);
+        Set<Long> studentsOnPath = resolveStudentIdsOnPath(classId, pathId, allStudents);
+        List<Student> students = allStudents.stream()
+                .filter(student -> studentsOnPath.contains(student.getId()))
                 .toList();
 
         List<Long> studentIds = students.stream().map(Student::getId).toList();
@@ -482,8 +484,46 @@ public class LearningPathService {
     }
 
     private boolean isStudentOnPath(Long studentId, Long classId, Long pathId) {
-        return pathAssignmentResolver.resolveAllPathsForStudent(studentId, classId).stream()
-                .anyMatch(p -> p.getId().equals(pathId));
+        return resolveStudentIdsOnPath(
+            classId, pathId, studentRepository.findBySchoolClass_Id(classId))
+            .contains(studentId);
+    }
+
+    /**
+     * Résout en batch les élèves d'une classe assignés à un parcours donné
+     * (assignation individuelle prioritaire sur assignation de classe).
+     */
+    private Set<Long> resolveStudentIdsOnPath(
+            Long classId, Long pathId, List<Student> students) {
+        if (students.isEmpty()) {
+            return Set.of();
+        }
+
+        List<Long> studentIds = students.stream().map(Student::getId).toList();
+        Map<Long, StudentLearningPath> studentAssignmentById =
+            studentLearningPathRepository.findWithPathsByStudentIds(studentIds).stream()
+                .collect(Collectors.toMap(
+                    a -> a.getStudent().getId(),
+                    a -> a,
+                    (a, b) -> a
+                ));
+
+        boolean classHasPath = classLearningPathRepository
+            .findWithPathsBySchoolClass_Id(classId).stream()
+            .anyMatch(a -> a.getLearningPath().getId().equals(pathId));
+
+        Set<Long> onPath = new HashSet<>();
+        for (Student student : students) {
+            StudentLearningPath individual = studentAssignmentById.get(student.getId());
+            if (individual != null) {
+                if (individual.getLearningPath().getId().equals(pathId)) {
+                    onPath.add(student.getId());
+                }
+            } else if (classHasPath) {
+                onPath.add(student.getId());
+            }
+        }
+        return onPath;
     }
 
     private Map<Long, Map<Long, UserProgress>> loadProgressByStudentAndTrick(

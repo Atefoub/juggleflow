@@ -33,6 +33,9 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
      */
     int countBySchoolClass_Id(Long classId);
 
+    /** Compte les élèves actifs (quota licence). */
+    long countByEnabledTrue();
+
     /**
      * Export admin : récupère les élèves avec leur classe (fetch join) avec
      * filtre optionnel sur l'année scolaire.
