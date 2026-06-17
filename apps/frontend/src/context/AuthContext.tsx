@@ -9,8 +9,13 @@ import {
   type ReactNode,
 } from 'react';
 import type { UserProfile, Role } from '../types/auth';
-import { api, authApi, setAccessToken, clearAccessToken, getAccessToken } from '../api/authApi';
-import type { LoginResponse } from '../types/auth';
+import {
+  authApi,
+  setAccessToken,
+  clearAccessToken,
+  getAccessToken,
+  restoreSessionFromRefreshCookie,
+} from '../api/authApi';
 import { applyProfileOnboarding, resetOnboarding } from '../utils/onboarding';
 import { resetPreferences } from '../utils/preferences';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
@@ -55,21 +60,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const tryRestoreSession = async () => {
       try {
-        // Tente d'obtenir un access token via le cookie httpOnly refresh_token.
-        // Le body est vide : le backend lit le refresh token depuis le cookie.
-        // withCredentials: true est configuré globalement sur l'instance axios (api).
-        const refreshResponse = await api.post<LoginResponse>('/auth/refresh', {});
-
-        setAccessToken(refreshResponse.data.accessToken);
-
-        const profile = await authApi.me();
-        if (!cancelled) {
+        const profile = await restoreSessionFromRefreshCookie();
+        if (!cancelled && profile) {
           applyProfileOnboarding(profile);
           setUser(profile);
         }
-      } catch {
-        // Cookie absent ou expiré → état non-authentifié (cas normal)
-        clearAccessToken();
       } finally {
         if (!cancelled) setIsLoading(false);
       }

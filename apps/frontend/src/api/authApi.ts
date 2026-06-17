@@ -31,11 +31,39 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-let _isRefreshing = false;
-let _refreshQueue: Array<{
-  resolve: (token: string) => void;
-  reject: (err: unknown) => void;
-}> = [];
+let refreshInFlight: Promise<string> | null = null;
+
+/** Un seul POST /auth/refresh à la fois (rotation + React StrictMode). */
+export function refreshAccessToken(): Promise<string> {
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = api
+    .post<LoginResponse>('/auth/refresh', {})
+    .then((response) => {
+      const newAccessToken = response.data.accessToken;
+      setAccessToken(newAccessToken);
+      return newAccessToken;
+    })
+    .catch((err) => {
+      clearAccessToken();
+      throw err;
+    })
+    .finally(() => {
+      refreshInFlight = null;
+    });
+
+  return refreshInFlight;
+}
+
+/** Restaure la session via cookie httpOnly (refresh + profil). */
+export async function restoreSessionFromRefreshCookie(): Promise<UserProfile | null> {
+  try {
+    await refreshAccessToken();
+    return await authApi.me();
+  } catch {
+    return null;
+  }
+}
 
 api.interceptors.response.use(
   (response) => response,
@@ -48,39 +76,16 @@ api.interceptors.response.use(
       originalRequest.url !== '/auth/refresh' &&
       originalRequest.url !== '/auth/login'
     ) {
-      if (_isRefreshing) {
-        return new Promise((resolve, reject) => {
-          _refreshQueue.push({ resolve, reject });
-        }).then((token) => {
-          originalRequest._retry = true;
-          originalRequest.headers = originalRequest.headers ?? {};
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return api(originalRequest);
-        });
-      }
-
       originalRequest._retry = true;
-      _isRefreshing = true;
 
       try {
-        const response = await api.post<LoginResponse>('/auth/refresh', {});
-        const newAccessToken = response.data.accessToken;
-        setAccessToken(newAccessToken);
-
-        _refreshQueue.forEach((cb) => cb.resolve(newAccessToken));
-        _refreshQueue = [];
-
+        const newAccessToken = await refreshAccessToken();
         originalRequest.headers = originalRequest.headers ?? {};
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        _refreshQueue.forEach((cb) => cb.reject(refreshError));
-        _refreshQueue = [];
-        clearAccessToken();
         window.location.href = '/login';
         return Promise.reject(refreshError);
-      } finally {
-        _isRefreshing = false;
       }
     }
 

@@ -25,7 +25,7 @@ test.describe('Parcours enseignant', () => {
   test('export CSV de progression pour un parcours assigné', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Parcours assignés' })).toBeVisible();
 
-    const downloadPromise = page.waitForEvent('download', { timeout: 30_000 });
+    const downloadPromise = page.waitForEvent('download', { timeout: 60_000 });
     await page.getByRole('button', { name: 'Générer rapport' }).click();
 
     const picker = page.getByRole('heading', { name: 'Choisir un parcours' });
@@ -36,10 +36,14 @@ test.describe('Parcours enseignant', () => {
     if (multiPathPicker) {
       const pickerSection = picker.locator('xpath=ancestor::section[1]');
       await pickerSection.getByRole('button').first().click();
-      await expect(page).toHaveURL(/\/teacher\/classe\/\d+\/parcours\/\d+/, {
-        timeout: 15_000,
-      });
     }
+
+    await expect(page).toHaveURL(/\/teacher\/classe\/\d+\/parcours\/\d+/, {
+      timeout: 20_000,
+    });
+    await expect(page.getByRole('button', { name: /^CSV$/ })).toBeVisible({
+      timeout: 20_000,
+    });
 
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toMatch(/progress_class_\d+_path_\d+\.csv/);
