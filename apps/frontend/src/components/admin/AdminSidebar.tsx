@@ -39,7 +39,10 @@ export default function AdminSidebar({ onItemClick }: AdminSidebarProps) {
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
+      <nav
+        className="flex-1 overflow-y-auto px-3 py-4"
+        aria-label="Navigation administration"
+      >
         <ul className="flex flex-col gap-1">
           {ADMIN_NAV_ITEMS.map((item) => {
             const Icon = item.icon;
