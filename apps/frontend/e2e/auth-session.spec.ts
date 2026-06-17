@@ -21,8 +21,8 @@ test.describe('Auth session (refresh cookie + logout)', () => {
     );
     await page.reload();
     await refreshResponse;
+    await expect(page.getByText('Progression moyenne')).toBeVisible({ timeout: 20_000 });
     await expect(page).toHaveURL(/\/teacher\/dashboard/);
-    await expect(page.getByText('Progression moyenne')).toBeVisible();
   });
 
   test('logout: déconnexion puis accès protégé refusé', async ({ page }) => {

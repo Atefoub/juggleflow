@@ -23,6 +23,7 @@ vi.mock('../api/authApi', () => {
     setAccessToken: vi.fn(),
     clearAccessToken: vi.fn(),
     getAccessToken: vi.fn().mockReturnValue(null),
+    restoreSessionFromRefreshCookie: vi.fn().mockResolvedValue(null),
   };
 });
 
