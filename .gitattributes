@@ -1,0 +1,9 @@
+# Normalize line endings across Windows, macOS, and Linux (CI).
+* text=auto eol=lf
+
+# Windows scripts keep CRLF.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Maven wrapper must stay LF for Unix shells.
+**/mvnw text eol=lf
