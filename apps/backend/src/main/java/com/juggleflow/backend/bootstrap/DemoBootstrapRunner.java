@@ -62,6 +62,9 @@ public class DemoBootstrapRunner implements ApplicationRunner {
     @Value("${demo.bootstrap.password:}")
     private String demoPassword;
 
+    @Value("${gdpr.current-policy-version:2026-1}")
+    private String currentPolicyVersion;
+
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
@@ -259,7 +262,7 @@ public class DemoBootstrapRunner implements ApplicationRunner {
                 .user(student)
                 .consentType(GdprConsent.ConsentType.PARENTAL_MINOR)
                 .consentGiven(true)
-                .policyVersion("1.0")
+                .policyVersion(currentPolicyVersion)
                 .expiresAt(Instant.now().plusSeconds(400L * 24 * 3600))
                 .build());
     }

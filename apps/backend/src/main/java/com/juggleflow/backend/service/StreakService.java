@@ -4,6 +4,9 @@ import com.juggleflow.backend.model.UserStreak;
 import com.juggleflow.backend.repository.UserStreakRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,9 +37,14 @@ public class StreakService {
 
     private final UserStreakRepository userStreakRepository;
 
+    @Retryable(
+        retryFor = DataIntegrityViolationException.class,
+        maxAttempts = 2,
+        backoff = @Backoff(delay = 5)
+    )
     @Transactional
     public UserStreak recordPracticeDay(Long userId, LocalDate practiceDate) {
-        UserStreak streak = userStreakRepository.findByUserId(userId)
+        UserStreak streak = userStreakRepository.findByUserIdForUpdate(userId)
             .orElseGet(() -> UserStreak.builder()
                 .userId(userId)
                 .currentStreakDays(0)

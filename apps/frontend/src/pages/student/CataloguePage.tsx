@@ -95,9 +95,11 @@ export default function CataloguePage() {
 
   useEffect(() => {
     const handler = (evt: Event) => {
-      const { detail } = evt as CustomEvent<{ trickId: number; status: TrickProgressStatus }>;
-      if (!detail?.trickId || !detail.status) return;
-      setProgressById((prev) => ({ ...prev, [detail.trickId]: detail.status }));
+      const { detail } = evt as CustomEvent<{ trickId: number; status?: TrickProgressStatus }>;
+      if (!detail?.trickId) return;
+      if (detail.status) {
+        setProgressById((prev) => ({ ...prev, [detail.trickId]: detail.status! }));
+      }
     };
 
     window.addEventListener(PROGRESS_UPDATED_EVENT, handler);

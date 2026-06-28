@@ -112,12 +112,6 @@ export default defineConfig(({ mode }) => {
               request.method === 'PUT' && /^\/api\/progress\/\d+$/.test(url.pathname),
             handler: 'NetworkOnly',
             method: 'PUT',
-            options: {
-              backgroundSync: {
-                name: 'progress-sync-queue',
-                options: { maxRetentionTime: 24 * 60 },
-              },
-            },
           },
           {
             // Catalogue public uniquement — pas /api/badges ni /api/eleve (données par utilisateur).

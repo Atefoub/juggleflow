@@ -142,10 +142,11 @@ export default function TrickDetailPage() {
   const xpDisplay  = Math.min(xp, XP_NEXT);
   async function handleSetStatus(newStatus: ProgressStatus) {
     if (!trick) return;
+    if (!user?.id) return;
+    if (savingStatus) return;
     setSavingStatus(true);
     setStatusError(null);
     try {
-      if (!user?.id) return;
       if (!isOnline) {
         enqueueProgressUpdate(user.id, {
           trickId: trick.id,

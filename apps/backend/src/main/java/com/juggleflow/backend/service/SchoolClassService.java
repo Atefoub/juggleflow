@@ -303,6 +303,10 @@ public class SchoolClassService {
 
         AdminCreateUserResponse created = adminService.createUser(adminReq);
 
+        SchoolClass schoolClass = findClassById(classId);
+        schoolClass.setStudentCount(schoolClass.getStudentCount() + 1);
+        schoolClassRepository.save(schoolClass);
+
         return TeacherCreateStudentResponse.builder()
                 .id(created.getId())
                 .email(created.getEmail())

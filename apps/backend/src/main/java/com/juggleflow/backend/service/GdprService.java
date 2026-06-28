@@ -9,6 +9,7 @@ import com.juggleflow.backend.model.GdprConsent.ConsentType;
 import com.juggleflow.backend.model.SchoolClass;
 import com.juggleflow.backend.model.Student;
 import com.juggleflow.backend.model.User;
+import org.springframework.security.authentication.DisabledException;
 import com.juggleflow.backend.repository.GdprConsentRepository;
 import com.juggleflow.backend.repository.SchoolClassRepository;
 import com.juggleflow.backend.repository.StudentRepository;
@@ -63,6 +64,9 @@ public class GdprService {
   @Value("${gdpr.consent-default-validity-days:400}")
   private long defaultValidityDays;
 
+  @Value("${gdpr.enforce-parental-consent-on-auth:true}")
+  private boolean enforceParentalConsentOnAuth;
+
   // -- Endpoints ---------------------------------------------------------------
 
   /**
@@ -114,6 +118,16 @@ public class GdprService {
       request.getConsentType(), user.getId(), ipAddress);
 
     ConsentStatus status = evaluateStatus(consent);
+
+    if (request.getConsentType() == ConsentType.PARENTAL_MINOR
+        && status == ConsentStatus.VALID
+        && request.getConsentGiven()
+        && !user.isEnabled()) {
+      user.setEnabled(true);
+      userRepository.save(user);
+      log.info("Compte élève {} réactivé suite à enregistrement du consentement parental",
+        user.getId());
+    }
     return ConsentStatusResponse.builder()
       .userId(user.getId())
       .firstName(user.getFirstName())
@@ -215,6 +229,59 @@ public class GdprService {
     Optional<GdprConsent> consent = gdprConsentRepository
       .findByUser_IdAndConsentType(userId, ConsentType.PARENTAL_MINOR);
     return consent.map(this::evaluateStatus).orElse(ConsentStatus.MISSING);
+  }
+
+  /**
+   * Vérifie qu'un élève peut s'authentifier (login, refresh, requêtes API).
+   * Désactive le compte si le consentement parental n'est plus valide.
+   */
+  @Transactional
+  public void assertStudentMayAuthenticate(User user) {
+    if (!enforceParentalConsentOnAuth || !(user instanceof Student)) {
+      return;
+    }
+    ConsentStatus status = getParentalConsentStatus(user.getId());
+    if (status == ConsentStatus.VALID) {
+      return;
+    }
+    syncDisabledForInvalidParentalConsent(user, status);
+    throw new DisabledException(consentBlockedMessage(status));
+  }
+
+  /**
+   * Contrôle d'accès pour le filtre JWT (sans lever d'exception).
+   */
+  @Transactional
+  public boolean isStudentAuthenticationAllowed(User user) {
+    if (!enforceParentalConsentOnAuth || !(user instanceof Student)) {
+      return true;
+    }
+    ConsentStatus status = getParentalConsentStatus(user.getId());
+    if (status == ConsentStatus.VALID) {
+      return true;
+    }
+    syncDisabledForInvalidParentalConsent(user, status);
+    return false;
+  }
+
+  private void syncDisabledForInvalidParentalConsent(User user, ConsentStatus status) {
+    if (user.isEnabled()) {
+      user.setEnabled(false);
+      userRepository.save(user);
+      log.warn("Compte élève {} désactivé : consentement parental invalide ({})",
+        user.getId(), status);
+    }
+  }
+
+  private static String consentBlockedMessage(ConsentStatus status) {
+    return switch (status) {
+      case EXPIRED ->
+        "Consentement parental expiré. Contactez votre établissement.";
+      case REVOKED ->
+        "Consentement parental révoqué. Contactez votre établissement.";
+      case MISSING, VALID ->
+        "Consentement parental requis. Contactez votre établissement.";
+    };
   }
 
   /**

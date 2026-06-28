@@ -38,6 +38,7 @@ public class AuthService {
   private final EstablishmentLicenseService establishmentLicenseService;
   private final AdminAuditService adminAuditService;
   private final AuthRegistrationProperties authRegistrationProperties;
+  private final GdprService gdprService;
 
   private static final String FORGOT_PASSWORD_GENERIC_MESSAGE =
     "Si un compte est associé à cette adresse, votre établissement a été informé. "
@@ -51,6 +52,7 @@ public class AuthService {
     );
 
     JuggleflowUserDetails userDetails = (JuggleflowUserDetails) authentication.getPrincipal();
+    gdprService.assertStudentMayAuthenticate(userDetails.getUser());
     return buildLoginResponse(userDetails.getUser(), userDetails);
   }
 
@@ -81,6 +83,7 @@ public class AuthService {
     userRepository.save(user);
 
     JuggleflowUserDetails userDetails = new JuggleflowUserDetails(user);
+    gdprService.assertStudentMayAuthenticate(user);
     return buildLoginResponse(user, userDetails);
   }
 
@@ -110,6 +113,7 @@ public class AuthService {
       throw new BadCredentialsException("Refresh token invalide ou expiré");
     }
 
+    gdprService.assertStudentMayAuthenticate(userDetails.getUser());
     return buildLoginResponse(userDetails.getUser(), userDetails);
   }
 

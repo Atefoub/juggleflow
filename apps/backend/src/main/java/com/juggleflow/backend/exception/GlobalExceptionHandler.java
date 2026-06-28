@@ -115,10 +115,14 @@ public class GlobalExceptionHandler {
     DisabledException ex,
     HttpServletRequest request) {
 
+    String message = isSafeBusinessMessage(ex.getMessage())
+      ? ex.getMessage()
+      : "Ce compte a été désactivé. Contactez l'administrateur.";
+
     ErrorResponse body = ErrorResponse.builder()
       .status(HttpStatus.FORBIDDEN.value())
       .error("Compte désactivé")
-      .message("Ce compte a été désactivé. Contactez l'administrateur.")
+      .message(message)
       .path(request.getRequestURI())
       .build();
 

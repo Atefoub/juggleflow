@@ -69,8 +69,7 @@ class GdprControllerTest {
     void recordConsent_shouldReturn400_whenParentalConsentMissingGuardian() throws Exception {
         String adminToken = createAdminAndLogin("admin@gdpr.fr");
 
-        String studentToken = registerAndGetToken("eleve@gdpr.fr", "student");
-        Long studentId = getUserId(studentToken);
+        Long studentId = getUserId(registerAndGetToken("eleve@gdpr.fr", "student"));
 
         ConsentRequest req = new ConsentRequest();
         req.setUserId(studentId);
