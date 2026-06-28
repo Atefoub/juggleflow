@@ -96,6 +96,8 @@ public class ProgressService {
         if (request.getStatus() == ProgressStatus.MASTERED
                 && progress.getMasteredAt() == null) {
             progress.setMasteredAt(Instant.now());
+        } else if (request.getStatus() != ProgressStatus.MASTERED) {
+            progress.setMasteredAt(null);
         }
 
         UserProgress saved = progressRepository.save(progress);

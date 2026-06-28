@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AppIcon from '../../components/icons/AppIcon';
 import BottomNav from '../../components/BottomNav';
@@ -40,6 +40,11 @@ export default function StudentSessionPage() {
   const [saving, setSaving]           = useState(false);
   const [status, setStatus]           = useState<ProgressStatus>('IN_PROGRESS');
   const [offlineHint, setOfflineHint] = useState<string | null>(null);
+  const sessionStartedRef = useRef(false);
+
+  useEffect(() => {
+    sessionStartedRef.current = false;
+  }, [trickId]);
 
   useEffect(() => {
     if (Number.isNaN(trickId)) {
@@ -48,29 +53,44 @@ export default function StudentSessionPage() {
       return;
     }
 
+    let cancelled = false;
+
     Promise.all([
       getTrickDetail(isOnline, trickId),
-      isOnline
-        ? studentApi.updateProgress(trickId, { status: 'IN_PROGRESS' }).catch(() => {
-            if (user?.id) {
-              enqueueProgressUpdate(user.id, { trickId, status: 'IN_PROGRESS' });
-            }
-          })
+      !sessionStartedRef.current
+        ? (isOnline
+            ? studentApi.updateProgress(trickId, { status: 'IN_PROGRESS' }).catch(() => {
+                if (user?.id) {
+                  enqueueProgressUpdate(user.id, { trickId, status: 'IN_PROGRESS' });
+                }
+              })
+            : Promise.resolve())
         : Promise.resolve(),
     ])
       .then(([t]) => {
+        if (cancelled) return;
         setTrick(t);
 
-        if (!isOnline && user?.id) {
-          // En offline, on met en file d'attente la mise à jour "en cours" pour sync plus tard.
-          enqueueProgressUpdate(user.id, { trickId, status: 'IN_PROGRESS' });
+        if (!sessionStartedRef.current) {
+          sessionStartedRef.current = true;
+          if (!isOnline && user?.id) {
+            enqueueProgressUpdate(user.id, { trickId, status: 'IN_PROGRESS' });
+          }
         }
 
         dispatchProgressUpdated({ trickId });
       })
-      .catch(() => setError('Impossible de démarrer la session.'))
-      .finally(() => setLoading(false));
-  }, [trickId, isOnline, user?.id]);
+      .catch(() => {
+        if (!cancelled) setError('Impossible de démarrer la session.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [trickId, user?.id]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -81,6 +101,7 @@ export default function StudentSessionPage() {
   async function markMastered() {
     if (!trick) return;
     if (!user?.id) return;
+    if (saving) return;
     setSaving(true);
     setError(null);
     try {

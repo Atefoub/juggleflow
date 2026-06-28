@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import com.juggleflow.backend.service.GdprService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -23,10 +24,15 @@ public class JwtFilter extends OncePerRequestFilter {
 
   private final JwtUtils jwtUtils;
   private final UserDetailsService userDetailsService;
+  private final GdprService gdprService;
 
-  public JwtFilter(JwtUtils jwtUtils, @Lazy UserDetailsService userDetailsService) {
+  public JwtFilter(
+      JwtUtils jwtUtils,
+      @Lazy UserDetailsService userDetailsService,
+      @Lazy GdprService gdprService) {
     this.jwtUtils = jwtUtils;
     this.userDetailsService = userDetailsService;
+    this.gdprService = gdprService;
   }
 
   @Override
@@ -50,7 +56,13 @@ public class JwtFilter extends OncePerRequestFilter {
       if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-        if (jwtUtils.isTokenValid(jwt, userDetails)) {
+        if (!userDetails.isEnabled()) {
+          log.debug("Compte désactivé — requête sur {}", request.getRequestURI());
+        } else if (userDetails instanceof JuggleflowUserDetails juggleflowUser
+            && !gdprService.isStudentAuthenticationAllowed(juggleflowUser.getUser())) {
+          log.debug("Consentement parental invalide — requête sur {}",
+            request.getRequestURI());
+        } else if (jwtUtils.isTokenValid(jwt, userDetails)) {
           UsernamePasswordAuthenticationToken authToken =
             new UsernamePasswordAuthenticationToken(
               userDetails, null, userDetails.getAuthorities());

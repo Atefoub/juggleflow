@@ -48,6 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const isOnline = useOnlineStatus();
   const syncInFlightRef = useRef(false);
+  const syncRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [syncTrigger, setSyncTrigger] = useState(0);
   const [offlineSync, setOfflineSync] = useState<OfflineSyncState>({
     pendingCount: 0,
     isSyncing: false,
@@ -113,10 +115,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const onVisible = () => {
-      if (document.visibilityState === 'visible' && navigator.onLine) refreshPending();
+      if (document.visibilityState === 'visible' && navigator.onLine) {
+        refreshPending();
+        setSyncTrigger((n) => n + 1);
+      }
     };
 
-    const onOnline = () => refreshPending();
+    const onOnline = () => {
+      refreshPending();
+      setSyncTrigger((n) => n + 1);
+    };
 
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('online', onOnline);
@@ -126,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (event.data?.type === 'SYNC_PROGRESS_DONE') {
           refreshPending();
           dispatchProgressUpdated();
+          setSyncTrigger((n) => n + 1);
         }
       });
     }
@@ -174,23 +183,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
         if (!cancelled) {
+          const failed = r.failed > 0;
           setOfflineSync((s) => ({
             ...s,
             pendingCount: nextPending,
             isSyncing: false,
             lastSyncAt: r.applied > 0 ? new Date().toISOString() : s.lastSyncAt,
-            lastError: r.failed > 0 ? 'Certaines mises à jour n’ont pas pu être synchronisées.' : null,
+            lastError: failed
+              ? 'Certaines mises à jour n’ont pas pu être synchronisées.'
+              : null,
           }));
+          if (failed && nextPending > 0) {
+            syncRetryTimerRef.current = setTimeout(() => {
+              setSyncTrigger((n) => n + 1);
+            }, 5000);
+          }
         }
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         if (cancelled) return;
-        const status = err?.response?.status;
+        const status = (err as { response?: { status?: number } })?.response?.status;
         const msg =
           status === 401 ? 'Synchronisation impossible: session expirée.' :
           status === 403 ? 'Synchronisation impossible: accès refusé.' :
           'Synchronisation impossible: réessaiera automatiquement.';
         setOfflineSync((s) => ({ ...s, isSyncing: false, lastError: msg }));
+        syncRetryTimerRef.current = setTimeout(() => {
+          setSyncTrigger((n) => n + 1);
+        }, 5000);
       })
       .finally(() => {
         syncInFlightRef.current = false;
@@ -198,10 +218,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
-      syncInFlightRef.current = false;
-      setOfflineSync((s) => (s.isSyncing ? { ...s, isSyncing: false } : s));
+      if (syncRetryTimerRef.current) {
+        clearTimeout(syncRetryTimerRef.current);
+        syncRetryTimerRef.current = null;
+      }
     };
-  }, [isOnline, user?.id, offlineSync.pendingCount]);
+  }, [isOnline, user?.id, offlineSync.pendingCount, syncTrigger]);
 
   const login = async (token: string, profile?: UserProfile): Promise<UserProfile> => {
     setAccessToken(token);
