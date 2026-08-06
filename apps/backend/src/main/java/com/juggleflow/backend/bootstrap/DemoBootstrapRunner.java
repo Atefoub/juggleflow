@@ -81,6 +81,10 @@ public class DemoBootstrapRunner implements ApplicationRunner {
             return;
         }
 
+        // Le seed V9 fixe license_expires_at à 2026-06-30 : sans prolongation,
+        // assertSeatAvailableForNewAccount() fait planter le démarrage (403) après cette date.
+        ensureDemoLicenseAllowsSeeding();
+
         String encoded = passwordEncoder.encode(demoPassword);
         int schoolYear = LocalDate.now().getYear();
         Trick echange = requireTrick("Échange 2 balles");
@@ -160,7 +164,26 @@ public class DemoBootstrapRunner implements ApplicationRunner {
                 """, totalStudents);
     }
 
+    /**
+     * Garantit une licence valide pour le seed démo (CI / Podman / soutenance).
+     * Ne s'applique que lorsque {@code demo.bootstrap.enabled=true}.
+     */
+    private void ensureDemoLicenseAllowsSeeding() {
+        var settings = establishmentLicenseService.getSettings();
+        LocalDate expiresAt = settings.getLicenseExpiresAt();
+        boolean expired = expiresAt != null && expiresAt.isBefore(LocalDate.now());
+        int seatCap = Math.max(settings.getLicenseSeatCap(), 60);
+        LocalDate renewed = LocalDate.now().plusYears(1);
+
+        if (expired || settings.getLicenseSeatCap() < 60) {
+            establishmentLicenseService.updateLicenseSettings(seatCap, renewed);
+            log.info("DemoBootstrap : licence établissement prolongée jusqu'au {} (plafond {})",
+                    renewed, seatCap);
+        }
+    }
+
     private Teacher saveTeacher(String encoded, String email, String firstName, String lastName) {
+        establishmentLicenseService.assertSeatAvailableForNewAccount();
         Teacher teacher = Teacher.builder()
                 .email(email)
                 .password(encoded)
