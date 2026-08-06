@@ -25,6 +25,11 @@ test.describe('Parcours enseignant', () => {
   test('export CSV de progression pour un parcours assigné', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Parcours assignés' })).toBeVisible();
 
+    // Attendre le chargement réel des parcours (le titre est visible même pendant le skeleton).
+    await expect(page.getByRole('button', { name: 'Voir' }).first()).toBeVisible({
+      timeout: 20_000,
+    });
+
     const downloadPromise = page.waitForEvent('download', { timeout: 60_000 });
     await page.getByRole('button', { name: 'Générer rapport' }).click();
 

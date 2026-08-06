@@ -7,8 +7,8 @@ import { backendUrl } from './helpers/auth';
  */
 const RATE_LIMIT_TEST_IP = '203.0.113.77';
 
-/** CI élève le plafond auth (80) ; il faut dépasser ce quota sur l’IP de test isolée. */
-const PROBE_ATTEMPTS = Number(process.env.E2E_RATE_LIMIT_PROBE_ATTEMPTS ?? 15);
+/** CI : APP_RATE_LIMIT_MAX_REQUESTS=15 + IP XFF isolée ; dépasser le quota avec une marge. */
+const PROBE_ATTEMPTS = Number(process.env.E2E_RATE_LIMIT_PROBE_ATTEMPTS ?? 25);
 
 test.describe('Rate limiting (API)', () => {
   test('login: trop de tentatives → HTTP 429', async ({ request }) => {
