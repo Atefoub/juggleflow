@@ -128,10 +128,10 @@ const SHOTS = [
   },
   {
     name: 'test-rate-limit-429',
-    file: 'apps/frontend/e2e/z-rate-limit.spec.ts',
-    start: 1,
-    end: 41,
-    lang: 'typescript',
+    file: 'apps/backend/src/test/java/com/juggleflow/backend/security/RateLimitMemoryIntegrationTest.java',
+    start: 21,
+    end: 80,
+    lang: 'java',
   },
   {
     name: 'frontend-protected-routes-by-role',

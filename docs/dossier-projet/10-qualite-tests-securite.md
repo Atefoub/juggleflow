@@ -36,6 +36,7 @@
 |---------|-----------------------------|
 | JWT / refresh / cookies | `JwtUtilsTest`, `RefreshCookieSecurityTest`, `RefreshCookieSecurityProdTest` |
 | Redis révocation & rate limit | `RedisSecurityIntegrationTest` |
+| Rate limit store mémoire (429) | `RateLimitMemoryIntegrationTest` |
 | CORS | `CorsPreflightTest` |
 | Auth / register | `AuthControllerTest`, `AuthRegistrationSecurityTest` |
 | Prod safety | `ProdSafetyChecksTest` |
@@ -76,7 +77,9 @@ Couverture documentée : utilitaires offline, ErrorBoundary, composants / pages 
 | `admin-rgpd.spec.ts` | Console consentements |
 | `teacher-journey.spec.ts` | Blocage, CSV, assignation |
 | `role-guard.spec.ts` | Redirections multi-rôles |
-| `z-rate-limit.spec.ts` | HTTP 429 (exécuté en dernier) |
+| `sidebar.spec.ts` | Navigation latérale enseignant |
+
+HTTP 429 : `RateLimitMemoryIntegrationTest` / `RedisSecurityIntegrationTest` (pas d’E2E hammer).
 
 Prérequis : stack Podman + bootstrap démo (`docs/RNCP6-TESTS.md`).
 
@@ -90,7 +93,7 @@ npm run e2e
 
 Workflow `.github/workflows/ci.yml` :
 
-- lint / test / build frontend (Node 22) ;
+- lint / test / build frontend (Node 24) ;
 - tests + JAR backend (Java 21) ;
 - job E2E avec services PostgreSQL 17 + Redis 7.4.
 
@@ -110,7 +113,7 @@ Autres workflows sécurité :
 ## 6. Limites de la stratégie de tests (documentées)
 
 - E2E parfois stateful ; idempotence partielle.
-- Rate-limit E2E doit rester **dernier**.
+- Rate-limit 429 couvert en IT backend (mémoire + Redis), pas en E2E Playwright.
 - Pas d’E2E offline PWA (Vitest seulement pour la file).
 - Trivy / dependency-review **non bloquants**.
 
@@ -127,7 +130,7 @@ Plan de tests pour le dossier (tableau type) :
 | ID | Cas | Type | Résultat attendu | Preuve |
 |----|-----|------|------------------|--------|
 | T-AUTH-01 | Login enseignant | E2E | Dashboard | `smoke.spec.ts` |
-| T-AUTH-02 | Trop de login | E2E | 429 | `z-rate-limit.spec.ts` |
+| T-AUTH-02 | Trop de login | IT | 429 | `RateLimitMemoryIntegrationTest` (+ Redis IT) |
 | T-SEC-01 | Refresh cookie Secure prod | IT | attributs cookie | `RefreshCookieSecurityProdTest` |
 | T-SEC-02 | Révocation JTI Redis | IT | token rejeté | `RedisSecurityIntegrationTest` |
 | T-RGPD-01 | Accès console admin | E2E | page consentements | `admin-rgpd.spec.ts` |

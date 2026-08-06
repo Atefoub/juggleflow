@@ -69,8 +69,7 @@
 <span class="ln"> 129</span>
 <span class="ln"> 130</span>
 <span class="ln"> 131</span></div>
-    <pre><code class="language-java">      .authorizeHttpRequests(auth -&gt; auth
-        .requestMatchers(PUBLIC_ROUTES).permitAll()
+    <pre><code class="language-java">        .requestMatchers(PUBLIC_ROUTES).permitAll()
 
         .requestMatchers(SWAGGER_ROUTES).access(swaggerAuthorizationManager())
 
@@ -81,7 +80,8 @@
         .hasAnyAuthority("ROLE_ENSEIGNANT", "ROLE_ADMINISTRATEUR")
 
         .anyRequest().authenticated()
-      )</code></pre>
+      )
+</code></pre>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>

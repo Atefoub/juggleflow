@@ -36,7 +36,9 @@ Répertoire : `apps/frontend/e2e/`
 | `admin-rgpd.spec.ts` | Admin → page RGPD, section consentements | `admin@juggleflow.local` |
 | `teacher-journey.spec.ts` | Alerte blocage, export CSV, assignation parcours | Enseignant CE1 |
 | `role-guard.spec.ts` | Redirection selon le rôle (élève / enseignant / admin) | Comptes démo |
-| `z-rate-limit.spec.ts` | Trop de POST `/api/auth/login` → HTTP 429 | API seule (exécuté en dernier) |
+| `sidebar.spec.ts` | Navigation latérale enseignant | Enseignant |
+
+HTTP 429 (rate limiting) : tests backend `RateLimitMemoryIntegrationTest` (store mémoire) et `RedisSecurityIntegrationTest` (store Redis / prod).
 
 Mot de passe démo : `Demo2026!` (`E2E_PASSWORD`). Admin CI : `Admin2026!` (`E2E_ADMIN_PASSWORD`).
 
@@ -61,13 +63,14 @@ Variables optionnelles : `E2E_PASSWORD`, `E2E_TEACHER_EMAIL`, `E2E_STUDENT_EMAIL
 Workflow : `.github/workflows/ci.yml`, job **E2E (Playwright)**.
 
 - Services : PostgreSQL 17, Redis 7.
-- Backend : `DEMO_BOOTSTRAP_ENABLED=true`, stores Redis pour JWT et rate limit.
+- Backend : `DEMO_BOOTSTRAP_ENABLED=true`, stores **mémoire** pour JWT et rate limit (Redis reste démarré ; health Redis désactivé pour éviter le flaky).
+- Quota auth E2E : `APP_RATE_LIMIT_MAX_REQUESTS=200` (login + refresh UI partagent `127.0.0.1`).
 - Frontend : `nx serve` via `playwright.config.mts`.
 - Rapport HTML uploadé en artefact en cas d’échec.
 
 ## Couverture fonctionnelle visée (RNCP6)
 
-- **Sécurité** : session (cookies refresh), rate limiting, révocation (tests backend Redis).
+- **Sécurité** : session (cookies refresh) ; rate limiting + révocation JWT (tests backend mémoire et Redis).
 - **Multi-rôles** : élève, enseignant, administrateur.
 - **RGPD** : accès à la console consentements parentaux.
 - **Métier** : suivi de classe, alerte de blocage sur figure, export CSV, assignation de parcours.
@@ -75,7 +78,7 @@ Workflow : `.github/workflows/ci.yml`, job **E2E (Playwright)**.
 ## Limites connues
 
 - Les E2E modifient parfois l’état (ex. assignation d’un parcours) ; les scénarios sont écrits pour être **ré-exécutables** (idempotence partielle).
-- Le test rate limit (`z-*.spec.ts`) doit rester **en dernier** pour ne pas saturer le quota login (10/min/IP).
+- Le 429 n’est **pas** prouvé en Playwright (hammer login flaky) ; il l’est en JUnit (`RateLimitMemoryIntegrationTest`, `RedisSecurityIntegrationTest`).
 - Pas de test E2E PWA offline pour l’instant (file d’attente couverte en Vitest).
 
 ## Commandes utiles (dossier)

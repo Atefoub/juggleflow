@@ -54,29 +54,9 @@
   </style>
 </head>
 <body>
-  <div class="path"><strong>apps/frontend/e2e/z-rate-limit.spec.ts</strong> · lignes 1–41</div>
+  <div class="path"><strong>apps/backend/src/test/java/com/juggleflow/backend/security/RateLimitMemoryIntegrationTest.java</strong> · lignes 21–80</div>
   <div class="frame">
-    <div class="gutter"><span class="ln">   1</span>
-<span class="ln">   2</span>
-<span class="ln">   3</span>
-<span class="ln">   4</span>
-<span class="ln">   5</span>
-<span class="ln">   6</span>
-<span class="ln">   7</span>
-<span class="ln">   8</span>
-<span class="ln">   9</span>
-<span class="ln">  10</span>
-<span class="ln">  11</span>
-<span class="ln">  12</span>
-<span class="ln">  13</span>
-<span class="ln">  14</span>
-<span class="ln">  15</span>
-<span class="ln">  16</span>
-<span class="ln">  17</span>
-<span class="ln">  18</span>
-<span class="ln">  19</span>
-<span class="ln">  20</span>
-<span class="ln">  21</span>
+    <div class="gutter"><span class="ln">  21</span>
 <span class="ln">  22</span>
 <span class="ln">  23</span>
 <span class="ln">  24</span>
@@ -96,48 +76,106 @@
 <span class="ln">  38</span>
 <span class="ln">  39</span>
 <span class="ln">  40</span>
-<span class="ln">  41</span></div>
-    <pre><code class="language-typescript">import { test, expect } from '@playwright/test';
-import { backendUrl } from './helpers/auth';
-
-/**
- * Exécuté en dernier (préfixe z-). IP isolée via X-Forwarded-For (CI : APP_TRUSTED_PROXY=true)
- * pour ne pas partager le quota avec les logins UI des autres specs.
+<span class="ln">  41</span>
+<span class="ln">  42</span>
+<span class="ln">  43</span>
+<span class="ln">  44</span>
+<span class="ln">  45</span>
+<span class="ln">  46</span>
+<span class="ln">  47</span>
+<span class="ln">  48</span>
+<span class="ln">  49</span>
+<span class="ln">  50</span>
+<span class="ln">  51</span>
+<span class="ln">  52</span>
+<span class="ln">  53</span>
+<span class="ln">  54</span>
+<span class="ln">  55</span>
+<span class="ln">  56</span>
+<span class="ln">  57</span>
+<span class="ln">  58</span>
+<span class="ln">  59</span>
+<span class="ln">  60</span>
+<span class="ln">  61</span>
+<span class="ln">  62</span>
+<span class="ln">  63</span>
+<span class="ln">  64</span>
+<span class="ln">  65</span>
+<span class="ln">  66</span>
+<span class="ln">  67</span>
+<span class="ln">  68</span>
+<span class="ln">  69</span>
+<span class="ln">  70</span>
+<span class="ln">  71</span>
+<span class="ln">  72</span>
+<span class="ln">  73</span>
+<span class="ln">  74</span>
+<span class="ln">  75</span>
+<span class="ln">  76</span>
+<span class="ln">  77</span>
+<span class="ln">  78</span>
+<span class="ln">  79</span>
+<span class="ln">  80</span></div>
+    <pre><code class="language-java">/**
+ * Couverture du store mémoire (dev / E2E CI). Le chemin Redis prod est dans
+ * {@link RedisSecurityIntegrationTest}. Le 429 ne doit pas être prouvé via Playwright :
+ * bcrypt + refill greedy + quota UI partagé rendent un hammer E2E flaky.
  */
-const RATE_LIMIT_TEST_IP = '203.0.113.77';
+@SpringBootTest(properties = {
+  "app.jwt.revocation.store=memory",
+  "app.rate-limit.store=memory",
+  "app.rate-limit.enabled=true",
+  "app.rate-limit.max-requests=2",
+  "app.rate-limit.window-seconds=60",
+  "app.trusted-proxy=true"
+})
+@ActiveProfiles("test")
+class RateLimitMemoryIntegrationTest {
 
-/** CI élève le plafond auth (80) ; il faut dépasser ce quota sur l’IP de test isolée. */
-const PROBE_ATTEMPTS = Number(process.env.E2E_RATE_LIMIT_PROBE_ATTEMPTS ?? 15);
+  @Autowired private WebApplicationContext context;
+  @Autowired private ObjectMapper objectMapper;
 
-test.describe('Rate limiting (API)', () =&gt; {
-  test('login: trop de tentatives → HTTP 429', async ({ request }) =&gt; {
-    const url = backendUrl('/api/auth/login');
-    let saw429 = false;
+  private MockMvc mockMvc;
 
-    for (let i = 0; i &lt; PROBE_ATTEMPTS; i++) {
-      const response = await request.post(url, {
-        data: {
-          email: 'rate-limit-e2e@ecole.fr',
-          password: 'WrongPassword!',
-        },
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Forwarded-For': RATE_LIMIT_TEST_IP,
-        },
-      });
+  @BeforeEach
+  void setUp() {
+    mockMvc = MockMvcBuilders
+      .webAppContextSetup(context)
+      .apply(SecurityMockMvcConfigurers.springSecurity())
+      .build();
+  }
 
-      if (response.status() === 429) {
-        saw429 = true;
-        const body = await response.text();
-        expect(body).toMatch(/Too Many Requests|trop de tentatives/i);
-        break;
-      }
+  @Test
+  @DisplayName("Rate limit (memory) + trusted proxy → 3e login sur la même IP XFF → 429")
+  void rateLimitMemory_shouldReturn429AfterQuota() throws Exception {
+    LoginRequest req = new LoginRequest();
+    req.setEmail("rate-limit-memory@test.fr");
+    req.setPassword("wrong-password");
+    String json = objectMapper.writeValueAsString(req);
 
-      expect([401, 429]).toContain(response.status());
-    }
+    // IP dédiée à ce test (buckets mémoire persistants dans le contexte Spring)
+    String xffIp = "203.0.113.50";
 
-    expect(saw429).toBe(true);
-  });</code></pre>
+    mockMvc.perform(post("/api/auth/login")
+        .with(remoteAddr("10.0.0.1"))
+        .header("X-Forwarded-For", xffIp)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(json))
+      .andExpect(status().isUnauthorized());
+
+    mockMvc.perform(post("/api/auth/login")
+        .with(remoteAddr("10.0.0.1"))
+        .header("X-Forwarded-For", xffIp)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(json))
+      .andExpect(status().isUnauthorized());
+
+    mockMvc.perform(post("/api/auth/login")
+        .with(remoteAddr("10.0.0.1"))
+        .header("X-Forwarded-For", xffIp)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(json))
+      .andExpect(status().isTooManyRequests());</code></pre>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>

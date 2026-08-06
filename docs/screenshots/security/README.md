@@ -22,5 +22,5 @@ Images générées pour le dossier professionnel (RNCP 37873 — Concepteur dév
 | `gdpr-consent-endpoints.png` | API RGPD admin (`/api/admin/gdpr`) | Conformité mineurs / consentements |
 | `test-redis-security-integration.png` | Tests Testcontainers Redis | Preuve automatisée révocation + rate limit |
 | `test-jwt-utils.png` | Tests unitaires JWT | Validation des règles token |
-| `test-rate-limit-429.png` | E2E Playwright HTTP 429 | Comportement observé en conditions réelles |
+| `test-rate-limit-429.png` | IT mémoire HTTP 429 | `RateLimitMemoryIntegrationTest` (store E2E/dev) |
 | `frontend-protected-routes-by-role.png` | `ProtectedRoute` React | Garde côté client complémentaire |
