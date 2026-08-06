@@ -97,11 +97,11 @@ jobs:
           wait_for_port 5432 Postgres
           wait_for_port 6379 Redis
 
-      - name: Build backend jar for E2E
-        working-directory: apps/backend
-        run: |
-          chmod +x mvnw
-          ./mvnw -q package -DskipTests
+      - name: Download backend jar
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-jar
+          path: apps/backend/target
 
       - name: Start API with demo data
         env:
@@ -125,6 +125,11 @@ jobs:
           APP_RATE_LIMIT_MAX_REQUESTS: "80"
         run: |
           JAR="apps/backend/target/backend-0.0.1-SNAPSHOT.jar"
+          if [ ! -f "${JAR}" ]; then
+            echo "Missing backend jar at ${JAR}"
+            ls -la apps/backend/target/ || true
+            exit 1
+          fi
           nohup java -jar "${JAR}" > backend-e2e.log 2>&1 &
           echo $! > backend.pid
           for _ in $(seq 1 90); do
@@ -204,5 +209,16 @@ jobs:
 
       - name: Build jar
         working-directory: apps/backend
-        run: ./mvnw -q clean package -DskipTests
+        run: |
+          chmod +x mvnw
+          ./mvnw -q clean package -DskipTests
+          test -f target/backend-0.0.1-SNAPSHOT.jar
+
+      - name: Upload backend jar for E2E
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: apps/backend/target/backend-0.0.1-SNAPSHOT.jar
+          if-no-files-found: error
+          retention-days: 1
 
