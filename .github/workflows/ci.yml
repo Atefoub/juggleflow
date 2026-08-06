@@ -58,19 +58,11 @@ jobs:
         run: |
           ./mvnw -q clean package -DskipTests
           test -f target/backend-0.0.1-SNAPSHOT.jar
-          ls -lh target/backend-0.0.1-SNAPSHOT.jar
-
-      - name: Upload backend jar for E2E
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-jar
-          path: apps/backend/target/backend-0.0.1-SNAPSHOT.jar
-          if-no-files-found: error
-          retention-days: 1
 
   e2e:
     name: E2E (Playwright)
     runs-on: ubuntu-latest
+    # Garantit que lint/tests unitaires passent avant E2E (pas de partage de JAR).
     needs: [frontend, backend]
     services:
       postgres:
@@ -95,25 +87,6 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
-    env:
-      POSTGRES_DB: juggleflow_db
-      POSTGRES_USER: juggleflow_user
-      POSTGRES_PASSWORD: juggleflow_dev
-      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/juggleflow_db
-      JWT_SECRET: e2e-ci-jwt-secret-must-be-at-least-32-chars-long
-      CORS_ALLOWED_ORIGINS: http://localhost:4200
-      COOKIE_SECURE: "false"
-      DEMO_BOOTSTRAP_ENABLED: "true"
-      DEMO_BOOTSTRAP_PASSWORD: Demo2026!
-      ADMIN_BOOTSTRAP_EMAIL: admin@juggleflow.local
-      ADMIN_BOOTSTRAP_PASSWORD: Admin2026!
-      REDIS_HOST: localhost
-      REDIS_PORT: "6379"
-      APP_JWT_REVOCATION_STORE: redis
-      APP_RATE_LIMIT_STORE: redis
-      APP_TRUSTED_PROXY: "true"
-      # Chaque visite de /login appelle aussi /auth/refresh (compté dans le quota).
-      APP_RATE_LIMIT_MAX_REQUESTS: "80"
     steps:
       - uses: actions/checkout@v4
 
@@ -126,6 +99,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: maven
 
       - name: Install dependencies
         run: npm ci
@@ -150,76 +124,41 @@ jobs:
           wait_for_port 5432 Postgres
           wait_for_port 6379 Redis
 
-      - name: Download backend jar
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-jar
-          path: e2e-artifacts
-
-      - name: Resolve backend jar path
-        id: jar
+      - name: Build backend jar for E2E
+        working-directory: apps/backend
         run: |
-          set -euo pipefail
-          echo "Artifact tree:"
-          find e2e-artifacts -type f -print || true
-          JAR="$(find e2e-artifacts -type f -name 'backend-0.0.1-SNAPSHOT.jar' ! -name '*.original' | head -n 1 || true)"
-          if [ -z "${JAR}" ]; then
-            JAR="$(find e2e-artifacts -type f -name '*.jar' ! -name '*.original' | head -n 1 || true)"
-          fi
-          if [ -z "${JAR}" ] || [ ! -f "${JAR}" ]; then
-            echo "Artifact jar missing — rebuilding locally as fallback"
-            chmod +x apps/backend/mvnw
-            (cd apps/backend && ./mvnw -q package -DskipTests)
-            JAR="apps/backend/target/backend-0.0.1-SNAPSHOT.jar"
-          fi
-          if [ ! -f "${JAR}" ]; then
-            echo "FATAL: no backend jar available"
-            exit 1
-          fi
-          cp "${JAR}" "${RUNNER_TEMP}/juggleflow-backend.jar"
-          ls -lh "${RUNNER_TEMP}/juggleflow-backend.jar"
-          echo "path=${RUNNER_TEMP}/juggleflow-backend.jar" >> "$GITHUB_OUTPUT"
+          chmod +x mvnw
+          ./mvnw -q package -DskipTests
+          test -f target/backend-0.0.1-SNAPSHOT.jar
+          ls -lh target/backend-0.0.1-SNAPSHOT.jar
+          cp target/backend-0.0.1-SNAPSHOT.jar "${RUNNER_TEMP}/juggleflow-backend.jar"
 
-      - name: Start API with demo data
-        run: |
-          set -euo pipefail
-          JAR="${{ steps.jar.outputs.path }}"
-          echo "Starting backend from ${JAR}"
-          # setsid: détache le process du step shell (sinon risque de SIGHUP en fin de step)
-          setsid java -jar "${JAR}" > backend-e2e.log 2>&1 < /dev/null &
-          echo $! > backend.pid
-          echo "Backend PID=$(cat backend.pid)"
-
-          for i in $(seq 1 90); do
-            if ! kill -0 "$(cat backend.pid)" 2>/dev/null; then
-              echo "Backend process exited early (attempt ${i})"
-              tail -n 200 backend-e2e.log || true
-              exit 1
-            fi
-
-            if curl -sf http://127.0.0.1:8080/actuator/health 2>/dev/null | grep -q '"status":"UP"'; then
-              LOGIN_BODY='{"email":"marie.dupont@ecole.fr","password":"Demo2026!"}'
-              if curl -sf -X POST http://127.0.0.1:8080/api/auth/login \
-                -H 'Content-Type: application/json' \
-                -d "${LOGIN_BODY}" \
-                | grep -q 'accessToken'; then
-                echo "Backend ready (health + demo login OK) after ${i} attempt(s)"
-                exit 0
-              fi
-              echo "Health UP but demo login not ready yet (attempt ${i})"
-            else
-              echo "Waiting for health… (attempt ${i}/90)"
-            fi
-            sleep 5
-          done
-
-          echo "Backend failed to become ready in time"
-          tail -n 200 backend-e2e.log || true
-          exit 1
-
-      - name: Run E2E tests
+      # IMPORTANT: démarrer l'API et lancer Playwright dans LE MÊME step.
+      # Sur GitHub Actions, un process lancé en arrière-plan dans un step
+      # est souvent tué à la fin de ce step — d'où les E2E qui ne trouvent
+      # plus l'API sur :8080.
+      - name: Start API and run E2E
         env:
-          CI: true
+          POSTGRES_DB: juggleflow_db
+          POSTGRES_USER: juggleflow_user
+          POSTGRES_PASSWORD: juggleflow_dev
+          SPRING_DATASOURCE_URL: jdbc:postgresql://127.0.0.1:5432/juggleflow_db
+          JWT_SECRET: e2e-ci-jwt-secret-must-be-at-least-32-chars-long
+          CORS_ALLOWED_ORIGINS: http://localhost:4200
+          COOKIE_SECURE: "false"
+          DEMO_BOOTSTRAP_ENABLED: "true"
+          DEMO_BOOTSTRAP_PASSWORD: Demo2026!
+          ADMIN_BOOTSTRAP_EMAIL: admin@juggleflow.local
+          ADMIN_BOOTSTRAP_PASSWORD: Admin2026!
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: "6379"
+          # Stores mémoire en E2E : évite un health Redis flaky ; Redis reste dispo si besoin.
+          APP_JWT_REVOCATION_STORE: memory
+          APP_RATE_LIMIT_STORE: memory
+          APP_TRUSTED_PROXY: "true"
+          APP_RATE_LIMIT_MAX_REQUESTS: "80"
+          MANAGEMENT_HEALTH_REDIS_ENABLED: "false"
+          CI: "true"
           PLAYWRIGHT_BACKEND_URL: http://127.0.0.1:8080
           E2E_RATE_LIMIT_PROBE_ATTEMPTS: "85"
           E2E_PASSWORD: Demo2026!
@@ -227,16 +166,51 @@ jobs:
           E2E_STUDENT_EMAIL: lucas.martin@ecole.fr
           E2E_ADMIN_EMAIL: admin@juggleflow.local
           E2E_ADMIN_PASSWORD: Admin2026!
-        run: npm run e2e
-
-      - name: Stop API
-        if: always()
         run: |
-          if [ -f backend.pid ]; then
-            kill "$(cat backend.pid)" 2>/dev/null || true
-            sleep 1
-            kill -9 "$(cat backend.pid)" 2>/dev/null || true
-          fi
+          set -euo pipefail
+          JAR="${RUNNER_TEMP}/juggleflow-backend.jar"
+          test -f "${JAR}"
+
+          java -jar "${JAR}" > backend-e2e.log 2>&1 &
+          BACKEND_PID=$!
+          echo "Backend PID=${BACKEND_PID}"
+
+          cleanup() {
+            kill "${BACKEND_PID}" 2>/dev/null || true
+            wait "${BACKEND_PID}" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          echo "Waiting for backend health + demo login…"
+          for i in $(seq 1 90); do
+            if ! kill -0 "${BACKEND_PID}" 2>/dev/null; then
+              echo "Backend exited early (attempt ${i})"
+              tail -n 200 backend-e2e.log || true
+              exit 1
+            fi
+
+            if curl -sf "http://127.0.0.1:8080/actuator/health" 2>/dev/null | grep -q '"status":"UP"'; then
+              if curl -sf -X POST "http://127.0.0.1:8080/api/auth/login" \
+                -H 'Content-Type: application/json' \
+                -d '{"email":"marie.dupont@ecole.fr","password":"Demo2026!"}' \
+                | grep -q 'accessToken'; then
+                echo "Backend ready after ${i} attempt(s)"
+                break
+              fi
+              echo "Health UP, waiting for demo login… (${i}/90)"
+            else
+              echo "Waiting for health… (${i}/90)"
+            fi
+
+            if [ "${i}" -eq 90 ]; then
+              echo "Backend failed to become ready"
+              tail -n 200 backend-e2e.log || true
+              exit 1
+            fi
+            sleep 5
+          done
+
+          npm run e2e
 
       - name: Upload backend log on E2E failure
         if: failure()
