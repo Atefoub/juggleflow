@@ -94,7 +94,34 @@
 <span class="ln"> 226</span>
 <span class="ln"> 227</span>
 <span class="ln"> 228</span></div>
-    <pre><code class="language-java">  /**
+    <pre><code class="language-java">   * requêtes parallèles de valider le même refresh.
+   */
+  public boolean consumeRefreshToken(String token) {
+    try {
+      String jti = extractClaim(token, Claims::getId);
+      if (!StringUtils.hasText(jti)) {
+        return false;
+      }
+
+      Date exp = extractExpiration(token);
+      long ttlMs = exp.getTime() - System.currentTimeMillis();
+      if (ttlMs &lt;= 0) {
+        return false;
+      }
+
+      if ("redis".equalsIgnoreCase(revocationStore) &amp;&amp; redis != null) {
+        Boolean acquired = redis.opsForValue().setIfAbsent(
+          REDIS_KEY_PREFIX + jti, "1", Duration.ofMillis(ttlMs));
+        return Boolean.TRUE.equals(acquired);
+      }
+
+      return revokedTokenIds.add(jti);
+    } catch (JwtException | IllegalArgumentException e) {
+      return false;
+    }
+  }
+
+  /**
    * Révoque un token en ajoutant son JTI en blacklist (logout, rotation).
    */
   public void revokeToken(String token) {
@@ -104,34 +131,7 @@
         return;
       }
 
-      Date exp = extractExpiration(token);
-      long ttlMs = exp.getTime() - System.currentTimeMillis();
-      if (ttlMs &lt;= 0) {
-        return;
-      }
-
-      if ("redis".equalsIgnoreCase(revocationStore) &amp;&amp; redis != null) {
-        redis.opsForValue().set(REDIS_KEY_PREFIX + jti, "1", Duration.ofMillis(ttlMs));
-      } else {
-        revokedTokenIds.add(jti);
-      }
-    } catch (JwtException | IllegalArgumentException ignored) {
-      // Token déjà invalide — pas besoin de le révoquer
-    }
-  }
-
-  private boolean isRevoked(String jti) {
-    if (!StringUtils.hasText(jti)) {
-      return false;
-    }
-
-    if ("redis".equalsIgnoreCase(revocationStore) &amp;&amp; redis != null) {
-      Boolean exists = redis.hasKey(REDIS_KEY_PREFIX + jti);
-      return Boolean.TRUE.equals(exists);
-    }
-
-    return revokedTokenIds.contains(jti);
-  }</code></pre>
+      Date exp = extractExpiration(token);</code></pre>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>

@@ -83,8 +83,7 @@
 <span class="ln"> 115</span>
 <span class="ln"> 116</span>
 <span class="ln"> 117</span></div>
-    <pre><code class="language-java">      .headers(headers -&gt; headers
-        .contentTypeOptions(c -&gt; {})
+    <pre><code class="language-java">        .contentTypeOptions(c -&gt; {})
         .frameOptions(frame -&gt; frame.deny())
         .httpStrictTransportSecurity(hsts -&gt; hsts
           .includeSubDomains(true)
@@ -109,7 +108,8 @@
         .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
           "Cross-Origin-Resource-Policy", "same-origin"
         ))
-      )</code></pre>
+      )
+</code></pre>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>

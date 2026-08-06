@@ -113,8 +113,7 @@
 <span class="ln"> 136</span>
 <span class="ln"> 137</span>
 <span class="ln"> 138</span></div>
-    <pre><code class="language-java">  @Bean
-  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    <pre><code class="language-java">  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     return http
       .csrf(AbstractHttpConfigurer::disable)
 
@@ -169,7 +168,8 @@
       .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
       .addFilterBefore(rateLimitFilter, JwtFilter.class)
 
-      .build();</code></pre>
+      .build();
+  }</code></pre>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>

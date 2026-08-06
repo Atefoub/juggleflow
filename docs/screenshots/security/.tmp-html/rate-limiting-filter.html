@@ -174,7 +174,8 @@
 <span class="ln"> 148</span>
 <span class="ln"> 149</span>
 <span class="ln"> 150</span></div>
-    <pre><code class="language-java">  private static final int MAX_BUCKET_ENTRIES_DEFAULT = 10_000;
+    <pre><code class="language-java">
+  private static final int MAX_BUCKET_ENTRIES_DEFAULT = 10_000;
 
   private static final Set&lt;String&gt; RATE_LIMITED_PATHS = Set.of(
     "/api/auth/login",
@@ -210,6 +211,16 @@
   private StringRedisTemplate redis;
 
   private final Map&lt;String, Bucket&gt; buckets = new ConcurrentHashMap&lt;&gt;();
+
+  @PostConstruct
+  void warnIfTrustedProxyEnabled() {
+    if (trustedProxy) {
+      log.warn(
+        "app.trusted-proxy=true : le rate limiting utilise la dernière entrée X-Forwarded-For. "
+          + "Fiable uniquement derrière un reverse proxy unique (nginx/traefik). "
+          + "Sans proxy dédié, un client peut forger XFF et contourner le rate limit.");
+    }
+  }
 
   private static final String REDIS_KEY_PREFIX = "ratelimit:auth:ip:";
 
@@ -280,18 +291,7 @@
       log.warn("Rate limit map saturée ({} entrées) — rejet de l'IP {}",
         maxBucketEntries, clientIp);
       sendTooManyRequests(response);
-      return;
-    }
-
-    Bucket bucket = buckets.computeIfAbsent(clientIp, k -&gt; createBucket());
-
-    if (bucket.tryConsume(1)) {
-      filterChain.doFilter(request, response);
-    } else {
-      log.warn("Rate limit dépassé pour IP : {}", clientIp);
-      sendTooManyRequests(response);
-    }
-  }</code></pre>
+      return;</code></pre>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>

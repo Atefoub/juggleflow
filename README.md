@@ -290,7 +290,7 @@ juggleflow/
 │   │   │   ├── teacher-journey.spec.ts
 │   │   │   ├── admin-rgpd.spec.ts
 │   │   │   ├── role-guard.spec.ts
-│   │   │   └── z-rate-limit.spec.ts        # Exécuté en dernier (ordre alpha)
+│   │   │   └── sidebar.spec.ts
 │   │   └── src/
 │   │       ├── api/                        # Couche HTTP + wrappers offline
 │   │       ├── components/                 # Composants réutilisables
@@ -376,7 +376,9 @@ npm run e2e:ui
 | `teacher-journey.spec.ts` | Tableau de bord, blocage, export CSV, assignation |
 | `admin-rgpd.spec.ts` | Consentements, exports, anonymisation |
 | `role-guard.spec.ts` | Isolation des routes par rôle |
-| `z-rate-limit.spec.ts` | Déclenchement du rate limiting (exécuté en dernier) |
+| `sidebar.spec.ts` | Navigation latérale enseignant |
+
+Le HTTP 429 (rate limiting auth) est couvert côté backend (`RateLimitMemoryIntegrationTest`, `RedisSecurityIntegrationTest`), pas en E2E Playwright — un hammer login E2E est flaky (bcrypt + refill Bucket4j + quota partagé login/refresh).
 
 ### Pipeline CI — GitHub Actions
 

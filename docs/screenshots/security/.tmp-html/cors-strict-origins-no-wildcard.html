@@ -78,8 +78,7 @@
 <span class="ln"> 167</span>
 <span class="ln"> 168</span>
 <span class="ln"> 169</span></div>
-    <pre><code class="language-java">  @Bean
-  public CorsConfigurationSource corsConfigurationSource() {
+    <pre><code class="language-java">  public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
 
     List&lt;String&gt; origins = List.of(allowedOrigins.split(","));
@@ -99,7 +98,8 @@
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", config);
-    return source;</code></pre>
+    return source;
+  }</code></pre>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>

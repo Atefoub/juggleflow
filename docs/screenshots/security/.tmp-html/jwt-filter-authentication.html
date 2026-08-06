@@ -100,7 +100,13 @@
 <span class="ln">  73</span>
 <span class="ln">  74</span>
 <span class="ln">  75</span></div>
-    <pre><code class="language-java">  @Override
+    <pre><code class="language-java">      @Lazy GdprService gdprService) {
+    this.jwtUtils = jwtUtils;
+    this.userDetailsService = userDetailsService;
+    this.gdprService = gdprService;
+  }
+
+  @Override
   protected void doFilterInternal(HttpServletRequest request,
                                   HttpServletResponse response,
                                   FilterChain filterChain)
@@ -121,7 +127,13 @@
       if (email != null &amp;&amp; SecurityContextHolder.getContext().getAuthentication() == null) {
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-        if (jwtUtils.isTokenValid(jwt, userDetails)) {
+        if (!userDetails.isEnabled()) {
+          log.debug("Compte désactivé — requête sur {}", request.getRequestURI());
+        } else if (userDetails instanceof JuggleflowUserDetails juggleflowUser
+            &amp;&amp; !gdprService.isStudentAuthenticationAllowed(juggleflowUser.getUser())) {
+          log.debug("Consentement parental invalide — requête sur {}",
+            request.getRequestURI());
+        } else if (jwtUtils.isTokenValid(jwt, userDetails)) {
           UsernamePasswordAuthenticationToken authToken =
             new UsernamePasswordAuthenticationToken(
               userDetails, null, userDetails.getAuthorities());
@@ -131,19 +143,7 @@
         } else {
           log.debug("Token JWT invalide ou révoqué pour la requête sur {}",
             request.getRequestURI());
-        }
-      }
-    } catch (io.jsonwebtoken.ExpiredJwtException e) {
-      log.debug("Token JWT expiré — requête sur {}", request.getRequestURI());
-    } catch (io.jsonwebtoken.JwtException e) {
-      log.warn("Token JWT malformé sur {} : {}", request.getRequestURI(), e.getMessage());
-    } catch (Exception e) {
-      log.error("Erreur inattendue dans JwtFilter sur {} : {}",
-        request.getRequestURI(), e.getMessage());
-    }
-
-    filterChain.doFilter(request, response);
-  }</code></pre>
+        }</code></pre>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
