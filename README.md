@@ -15,8 +15,8 @@
   <a href="https://github.com/votre-org/juggleflow/actions/workflows/codeql.yml"><img src="https://github.com/votre-org/juggleflow/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License MIT"></a>
   <img src="https://img.shields.io/badge/Java-21-orange?logo=openjdk" alt="Java 21">
-  <img src="https://img.shields.io/badge/Spring_Boot-3.4.2-6DB33F?logo=springboot&logoColor=white" alt="Spring Boot 3.4">
-  <img src="https://img.shields.io/badge/Node-22-339933?logo=nodedotjs&logoColor=white" alt="Node 22">
+  <img src="https://img.shields.io/badge/Spring_Boot-3.4.13-6DB33F?logo=springboot&logoColor=white" alt="Spring Boot 3.4">
+  <img src="https://img.shields.io/badge/Node-24-339933?logo=nodedotjs&logoColor=white" alt="Node 24">
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React 19">
   <img src="https://img.shields.io/badge/PWA-Ready-5A0FC8?logo=pwa" alt="PWA Ready">
   <img src="https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL 17">
@@ -91,7 +91,7 @@
 | Routing | React Router DOM | v6 |
 | Formulaires | React Hook Form + Zod | v7 / v4 |
 | PWA | vite-plugin-pwa + Workbox | 1.3 |
-| Backend | Spring Boot + Java | 3.4.2 / 21 |
+| Backend | Spring Boot + Java | 3.4.13 / 21 |
 | Authentification | JWT (access + refresh httpOnly) + révocation JTI Redis | — |
 | Base de données | PostgreSQL + migrations Flyway | 17 / V1→V18 |
 | Cache / sécurité | Redis (révocation JWT + rate limiting distribués) | 7 |
@@ -138,7 +138,7 @@ graph LR
 
 | Outil | Version minimale | Lien |
 |-------|-----------------|------|
-| Node.js | 22 | [nodejs.org](https://nodejs.org) |
+| Node.js | 24 (LTS) | [nodejs.org](https://nodejs.org) |
 | Java (JDK) | 21 | [adoptium.net](https://adoptium.net) |
 | PostgreSQL | 17 | [postgresql.org](https://www.postgresql.org) |
 | Redis | 7 | [redis.io](https://redis.io) |
