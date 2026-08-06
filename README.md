@@ -84,8 +84,8 @@
 
 | Composant | Technologie | Version |
 |-----------|-------------|---------|
-| Monorepo | [Nx](https://nx.dev) | 22.6.5 |
-| Frontend | React + TypeScript + Vite | 19 / 5.9 / 8 |
+| Monorepo | [Nx](https://nx.dev) | 23.1.1 |
+| Frontend | React + TypeScript + Vite | 19 / 6.0.3 / 8 |
 | UI | Tailwind CSS | 4 |
 | Data-fetching | TanStack Query | v5 |
 | Routing | React Router DOM | v6 |
@@ -93,8 +93,8 @@
 | PWA | vite-plugin-pwa + Workbox | 1.3 |
 | Backend | Spring Boot + Java | 3.4.13 / 21 |
 | Authentification | JWT (access + refresh httpOnly) + révocation JTI Redis | — |
-| Base de données | PostgreSQL + migrations Flyway | 17 / V1→V18 |
-| Cache / sécurité | Redis (révocation JWT + rate limiting distribués) | 7 |
+| Base de données | PostgreSQL + migrations Flyway | 17 / V1→V24 |
+| Cache / sécurité | Redis (révocation JWT + rate limiting distribués) | 7.4 |
 | Tests frontend | Vitest + Testing Library | 4.1 |
 | Tests backend | JUnit 5 | — |
 | Tests E2E | Playwright | 1.52 |
@@ -311,7 +311,7 @@ juggleflow/
 │           │   ├── security/               # Filtres JWT, rate limiting
 │           │   └── service/                # Logique métier
 │           └── resources/
-│               └── db/migration/           # Migrations Flyway (V1 → V18)
+│               └── db/migration/           # Migrations Flyway (V1 → V24)
 ├── docker-compose.yml                      # Stack de développement local
 ├── compose.prod.yml                        # Stack prod-like (images immutables)
 ├── nx.json                                 # Configuration Nx
