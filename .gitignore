@@ -63,3 +63,6 @@ apps/frontend/dev-dist/
 /blob-report/
 apps/frontend/test-results/
 apps/frontend/playwright-report/
+.nx/polygraph
+.nx/self-healing
+.nx/migrate-runs
