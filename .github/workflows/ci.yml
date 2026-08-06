@@ -97,8 +97,13 @@ jobs:
           wait_for_port 5432 Postgres
           wait_for_port 6379 Redis
 
-      - name: Start API with demo data
+      - name: Build backend jar for E2E
         working-directory: apps/backend
+        run: |
+          chmod +x mvnw
+          ./mvnw -q package -DskipTests
+
+      - name: Start API with demo data
         env:
           POSTGRES_DB: juggleflow_db
           POSTGRES_USER: juggleflow_user
@@ -119,16 +124,17 @@ jobs:
           # Chaque visite de /login appelle aussi /auth/refresh (compté dans le quota).
           APP_RATE_LIMIT_MAX_REQUESTS: "80"
         run: |
-          chmod +x mvnw
-          ./mvnw -q spring-boot:run > ../../backend-e2e.log 2>&1 &
-          BACKEND_PID=$!
-          for _ in $(seq 1 60); do
-            if ! kill -0 "${BACKEND_PID}" 2>/dev/null; then
+          JAR="apps/backend/target/backend-0.0.1-SNAPSHOT.jar"
+          nohup java -jar "${JAR}" > backend-e2e.log 2>&1 &
+          echo $! > backend.pid
+          for _ in $(seq 1 90); do
+            if ! kill -0 "$(cat backend.pid)" 2>/dev/null; then
               echo "Backend process exited early"
-              tail -n 120 ../../backend-e2e.log || true
+              tail -n 150 backend-e2e.log || true
               exit 1
             fi
-            if curl -sf http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
+            if grep -q "Started JuggleFlowApplication" backend-e2e.log 2>/dev/null \
+              && curl -sf http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
               if curl -sf -X POST http://localhost:8080/api/auth/login \
                 -H 'Content-Type: application/json' \
                 -d '{"email":"marie.dupont@ecole.fr","password":"Demo2026!"}' \
@@ -140,7 +146,7 @@ jobs:
             sleep 5
           done
           echo "Backend failed to start in time"
-          tail -n 120 ../../backend-e2e.log || true
+          tail -n 150 backend-e2e.log || true
           exit 1
 
       - name: Run E2E tests
@@ -154,6 +160,13 @@ jobs:
           E2E_ADMIN_EMAIL: admin@juggleflow.local
           E2E_ADMIN_PASSWORD: Admin2026!
         run: npm run e2e
+
+      - name: Stop API
+        if: always()
+        run: |
+          if [ -f backend.pid ]; then
+            kill "$(cat backend.pid)" 2>/dev/null || true
+          fi
 
       - name: Upload backend log on E2E failure
         if: failure()
