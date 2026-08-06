@@ -156,13 +156,14 @@ jobs:
           APP_JWT_REVOCATION_STORE: memory
           APP_RATE_LIMIT_STORE: memory
           APP_TRUSTED_PROXY: "true"
-          # Quota bas : le test rate-limit utilise une IP XFF isolée (pas les logins UI).
-          # Bucket4j refill greedy → il faut rester nettement sous ~30 pour un 429 fiable.
-          APP_RATE_LIMIT_MAX_REQUESTS: "15"
+          # Logins/refresh Playwright partagent 127.0.0.1 → quota assez haut pour toute la suite
+          # (+ retries). Le test 429 utilise une IP XFF isolée (voir z-rate-limit.spec.ts).
+          # Bucket4j refill greedy : probes ≈ 2×max pour un 429 fiable sur l'IP isolée.
+          APP_RATE_LIMIT_MAX_REQUESTS: "200"
           MANAGEMENT_HEALTH_REDIS_ENABLED: "false"
           CI: "true"
           PLAYWRIGHT_BACKEND_URL: http://127.0.0.1:8080
-          E2E_RATE_LIMIT_PROBE_ATTEMPTS: "30"
+          E2E_RATE_LIMIT_PROBE_ATTEMPTS: "450"
           E2E_PASSWORD: Demo2026!
           E2E_TEACHER_EMAIL: marie.dupont@ecole.fr
           E2E_STUDENT_EMAIL: lucas.martin@ecole.fr
