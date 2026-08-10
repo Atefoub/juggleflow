@@ -1,6 +1,7 @@
 import AppIcon from '../icons/AppIcon';
 import type { TrickResponse } from '../../api/catalogueApi';
 import {
+  isJugglingLabPublicAnimator,
   resolveTrickAnimation,
   type JugglingLabGifOptions,
   type ResolvedTrickAnimation,
@@ -16,44 +17,50 @@ type VariantConfig = {
   emptyFrameClass?: string;
   imgClass: string;
   iframeClass: string;
+  /** Ne pas embarquer l’animateur JL public (trop lourd pour listes). */
+  compactSkipPublicAnimator: boolean;
   wrapper?: 'card' | 'session-section';
 };
 
 const VARIANT: Record<AnimationPreviewVariant, VariantConfig> = {
   list: {
-    gif: { width: 200, height: 225, slowdown: 2 },
+    gif: { slowdown: 2 },
     pointerEventsNone: false,
     emptyFallback: 'placeholder',
     placeholderIcon: 36,
+    compactSkipPublicAnimator: true,
     imgClass: 'rounded-xl shrink-0 w-20 h-20 object-cover bg-bg-input',
     iframeClass: 'rounded-xl shrink-0 w-20 h-20 bg-bg-input border-0',
   },
   tile: {
-    gif: { width: 240, height: 270, slowdown: 2 },
+    gif: { slowdown: 2 },
     pointerEventsNone: true,
     emptyFallback: 'placeholder',
     placeholderIcon: 32,
+    compactSkipPublicAnimator: true,
     imgClass: 'w-full h-20 object-cover rounded-xl bg-bg-input',
     iframeClass: 'w-full h-20 border-0 rounded-xl bg-bg-input',
   },
   detail: {
-    gif: { width: 400, height: 450, slowdown: 2 },
+    gif: { slowdown: 2 },
     pointerEventsNone: false,
     emptyFallback: 'message',
     placeholderIcon: 48,
+    compactSkipPublicAnimator: false,
     emptyFrameClass:
       'rounded-2xl bg-bg-card border border-border h-48 flex flex-col items-center justify-center gap-2',
     imgClass: 'w-full max-h-72 object-contain bg-bg-input',
-    iframeClass: 'w-full h-48 border-none',
+    iframeClass: 'w-full h-72 border-none bg-bg-input',
     wrapper: 'card',
   },
   session: {
-    gif: { width: 320, height: 360, slowdown: 2 },
+    gif: { slowdown: 2 },
     pointerEventsNone: false,
     emptyFallback: 'hidden',
     placeholderIcon: 40,
+    compactSkipPublicAnimator: false,
     imgClass: 'w-full max-h-44 object-contain bg-bg-input',
-    iframeClass: 'w-full h-40 border-none',
+    iframeClass: 'w-full h-56 border-none bg-bg-input',
     wrapper: 'session-section',
   },
 };
@@ -108,7 +115,8 @@ function renderMedia(
         title={`Animation de la figure ${trick.name}`}
         className={[cfg.iframeClass, pe, className].filter(Boolean).join(' ')}
         loading="lazy"
-        scrolling="no"
+        referrerPolicy="strict-origin-when-cross-origin"
+        allow="autoplay"
       />
     );
   }
@@ -174,6 +182,16 @@ export default function AnimationPreview({
     return null;
   }
 
+  // Liste / tuiles : pas d’iframe JL (SPA lourde × N cartes). Les GIF custom restent OK.
+  if (
+    cfg.compactSkipPublicAnimator &&
+    resolved.kind === 'iframe' &&
+    isJugglingLabPublicAnimator(resolved.src) &&
+    (variant === 'list' || variant === 'tile')
+  ) {
+    return renderCompactPlaceholder(variant, cfg, className);
+  }
+
   const media = renderMedia(trick, resolved, cfg, className);
 
   if (cfg.wrapper === 'card') {
@@ -182,7 +200,7 @@ export default function AnimationPreview({
         <div className="rounded-2xl overflow-hidden bg-bg-card border border-border">
           {media}
         </div>
-        {resolved.kind === 'img' && <JugglingLabCredit />}
+        <JugglingLabCredit />
       </section>
     );
   }
