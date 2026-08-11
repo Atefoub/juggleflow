@@ -9,6 +9,11 @@
   --container-lg: 32rem;
   --container-xl: 36rem;
 
+  /* Gabarits d'écran applicatifs */
+  --container-shell: 26.875rem;   /* 430px — colonne mobile (PWA élève) */
+  --container-shell-md: 48rem;    /* 768px — tablette */
+  --container-shell-lg: 64rem;    /* 1024px — poste fixe */
+
   /* Fonds */
   --color-bg-primary: #0A0E2A;
   --color-bg-secondary: #F0F2FF;

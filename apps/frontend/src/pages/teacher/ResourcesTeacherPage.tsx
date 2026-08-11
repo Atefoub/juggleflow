@@ -130,7 +130,7 @@ export default function ResourcesTeacherPage() {
             <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
               Études scientifiques
             </h2>
-            <div className="grid gap-3 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {pdfs.length === 0 ? (
                 <EmptySearch />
               ) : pdfs.map((res) => (
@@ -144,7 +144,7 @@ export default function ResourcesTeacherPage() {
         )}
 
         {tab === 'Vidéos' && !loading && (
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {videos.length === 0 ? (
               <EmptySearch />
             ) : (
@@ -169,7 +169,7 @@ export default function ResourcesTeacherPage() {
         )}
 
         {tab === 'Fiches' && !loading && (
-          <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {sheets.length === 0 ? <EmptySearch /> : sheets.map((g) => (
               <GuideRow key={g.id} res={g} />
             ))}
@@ -177,7 +177,7 @@ export default function ResourcesTeacherPage() {
         )}
 
         {tab === 'Guides EPS' && !loading && (
-          <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {guides.length === 0 ? <EmptySearch /> : guides.map((g) => (
               <GuideRow key={g.id} res={g} />
             ))}

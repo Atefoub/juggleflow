@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import BottomNav from '../../components/BottomNav';
 import AppIcon from '../../components/icons/AppIcon';
-import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
 import type {
   StudentStats,
@@ -126,7 +124,7 @@ export default function StudentDashboardPage() {
   ].slice(0, 3);
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+    <>
 
       {/* ── Header ── */}
       <header className="px-5 pt-12 pb-4 bg-bg-header border-b border-border">
@@ -348,7 +346,6 @@ export default function StudentDashboardPage() {
         )}
       </main>
 
-      <BottomNav items={STUDENT_NAV_ITEMS} />
-    </div>
+    </>
   );
 }

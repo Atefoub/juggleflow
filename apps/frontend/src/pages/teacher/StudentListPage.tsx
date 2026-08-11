@@ -288,7 +288,7 @@ export default function StudentListPage() {
           <label className="text-xs font-semibold text-text-secondary" htmlFor="create-student-email">
             Créer un élève
           </label>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <input
               id="create-student-email"
               value={newStudentEmail}
@@ -452,7 +452,7 @@ export default function StudentListPage() {
 
         {/* Student list */}
         {!loading && !classDataLoading && !error && filteredStudents.length > 0 && (
-          <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {filteredStudents.map((student) => {
               const chipColor = GROUP_COLOR_MAP[student.groupColor];
               const pathRow = pathOverview.get(student.id);

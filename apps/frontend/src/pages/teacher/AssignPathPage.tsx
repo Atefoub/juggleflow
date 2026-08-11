@@ -428,7 +428,7 @@ export default function AssignPathPage() {
       </main>
 
       {/* Footer nav buttons */}
-      <div className="fixed bottom-18 left-0 right-0 z-20 max-w-[430px] mx-auto px-5 pb-2 flex gap-3 bg-bg-primary border-t border-border pt-3 lg:bottom-0 lg:left-60 lg:right-0 lg:max-w-none lg:px-8 lg:py-4">
+      <div className="fixed bottom-18 left-0 right-0 z-20 max-w-shell mx-auto px-5 pb-2 flex gap-3 bg-bg-primary border-t border-border pt-3 md:bottom-0 md:left-60 md:right-0 md:max-w-none md:px-8 md:py-4">
         {step > 1 && (
           <button
             onClick={() => setStep((s) => (s - 1) as Step)}

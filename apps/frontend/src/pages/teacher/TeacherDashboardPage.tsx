@@ -133,17 +133,17 @@ export default function TeacherDashboardPage() {
       </div>
 
       {/* Contenu */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
+      <div className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 sm:items-start">
 
         {/* Erreur */}
         {error && (
-          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-alert-surface border border-alert lg:col-span-2">
+          <div className="p-4 rounded-2xl text-sm text-center text-alert bg-alert-surface border border-alert sm:col-span-2">
             {error}
           </div>
         )}
 
         {loading && (
-          <div className="flex flex-col gap-3 lg:col-span-2">
+          <div className="flex flex-col gap-3 sm:col-span-2">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-20 rounded-2xl animate-pulse bg-bg-card" />
             ))}
@@ -153,7 +153,7 @@ export default function TeacherDashboardPage() {
         {!loading && !error && (
           <>
             {/* Progression moyenne */}
-            <div className="p-4 rounded-2xl flex items-center gap-4 bg-bg-card border border-border lg:col-span-1">
+            <div className="p-4 rounded-2xl flex items-center gap-4 bg-bg-card border border-border sm:col-span-1">
               <div className="flex-1">
                 <p className="text-xs uppercase tracking-widest mb-1 text-text-muted">
                   Progression moyenne
@@ -170,7 +170,7 @@ export default function TeacherDashboardPage() {
 
             {/* Groupes d'élèves */}
             {students.length > 0 && (
-              <div className="lg:col-span-1">
+              <div className="sm:col-span-1">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
                     Groupes d'élèves
@@ -234,7 +234,7 @@ export default function TeacherDashboardPage() {
 
             {/* Alerte blocage sur figure (parcours) */}
             {exerciseBlockedStudents.length > 0 && selectedClass && (
-              <div className="flex items-start gap-3 rounded-2xl border border-border border-l-[3px] border-l-brand-end bg-accent-surface p-4 lg:col-span-2">
+              <div className="flex items-start gap-3 rounded-2xl border border-border border-l-[3px] border-l-brand-end bg-accent-surface p-4 sm:col-span-2">
                 <AppIcon name="alert-warning" size={20} className="shrink-0" label="Attention" />
                 <div className="flex-1">
                   <p className="text-sm font-bold text-text-primary mb-1">
@@ -264,7 +264,7 @@ export default function TeacherDashboardPage() {
 
             {/* Alerte élèves en difficulté (groupe rouge) */}
             {blockedStudents.length > 0 && (
-              <div className="flex items-start gap-3 rounded-2xl border border-border border-l-[3px] border-l-brand-end bg-accent-surface p-4 lg:col-span-2">
+              <div className="flex items-start gap-3 rounded-2xl border border-border border-l-[3px] border-l-brand-end bg-accent-surface p-4 sm:col-span-2">
                 <AppIcon name="alert-warning" size={20} className="shrink-0" label="Attention" />
                 <div className="flex-1">
                   <p className="text-sm font-bold text-text-primary mb-1">
@@ -294,7 +294,7 @@ export default function TeacherDashboardPage() {
 
             {/* Parcours effectif par élève */}
             {selectedClass && students.length > 0 && (
-              <section className="lg:col-span-2">
+              <section className="sm:col-span-2">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
                     Parcours par élève
@@ -359,7 +359,7 @@ export default function TeacherDashboardPage() {
 
             {/* Parcours assignés */}
             {selectedClass && (
-              <section className="lg:col-span-2">
+              <section className="sm:col-span-2">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
                     Parcours assignés
@@ -390,7 +390,7 @@ export default function TeacherDashboardPage() {
                     Aucun parcours assigné pour l'instant.
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:gap-3">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
                     {assignedPaths.map((p) => (
                       <div
                         key={p.id}
@@ -430,13 +430,13 @@ export default function TeacherDashboardPage() {
 
             {/* Aucune classe */}
             {classes.length === 0 && (
-              <div className="p-4 rounded-2xl text-sm bg-bg-card border border-border text-text-secondary lg:col-span-2">
+              <div className="p-4 rounded-2xl text-sm bg-bg-card border border-border text-text-secondary sm:col-span-2">
                 Vous n'avez pas encore de classe. Créez-en une pour commencer.
               </div>
             )}
 
             {/* Actions rapides */}
-            <div className="lg:col-span-2">
+            <div className="sm:col-span-2">
               <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
                 Actions rapides
               </h2>
@@ -492,7 +492,7 @@ export default function TeacherDashboardPage() {
 
             {/* Sélection du parcours pour le rapport */}
             {reportPickerOpen && selectedClass && sortedAssignedPaths.length > 1 && (
-              <section className="p-4 rounded-2xl bg-bg-card border border-border lg:col-span-2">
+              <section className="p-4 rounded-2xl bg-bg-card border border-border sm:col-span-2">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
                     Choisir un parcours

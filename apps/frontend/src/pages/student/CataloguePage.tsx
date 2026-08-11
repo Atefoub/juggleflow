@@ -1,13 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import BottomNav from '../../components/BottomNav';
 import AppIcon from '../../components/icons/AppIcon';
 import AnimationPreview from '../../components/catalogue/AnimationPreview';
 import DifficultyChip from '../../components/catalogue/DifficultyChip';
 import ProgressChip from '../../components/catalogue/ProgressChip';
 import type { TrickProgressStatus } from '../../components/catalogue/progressStatus';
 import { TrickCard, TrickCardSkeleton } from '../../components/catalogue/TrickCard';
-import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import OfflineBanner from '../../components/OfflineBanner';
 import { getPopularTricks, getTricksPage } from '../../api/catalogueOffline';
@@ -183,7 +181,7 @@ export default function CataloguePage() {
     (activeFilter !== 'Tous' ? 1 : 0) + (debouncedSearch ? 1 : 0);
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+    <>
 
       <header className="px-5 pt-12 pb-4 sticky top-0 z-30 bg-bg-header border-b border-border">
         <h1 className="font-display text-xl font-bold text-text-primary mb-4">Catalogue</h1>
@@ -351,7 +349,6 @@ export default function CataloguePage() {
         )}
       </main>
 
-      <BottomNav items={STUDENT_NAV_ITEMS} />
-    </div>
+    </>
   );
 }

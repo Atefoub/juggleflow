@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import BottomNav from '../../components/BottomNav';
-import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
 import PathTrickList from '../../components/student/PathTrickList';
 import OfflineBanner from '../../components/OfflineBanner';
@@ -78,7 +76,7 @@ export default function StudentLearningPathPage() {
   }, [reload]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+    <>
       <header className="px-5 pt-12 pb-4 bg-bg-header border-b border-border">
         <button
           type="button"
@@ -155,7 +153,6 @@ export default function StudentLearningPathPage() {
         )}
       </main>
 
-      <BottomNav items={STUDENT_NAV_ITEMS} />
-    </div>
+    </>
   );
 }

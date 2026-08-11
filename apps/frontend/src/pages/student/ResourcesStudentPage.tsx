@@ -5,8 +5,6 @@ import {
   RESOURCE_EXERCISE_ICONS,
   RESOURCE_VIDEO_ICONS,
 } from '../../components/icons/iconRegistry';
-import BottomNav from '../../components/BottomNav';
-import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import OfflineBanner from '../../components/OfflineBanner';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { resourcesApi, type PedagogicalResource } from '../../api/resourcesApi';
@@ -149,7 +147,7 @@ export default function ResourcesStudentPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+    <>
 
       {/* Header */}
       <header className="px-5 pt-12 pb-4 bg-bg-header border-b border-border">
@@ -376,7 +374,6 @@ export default function ResourcesStudentPage() {
         )}
       </main>
 
-      <BottomNav items={STUDENT_NAV_ITEMS} />
-    </div>
+    </>
   );
 }
