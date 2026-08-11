@@ -144,7 +144,7 @@ export default function AssignPathPage() {
   const submitting = assignMutation.isPending;
 
   return (
-    <div className="flex flex-1 flex-col w-full min-h-0 pb-28 lg:pb-24">
+    <div className="flex flex-1 flex-col w-full min-h-0 pb-28 md:pb-24">
       {/* Header */}
       <header className="px-5 pt-4 pb-4 md:pt-6 md:px-0 bg-bg-header border-b border-border">
         <button
