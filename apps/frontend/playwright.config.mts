@@ -24,8 +24,16 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   projects: [
-    { name: 'mobile', use: { ...devices['Pixel 5'] } },
-    { name: 'tablet', use: { ...devices['iPad Mini'] } },
+    {
+      name: 'mobile',
+      testMatch: /responsive\.spec\.ts/,
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'tablet',
+      testMatch: /responsive\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], viewport: { width: 820, height: 1180 } },
+    },
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
   ],
   globalSetup: path.join(configDir, 'e2e/global-setup.ts'),

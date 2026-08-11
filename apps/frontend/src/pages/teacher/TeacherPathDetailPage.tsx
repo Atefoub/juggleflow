@@ -97,7 +97,7 @@ export default function TeacherPathDetailPage() {
 
   return (
     <div className="flex flex-1 flex-col w-full min-h-0">
-      <header className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-bg-header border-b border-border">
+      <header className="px-5 pt-4 pb-4 md:pt-6 md:px-0 bg-bg-header border-b border-border">
         <div className="flex items-center justify-between gap-3 mb-3">
           <button
             onClick={() => navigate(-1)}
@@ -162,7 +162,7 @@ export default function TeacherPathDetailPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 flex flex-col gap-4">
+      <main className="flex-1 overflow-y-auto px-5 py-4 md:px-0 flex flex-col gap-4">
         {error && (
           <div className="p-4 rounded-2xl text-sm text-center text-alert bg-alert-surface border border-alert">
             {error}

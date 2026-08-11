@@ -146,7 +146,7 @@ export default function AssignPathPage() {
   return (
     <div className="flex flex-1 flex-col w-full min-h-0 pb-28 lg:pb-24">
       {/* Header */}
-      <header className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-bg-header border-b border-border">
+      <header className="px-5 pt-4 pb-4 md:pt-6 md:px-0 bg-bg-header border-b border-border">
         <button
           onClick={() => navigate(-1)}
           aria-label="Retour"
@@ -190,7 +190,7 @@ export default function AssignPathPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 flex flex-col gap-4 lg:max-w-3xl">
+      <main className="flex-1 overflow-y-auto px-5 py-4 md:px-0 flex flex-col gap-4 md:max-w-3xl">
         {error && (
           <div className="p-4 rounded-2xl text-sm text-center text-alert bg-alert-surface border border-alert">
             {error}
