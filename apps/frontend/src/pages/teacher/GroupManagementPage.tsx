@@ -167,7 +167,7 @@ export default function GroupManagementPage() {
   return (
     <div className="flex flex-1 flex-col w-full min-h-0">
 
-      <header className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-bg-header border-b border-border">
+      <header className="px-5 pt-4 pb-4 md:pt-6 md:px-0 bg-bg-header border-b border-border">
         <div className="flex items-start gap-3 mb-4">
           <button
             type="button"
@@ -215,7 +215,7 @@ export default function GroupManagementPage() {
         </p>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 flex flex-col gap-5">
+      <main className="flex-1 overflow-y-auto px-5 py-4 md:px-0 flex flex-col gap-5">
 
         {error && (
           <div className="p-4 rounded-2xl text-sm text-center text-alert bg-alert-surface border border-alert">
@@ -234,7 +234,7 @@ export default function GroupManagementPage() {
         {!loading && !classDataLoading && selectedClass && students.length > 0 && (
           <>
             {/* Colonnes par groupe */}
-            <section className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 lg:grid lg:grid-cols-3 lg:overflow-visible lg:mx-0 lg:px-0 lg:gap-4 lg:items-start">
+            <section className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 md:grid md:grid-cols-3 md:overflow-visible md:mx-0 md:px-0 md:gap-4 md:items-start">
               {GROUP_ORDER.map((color) => {
                 const list = groups[color];
                 const avg = averageGroupProgress(list);
@@ -377,7 +377,7 @@ export default function GroupManagementPage() {
                 Élèves
               </h2>
               <div className="rounded-2xl overflow-hidden border border-border">
-                <div className="hidden sm:grid grid-cols-[1fr_minmax(0,1.2fr)_72px_88px] gap-2 px-4 py-2 bg-bg-header text-[0.65rem] font-semibold uppercase tracking-wider text-text-muted">
+                <div className="hidden md:grid grid-cols-[1fr_minmax(0,1.2fr)_72px_88px] gap-2 px-4 py-2 bg-bg-header text-[0.65rem] font-semibold uppercase tracking-wider text-text-muted">
                   <span>Élève</span>
                   <span>Parcours</span>
                   <span className="text-right">Sur parcours</span>
@@ -411,7 +411,7 @@ export default function GroupManagementPage() {
                           }
                           className="w-full text-left"
                         >
-                          <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[1fr_minmax(0,1.2fr)_72px_88px] sm:items-center sm:gap-2">
+                          <div className="flex flex-col gap-2 md:grid md:grid-cols-[1fr_minmax(0,1.2fr)_72px_88px] md:items-center md:gap-2">
                             <div className="flex items-center gap-3 min-w-0">
                               <span
                                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
@@ -423,7 +423,7 @@ export default function GroupManagementPage() {
                                 <p className="text-sm font-semibold text-text-primary truncate">
                                   {s.firstName} {s.lastName}
                                 </p>
-                                <p className="text-xs text-text-muted sm:hidden">
+                                <p className="text-xs text-text-muted md:hidden">
                                   {GROUP_LABEL_MAP[s.groupColor]}
                                   {s.groupColorManual && (
                                     <span className="ml-1 text-brand-end">· manuel</span>
@@ -431,11 +431,11 @@ export default function GroupManagementPage() {
                                 </p>
                               </div>
                             </div>
-                            <StudentPathSummary overview={pathRow} className="sm:px-0" />
-                            <span className="text-sm font-bold text-text-primary sm:text-right">
+                            <StudentPathSummary overview={pathRow} className="md:px-0" />
+                            <span className="text-sm font-bold text-text-primary md:text-right">
                               {pathPct != null ? `${pathPct}%` : '—'}
                             </span>
-                            <span className="text-xs text-text-muted sm:text-right">
+                            <span className="text-xs text-text-muted md:text-right">
                               {formatLastActivity(s.lastActivityAt)}
                             </span>
                           </div>

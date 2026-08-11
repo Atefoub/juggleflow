@@ -73,7 +73,7 @@ export default function ResourcesTeacherPage() {
   return (
     <div className="flex flex-1 flex-col w-full min-h-0">
 
-      <header className="px-5 pt-4 pb-4 lg:pt-6 lg:px-0 bg-bg-header border-b border-border">
+      <header className="px-5 pt-4 pb-4 md:pt-6 md:px-0 bg-bg-header border-b border-border">
         <h1 className="font-display font-bold text-text-primary text-2xl mb-4">Ressources</h1>
         <p className="text-xs text-text-secondary mb-4">Contenus pédagogiques et scientifiques</p>
 
@@ -95,7 +95,7 @@ export default function ResourcesTeacherPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 flex flex-col gap-4">
+      <main className="flex-1 overflow-y-auto px-5 py-4 md:px-0 flex flex-col gap-4">
 
         <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-bg-card border border-border">
           <AppIcon name="search" size={16} label="Recherche" />
@@ -130,7 +130,7 @@ export default function ResourcesTeacherPage() {
             <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider">
               Études scientifiques
             </h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {pdfs.length === 0 ? (
                 <EmptySearch />
               ) : pdfs.map((res) => (
@@ -144,7 +144,7 @@ export default function ResourcesTeacherPage() {
         )}
 
         {tab === 'Vidéos' && !loading && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {videos.length === 0 ? (
               <EmptySearch />
             ) : (
@@ -169,7 +169,7 @@ export default function ResourcesTeacherPage() {
         )}
 
         {tab === 'Fiches' && !loading && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {sheets.length === 0 ? <EmptySearch /> : sheets.map((g) => (
               <GuideRow key={g.id} res={g} />
             ))}
@@ -177,7 +177,7 @@ export default function ResourcesTeacherPage() {
         )}
 
         {tab === 'Guides EPS' && !loading && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {guides.length === 0 ? <EmptySearch /> : guides.map((g) => (
               <GuideRow key={g.id} res={g} />
             ))}

@@ -193,7 +193,7 @@ export default function StudentDetailPage() {
     <div className="flex flex-1 flex-col w-full min-h-0">
 
       {/* Header */}
-      <header className="px-5 pt-4 pb-5 lg:pt-6 lg:px-0 bg-bg-header border-b border-border">
+      <header className="px-5 pt-4 pb-5 md:pt-6 md:px-0 bg-bg-header border-b border-border">
         <button
           onClick={() => navigate(-1)}
           aria-label="Retour"
@@ -247,7 +247,7 @@ export default function StudentDetailPage() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 sm:items-start">
+      <main className="flex-1 overflow-y-auto px-5 py-4 md:px-0 grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6 md:items-start">
 
         {error && (
           <div className="p-4 rounded-2xl text-sm text-center text-alert bg-alert-surface border border-alert">
@@ -320,7 +320,7 @@ export default function StudentDetailPage() {
               <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
                 Statistiques
               </h2>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 {([
                   { value: `${progressPct}%`, label: 'Progression', iconName: 'chart-bar' as IconName, iconLabel: 'progression' },
                   {
