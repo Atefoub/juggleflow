@@ -51,7 +51,7 @@ export default function SyncStatusBanner() {
             : 'Synchronisation terminée.';
 
   return (
-    <div className={`mx-auto max-w-107.5 px-5 pt-3`}>
+    <div className={`mx-auto max-w-shell px-5 pt-3 md:max-w-shell-md lg:max-w-shell-lg`}>
       <div className={`p-3 rounded-2xl border ${tone}`}>
         <p className="text-xs font-semibold">{message}</p>
       </div>

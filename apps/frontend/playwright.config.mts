@@ -23,7 +23,11 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'mobile', use: { ...devices['Pixel 5'] } },
+    { name: 'tablet', use: { ...devices['iPad Mini'] } },
+    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
+  ],
   globalSetup: path.join(configDir, 'e2e/global-setup.ts'),
   webServer: process.env.PLAYWRIGHT_SKIP_WEBSERVER
     ? undefined

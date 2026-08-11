@@ -7,10 +7,8 @@ import {
   RANK_INLINE_ICON,
   type IconName,
 } from '../../components/icons/iconRegistry';
-import BottomNav from '../../components/BottomNav';
 import ThemeSwitcher from '../../components/ThemeSwitcher';
 import ToggleSwitch from '../../components/ToggleSwitch';
-import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
 import PathTrickList from '../../components/student/PathTrickList';
 import type { StudentStats, LearningPath } from '../../api/studentApi';
@@ -201,7 +199,7 @@ export default function StudentProfilePage() {
     : `${totalMinutes}min`;
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+    <>
 
       {/* Header */}
       <header className="px-5 pt-12 pb-6 bg-bg-header border-b border-border flex flex-col items-center gap-3">
@@ -523,7 +521,6 @@ export default function StudentProfilePage() {
 
       </main>
 
-      <BottomNav items={STUDENT_NAV_ITEMS} />
-    </div>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { Role } from '../types/auth';
 import { isStudentOnboardingDone } from '../utils/onboarding';
 import AdminLayout from '../components/admin/AdminLayout';
 import AppThemeSync from '../components/AppThemeSync';
+import StudentLayout from '../components/student/StudentLayout';
 import TeacherLayout from '../components/teacher/TeacherLayout';
 
 // Lazy pages (code-splitting)
@@ -101,7 +102,9 @@ function OnboardingRoute() {
 }
 
 const student = (el: React.ReactNode) => (
-  <ProtectedRoute requiredRole="ROLE_ELEVE">{el}</ProtectedRoute>
+  <ProtectedRoute requiredRole="ROLE_ELEVE">
+    <StudentLayout>{el}</StudentLayout>
+  </ProtectedRoute>
 );
 const teacher = (el: React.ReactNode) => (
   <ProtectedRoute requiredRole="ROLE_ENSEIGNANT">

@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import BottomNav from '../../components/BottomNav';
 import AppIcon from '../../components/icons/AppIcon';
 import { RANK_BADGE_ICON } from '../../components/icons/iconRegistry';
 import ProgressStatusIcon from '../../components/icons/ProgressStatusIcon';
-import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
 import { getTrickDetail } from '../../api/catalogueOffline';
 import type { TrickResponse } from '../../api/catalogueApi';
@@ -179,7 +177,7 @@ export default function TrickDetailPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+    <>
 
       {/* Header */}
       <header className="px-5 pt-12 pb-4 bg-bg-header border-b border-border">
@@ -440,7 +438,6 @@ export default function TrickDetailPage() {
         )}
       </main>
 
-      <BottomNav items={STUDENT_NAV_ITEMS} />
-    </div>
+    </>
   );
 }

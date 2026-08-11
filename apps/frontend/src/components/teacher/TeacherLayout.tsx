@@ -10,7 +10,7 @@ interface TeacherLayoutProps {
 
 /**
  * Shell enseignant : colonne mobile (~430px) + barre du bas ;
- * à partir de lg (1024px) : sidebar fixe et contenu jusqu'à max-w-7xl.
+ * à partir de md (768px) : sidebar fixe et contenu jusqu'à max-w-7xl.
  */
 export default function TeacherLayout({ children }: TeacherLayoutProps) {
   const location = useLocation();
@@ -41,7 +41,7 @@ export default function TeacherLayout({ children }: TeacherLayoutProps) {
   return (
     <div className="jf-teacher min-h-screen bg-bg-primary font-body">
       <aside
-        className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-60 lg:border-r lg:border-border lg:bg-bg-header lg:z-30"
+        className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-60 md:border-r md:border-border md:bg-bg-header md:z-30"
         aria-label="Navigation principale"
       >
         <TeacherSidebar />
@@ -51,7 +51,7 @@ export default function TeacherLayout({ children }: TeacherLayoutProps) {
         <button
           type="button"
           aria-label="Fermer la navigation"
-          className="fixed inset-0 z-40 bg-black/55 lg:hidden cursor-default"
+          className="fixed inset-0 z-40 bg-black/55 md:hidden cursor-default"
           onClick={() => setDrawerOpen(false)}
         />
       )}
@@ -59,7 +59,7 @@ export default function TeacherLayout({ children }: TeacherLayoutProps) {
       <aside
         className={[
           'fixed inset-y-0 left-0 w-72 max-w-[85vw] z-50 bg-bg-header border-r border-border shadow-xl',
-          'transform transition-transform duration-200 ease-out lg:hidden',
+          'transform transition-transform duration-200 ease-out md:hidden',
           drawerOpen ? 'translate-x-0' : '-translate-x-full',
         ].join(' ')}
         role="dialog"
@@ -80,8 +80,8 @@ export default function TeacherLayout({ children }: TeacherLayoutProps) {
         </div>
       </aside>
 
-      <div className="lg:pl-60 flex flex-col min-h-screen">
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-bg-header px-4 lg:hidden">
+      <div className="md:pl-60 flex flex-col min-h-screen">
+        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-bg-header px-4 md:hidden">
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
@@ -94,13 +94,13 @@ export default function TeacherLayout({ children }: TeacherLayoutProps) {
           <span className="font-display text-sm font-bold text-text-primary">JuggleFlow</span>
         </header>
 
-        <div className="flex flex-1 flex-col w-full max-w-[430px] mx-auto lg:max-w-none lg:mx-0 pb-20 lg:pb-8">
-          <div className="flex flex-1 flex-col w-full lg:max-w-7xl lg:mx-auto lg:px-8">
+        <div className="flex flex-1 flex-col w-full max-w-shell mx-auto md:max-w-none md:mx-0 pb-20 md:pb-8">
+          <div className="flex flex-1 flex-col w-full md:max-w-7xl md:mx-auto md:px-8">
             {children}
           </div>
         </div>
 
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-bg-primary border-t border-border">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 mx-auto w-full max-w-shell bg-bg-primary border-t border-border">
           <BottomNav items={[...TEACHER_NAV_ITEMS]} />
         </div>
       </div>

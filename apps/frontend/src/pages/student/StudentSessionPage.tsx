@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AppIcon from '../../components/icons/AppIcon';
-import BottomNav from '../../components/BottomNav';
-import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
 import { getTrickDetail } from '../../api/catalogueOffline';
 import { LEVEL_LABELS, type TrickResponse } from '../../api/catalogueApi';
@@ -132,7 +130,7 @@ export default function StudentSessionPage() {
   const percent = Math.min((elapsed / targetSeconds) * 100, 100);
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+    <>
       <header className="px-5 pt-12 pb-4 bg-bg-header border-b border-border">
         <button
           onClick={() => navigate(-1)}
@@ -254,8 +252,7 @@ export default function StudentSessionPage() {
         )}
       </main>
 
-      <BottomNav items={STUDENT_NAV_ITEMS} />
-    </div>
+    </>
   );
 }
 

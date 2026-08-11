@@ -247,7 +247,7 @@ export default function StudentDetailPage() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
+      <main className="flex-1 overflow-y-auto px-5 py-4 lg:px-0 grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 sm:items-start">
 
         {error && (
           <div className="p-4 rounded-2xl text-sm text-center text-alert bg-alert-surface border border-alert">
@@ -320,7 +320,7 @@ export default function StudentDetailPage() {
               <h2 className="font-display font-bold text-text-primary text-sm uppercase tracking-wider mb-3">
                 Statistiques
               </h2>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 {([
                   { value: `${progressPct}%`, label: 'Progression', iconName: 'chart-bar' as IconName, iconLabel: 'progression' },
                   {

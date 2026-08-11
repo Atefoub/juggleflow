@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
-import BottomNav from '../../components/BottomNav';
 import AppIcon from '../../components/icons/AppIcon';
 import {
   BADGE_ICON_BY_ID,
   RANK_INLINE_ICON,
   type IconName,
 } from '../../components/icons/iconRegistry';
-import { STUDENT_NAV_ITEMS } from '../../config/studentNav';
 import ProgressBar from '../../components/ProgressBar';
 import OfflineBanner from '../../components/OfflineBanner';
 import { useAuth } from '../../context/AuthContext';
@@ -140,7 +138,7 @@ export default function BadgesPage() {
   const masteredCount = stats?.totalTricksLearned ?? 0;
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-body max-w-107.5 mx-auto pb-20">
+    <>
 
       {/* Header XP */}
       <header className="px-5 pt-12 pb-5 bg-bg-header border-b border-border">
@@ -264,7 +262,6 @@ export default function BadgesPage() {
         )}
       </main>
 
-      <BottomNav items={STUDENT_NAV_ITEMS} />
-    </div>
+    </>
   );
 }

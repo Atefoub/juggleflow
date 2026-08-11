@@ -17,7 +17,7 @@ export default function BottomNav({ items }: BottomNavProps) {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 flex items-center justify-around h-18 bg-bg-primary border-t border-border pb-2 max-w-[430px] mx-auto">
+    <nav className="flex h-18 w-full items-center justify-around border-t border-border bg-bg-primary pb-2">
       {items.map((item) => {
         const pathname = location.pathname;
         const isActive =
