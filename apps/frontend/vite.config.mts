@@ -45,7 +45,7 @@ export default defineConfig(({ mode }) => {
     nxViteTsPaths(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'logo1.png', 'logo2.png', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.ico', 'favicon.svg', 'favicon-32x32.png', 'logo1.png', 'logo2.png', 'apple-touch-icon.png'],
       manifest: {
         id: '/',
         name: 'JuggleFlow',
