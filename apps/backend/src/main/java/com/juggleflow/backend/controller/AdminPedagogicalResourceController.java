@@ -2,7 +2,9 @@ package com.juggleflow.backend.controller;
 
 import com.juggleflow.backend.dto.PedagogicalResourceResponse;
 import com.juggleflow.backend.service.PedagogicalResourceService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/admin/resources")
 @RequiredArgsConstructor
 @PreAuthorize("hasAuthority('ROLE_ADMINISTRATEUR')")
+@Tag(name = "Ressources (administration)", description = "Dépôt des fichiers de ressources")
 @SecurityRequirement(name = "bearerAuth")
 public class AdminPedagogicalResourceController {
 
@@ -27,6 +30,7 @@ public class AdminPedagogicalResourceController {
      * POST /api/admin/resources/{id}/file — dépose un PDF pour une ressource existante.
      */
     @PostMapping(value = "/{id}/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Déposer un PDF sur une ressource existante")
     public ResponseEntity<PedagogicalResourceResponse> uploadFile(
         @PathVariable Long id,
         @RequestPart("file") MultipartFile file

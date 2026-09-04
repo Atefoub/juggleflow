@@ -67,6 +67,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-use-32-chars-minimum!!}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4200}
       COOKIE_SECURE: "false"
+      SWAGGER_ENABLED: "true"
       SWAGGER_PUBLIC: "true"
       DEMO_BOOTSTRAP_ENABLED: ${DEMO_BOOTSTRAP_ENABLED:-true}
       DEMO_BOOTSTRAP_PASSWORD: ${DEMO_BOOTSTRAP_PASSWORD:-Demo2026!}

@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/eleve/daily-challenge")
 @RequiredArgsConstructor
-@Tag(name = "Defi du jour", description = "Defi quotidien pour l'eleve connecte")
+@Tag(name = "Défi du jour", description = "Défi quotidien de l'élève connecté")
 @SecurityRequirement(name = "bearerAuth")
 public class DailyChallengeController {
 
@@ -31,7 +31,7 @@ public class DailyChallengeController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('ROLE_ELEVE')")
-    @Operation(summary = "Defi du jour pour l'eleve connecte (rotation deterministe)")
+    @Operation(summary = "Défi du jour de l'élève connecté (rotation déterministe)")
     public ResponseEntity<DailyChallengeResponse> getDailyChallenge() {
         return dailyChallengeService.getTodayChallenge()
             .map(ResponseEntity::ok)

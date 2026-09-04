@@ -9,9 +9,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -97,6 +99,23 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getMessage()).isEqualTo("Email ou mot de passe incorrect");
+    }
+
+    @Test
+    @DisplayName("Ressource statique absente → 404 plutôt qu'un 500")
+    void missingStaticResource_shouldReturn404() {
+        var handler = new GlobalExceptionHandler();
+        var request = new MockHttpServletRequest();
+        request.setRequestURI("/swagger-ui/index.html");
+
+        var response = handler.handleNoResourceFound(
+            new NoResourceFoundException(HttpMethod.GET, "swagger-ui/index.html"),
+            request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getError()).isEqualTo("Ressource introuvable");
+        assertThat(response.getBody().getPath()).isEqualTo("/swagger-ui/index.html");
     }
 
     @Test

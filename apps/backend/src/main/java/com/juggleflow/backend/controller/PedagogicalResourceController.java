@@ -5,6 +5,9 @@ import com.juggleflow.backend.model.PedagogicalResource;
 import com.juggleflow.backend.model.PedagogicalResource.Audience;
 import com.juggleflow.backend.model.PedagogicalResource.ResourceType;
 import com.juggleflow.backend.service.PedagogicalResourceService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -21,6 +24,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/resources")
 @RequiredArgsConstructor
+@Tag(name = "Ressources pédagogiques", description = "Consultation et téléchargement des ressources")
+@SecurityRequirement(name = "bearerAuth")
 public class PedagogicalResourceController {
 
     private final PedagogicalResourceService resourceService;
@@ -29,6 +34,7 @@ public class PedagogicalResourceController {
      * GET /api/resources?audience=TEACHER|STUDENT&type=STUDY_PDF (optionnel)
      */
     @GetMapping
+    @Operation(summary = "Lister les ressources, filtrables par public et par type")
     public ResponseEntity<List<PedagogicalResourceResponse>> list(
         @RequestParam String audience,
         @RequestParam(required = false) String type
@@ -45,6 +51,7 @@ public class PedagogicalResourceController {
      * GET /api/resources/{id}/download — PDF stocké côté serveur (authentification requise).
      */
     @GetMapping("/{id}/download")
+    @Operation(summary = "Télécharger le PDF d'une ressource")
     public ResponseEntity<Resource> download(@PathVariable Long id) {
         Resource file = resourceService.loadDownloadFile(id);
         PedagogicalResource meta = resourceService.findActiveById(id);
