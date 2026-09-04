@@ -12,6 +12,9 @@ import com.juggleflow.backend.repository.StudentRepository;
 import com.juggleflow.backend.repository.UserRepository;
 import com.juggleflow.backend.security.CookieUtils;
 import com.juggleflow.backend.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -32,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentification", description = "Connexion, inscription, rotation des jetons et profil")
 public class AuthController {
 
   private final AuthService    authService;
@@ -46,6 +50,7 @@ public class AuthController {
    * dans un cookie httpOnly via CookieUtils.
    */
   @PostMapping("/login")
+  @Operation(summary = "Connexion : jeton d'accès en réponse, jeton de rafraîchissement en cookie httpOnly")
   public ResponseEntity<LoginResponse> login(
     @Valid @RequestBody LoginRequest request,
     HttpServletResponse response) {
@@ -61,6 +66,7 @@ public class AuthController {
    * Identique à /login : refresh token en cookie, access token en body.
    */
   @PostMapping("/register")
+  @Operation(summary = "Inscription : mêmes jetons que la connexion")
   public ResponseEntity<LoginResponse> register(
     @Valid @RequestBody RegisterRequest request,
     HttpServletResponse response) {
@@ -75,6 +81,7 @@ public class AuthController {
    * Demande de réinitialisation (traitement manuel par l'administrateur).
    */
   @PostMapping("/forgot-password")
+  @Operation(summary = "Demande de réinitialisation, traitée manuellement par l'administrateur")
   public ResponseEntity<ForgotPasswordResponse> forgotPassword(
     @Valid @RequestBody ForgotPasswordRequest request) {
     return ResponseEntity.accepted()
@@ -83,6 +90,7 @@ public class AuthController {
 
   /** Refresh via cookie httpOnly ; rotation du refresh token en cas de succès. */
   @PostMapping("/refresh")
+  @Operation(summary = "Rotation du jeton de rafraîchissement et émission d'un nouveau jeton d'accès")
   public ResponseEntity<LoginResponse> refresh(
     HttpServletRequest request,
     HttpServletResponse response) {
@@ -97,6 +105,7 @@ public class AuthController {
 
   /** Logout sans Bearer requis (révocation refresh + suppression cookie). */
   @PostMapping("/logout")
+  @Operation(summary = "Déconnexion : révocation du jeton de rafraîchissement et purge du cookie")
   public ResponseEntity<Void> logout(
     HttpServletRequest request,
     HttpServletResponse response) {
@@ -110,6 +119,8 @@ public class AuthController {
 
   /** GET /api/auth/me */
   @GetMapping("/me")
+  @Operation(summary = "Profil de l'utilisateur connecté")
+  @SecurityRequirement(name = "bearerAuth")
   public ResponseEntity<UserProfileResponse> me(
     @AuthenticationPrincipal UserDetails userDetails) {
 

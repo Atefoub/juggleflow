@@ -3,6 +3,9 @@ package com.juggleflow.backend.controller;
 import com.juggleflow.backend.dto.StudentOnboardingRequest;
 import com.juggleflow.backend.dto.UserProfileResponse;
 import com.juggleflow.backend.service.StudentOnboardingService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,11 +22,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/eleve/onboarding")
 @RequiredArgsConstructor
 @PreAuthorize("hasAuthority('ROLE_ELEVE')")
+@Tag(name = "Onboarding élève", description = "Déclaration du niveau initial de l'élève")
+@SecurityRequirement(name = "bearerAuth")
 public class EleveOnboardingController {
 
     private final StudentOnboardingService studentOnboardingService;
 
     @PostMapping
+    @Operation(summary = "Terminer l'onboarding : déclaration du niveau initial")
     public ResponseEntity<UserProfileResponse> completeOnboarding(
         @AuthenticationPrincipal UserDetails userDetails,
         @Valid @RequestBody StudentOnboardingRequest request
@@ -34,6 +40,7 @@ public class EleveOnboardingController {
     }
 
     @PatchMapping
+    @Operation(summary = "Mettre à jour le niveau déclaré de l'élève")
     public ResponseEntity<UserProfileResponse> updateLevel(
         @AuthenticationPrincipal UserDetails userDetails,
         @Valid @RequestBody StudentOnboardingRequest request

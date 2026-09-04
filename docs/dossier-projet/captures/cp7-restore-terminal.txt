@@ -1,0 +1,52 @@
+PS C:\Users\antoi\Documents\juggleflow> podman exec juggleflow-postgres psql -U juggleflow_user -d juggleflow_db -c "SELECT COUNT(*) FROM users;"
+ count 
+-------
+    18
+(1 row)
+
+
+PS C:\Users\antoi\Documents\juggleflow> podman exec juggleflow-postgres pg_dump -U juggleflow_user -d juggleflow_db -Fc -f /tmp/juggleflow.dump
+
+PS C:\Users\antoi\Documents\juggleflow> podman exec juggleflow-postgres psql -U juggleflow_user -d juggleflow_db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+NOTICE:  drop cascades to 28 other objects
+DETAIL:  drop cascades to function set_updated_at()
+drop cascades to table admin_audit_event
+drop cascades to table administrator
+drop cascades to table badge
+drop cascades to table badge_type
+drop cascades to table category
+drop cascades to table class_learning_path
+drop cascades to table daily_challenge
+drop cascades to table difficulty_level
+drop cascades to table establishment_settings
+drop cascades to table flyway_schema_history
+drop cascades to table gdpr_consent
+drop cascades to table learning_path
+drop cascades to table learning_path_step
+drop cascades to table pedagogical_resource
+drop cascades to table practice_session
+drop cascades to table prerequisite
+drop cascades to table school_class
+drop cascades to table student
+drop cascades to table student_brain_module_chapter
+drop cascades to table student_learning_path
+drop cascades to table teacher
+drop cascades to table trick
+drop cascades to table user_badge
+drop cascades to table user_favorite_trick
+drop cascades to table user_progress
+drop cascades to table user_streak
+drop cascades to table users
+DROP SCHEMA
+CREATE SCHEMA
+
+PS C:\Users\antoi\Documents\juggleflow> podman exec juggleflow-postgres pg_restore -U juggleflow_user --no-owner -d juggleflow_db /tmp/juggleflow.dump
+
+PS C:\Users\antoi\Documents\juggleflow> podman exec juggleflow-postgres psql -U juggleflow_user -d juggleflow_db -c "SELECT COUNT(*) FROM users;"
+ count 
+-------
+    18
+(1 row)
+
+
+PS C:\Users\antoi\Documents\juggleflow>

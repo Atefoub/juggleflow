@@ -197,7 +197,7 @@ public class AdminController {
      * l'utilisateur final.
      */
     @PostMapping("/users")
-    @Operation(summary = "Creer un utilisateur (admin)")
+    @Operation(summary = "Créer un utilisateur (admin)")
     public ResponseEntity<AdminCreateUserResponse> createUser(
         @Valid @RequestBody AdminCreateUserRequest body,
         @AuthenticationPrincipal UserDetails principal) {

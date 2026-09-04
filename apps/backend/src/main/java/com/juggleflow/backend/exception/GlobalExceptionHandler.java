@@ -16,6 +16,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.Instant;
 import java.util.Map;
@@ -190,6 +191,25 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ResourceNotFoundException.class)
   public ResponseEntity<ErrorResponse> handleNotFound(
     ResourceNotFoundException ex,
+    HttpServletRequest request) {
+
+    ErrorResponse body = ErrorResponse.builder()
+      .status(HttpStatus.NOT_FOUND.value())
+      .error("Ressource introuvable")
+      .message("La ressource demandée n'existe pas ou vous n'y avez pas accès.")
+      .path(request.getRequestURI())
+      .build();
+
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+  }
+
+  /**
+   * Ressource statique absente (ex. Swagger UI si {@code SWAGGER_ENABLED=false}).
+   * Sans handler dédié, {@code NoResourceFoundException} tombait dans le fallback 500.
+   */
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<ErrorResponse> handleNoResourceFound(
+    NoResourceFoundException ex,
     HttpServletRequest request) {
 
     ErrorResponse body = ErrorResponse.builder()
